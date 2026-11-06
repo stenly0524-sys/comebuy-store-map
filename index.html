@@ -104,7 +104,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 /* Brand filter: white by default, selected brand uses COMEBUY red. */
 .brand-filter button,.brand-filter button[data-brand="COMEBUY TEA"]{background:#fff!important;color:#292321!important;border:1px solid #e2dcd6!important}
 .brand-filter button.active,.brand-filter button[data-brand="COMEBUY TEA"].active{background:#d71920!important;color:#fff!important;border-color:#d71920!important}
-</style>
+.vacancy-area-editor{display:flex;flex-direction:column;gap:5px;margin:9px 4px}.vacancy-area-editor label{font-size:12px;font-weight:800}.vacancy-area-editor select{width:100%;height:40px;border:1px solid #ddd4ce;border-radius:9px;background:white;padding:5px}.vacancy-item-actions{flex-wrap:wrap}.vacancy-item-actions button{min-width:calc(50% - 6px)}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -356,6 +356,43 @@ function refreshVacancyMarkers(){
  if(vacancyVisibility){vacancyVisibility.textContent=vacancyVisible?'🏠 隱藏空舖標記':'🏠 顯示空舖標記';vacancyVisibility.setAttribute('aria-pressed',String(vacancyVisible))}
 }
 
+const AREA_TYPES=['待調查','住宅生活型','辦公商務型','商業購物型','學區校園型','交通轉運型','觀光休閒型','工業園區型','複合混合型'];
+async function detectAreaType(v,force=false){
+ if(!v.position)return false;
+ if(!force&&v.areaAnalysis?.date&&Date.now()-v.areaAnalysis.date<30*86400000)return true;
+ const {lat,lng}=v.position;
+ if(!Number.isFinite(lat)||!Number.isFinite(lng))return false;
+ const query='[out:json][timeout:20];(nwr(around:500,'+lat+','+lng+')['+'"amenity"'+'];nwr(around:500,'+lat+','+lng+')['+'"shop"'+'];nwr(around:500,'+lat+','+lng+')['+'"office"'+'];nwr(around:500,'+lat+','+lng+')['+'"tourism"'+'];nwr(around:500,'+lat+','+lng+')['+'"landuse"'+'];nwr(around:500,'+lat+','+lng+')['+'"railway"'+'];);out tags;';
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),14000);
+ try{
+  const response=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:query}),signal:controller.signal});
+  if(!response.ok)throw Error('OSM HTTP '+response.status);
+  const data=await response.json();
+  const counts=Object.fromEntries(AREA_TYPES.slice(1).map(k=>[k,0]));
+  const seen=new Set();
+  for(const element of data.elements||[]){
+   const key=element.type+':'+element.id;if(seen.has(key))continue;seen.add(key);
+   const t=element.tags||{},a=t.amenity||'',shop=t.shop||'',land=t.landuse||'';
+   if(['school','college','university','kindergarten','language_school'].includes(a))counts['學區校園型']+=3;
+   if(t.office||['commercial'].includes(land))counts['辦公商務型']+=2;
+   if(shop||['marketplace','restaurant','cafe','fast_food','food_court'].includes(a))counts['商業購物型']+=1;
+   if(['residential'].includes(land)||t.building==='apartments'||t.building==='residential')counts['住宅生活型']+=2;
+   if(['station','subway_entrance','tram_stop','halt'].includes(t.railway)||['bus_station','ferry_terminal'].includes(a))counts['交通轉運型']+=3;
+   if(t.tourism||['museum','arts_centre','theatre'].includes(a))counts['觀光休閒型']+=2;
+   if(['industrial'].includes(land)||t.building==='industrial')counts['工業園區型']+=3;
+  }
+  const ranked=Object.entries(counts).filter(([k,n])=>n>0).sort((a,b)=>b[1]-a[1]);
+  const primary=ranked[0];
+  // Sparse OSM tags must not be interpreted as proof of a residential or commercial district.
+  const suggestion=primary&&primary[1]>=3?primary[0]:'待調查';
+  v.areaAnalysis={source:'OpenStreetMap / Overpass',radiusMeters:500,date:Date.now(),counts,featureCount:seen.size,suggestion,confidence:'僅供初篩，需人工確認'};
+  if(!v.areaManual)v.areaType=suggestion;
+  saveVacancies();return true;
+ }catch(err){
+  v.areaAnalysis={source:'OpenStreetMap / Overpass',date:Date.now(),error:'公開查詢服務暫時無法使用'};
+  saveVacancies();return false;
+ }finally{clearTimeout(timer)}
+}
 function geocodeVacancy(v){
  return new Promise(resolve=>{
   if(!geocoder){resolve(false);return}
@@ -383,7 +420,7 @@ function showVacancies(){
  nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const visibilityWrap=document.createElement('div');visibilityWrap.className='vacancy-visibility';visibilityWrap.innerHTML='<button type="button" id="vacancyVisibility" aria-pressed="'+String(vacancyVisible)+'">'+(vacancyVisible?'🏠 隱藏空舖標記':'🏠 顯示空舖標記')+'</button>';drawerBody.appendChild(visibilityWrap);vacancyVisibility=visibilityWrap.querySelector('button');vacancyVisibility.onclick=()=>{vacancyVisible=!vacancyVisible;refreshVacancyMarkers()};
  const form=document.createElement('form');form.className='vacancy-form';
- form.innerHTML='<label for="vacancyAddress">新增空舖地址</label><input id="vacancyAddress" name="address" autocomplete="street-address" placeholder="例如：台北市內湖區行善路62號" required maxlength="220"><label for="vacancyRent">每月租金（新台幣元）</label><input id="vacancyRent" type="number" inputmode="numeric" min="0" step="1" placeholder="例如：60000" required><div class="vacancy-note">地址定位後自動帶入縣市、行政區；商業／住宅等商圈屬性需實地調查。</div><button type="submit">＋ 新增空舖並定位</button><div class="vacancy-note">紀錄僅儲存在本裝置瀏覽器，尚未雲端同步。</div><div class="vacancy-error" role="status"></div>';
+ form.innerHTML='<label for="vacancyAddress">新增空舖地址</label><input id="vacancyAddress" name="address" autocomplete="street-address" placeholder="例如：台北市內湖區行善路62號" required maxlength="220"><label for="vacancyRent">每月租金（新台幣元）</label><input id="vacancyRent" type="number" inputmode="numeric" min="0" step="1" placeholder="例如：60000" required><div class="vacancy-note">地址定位後自動帶入縣市、行政區；商圈屬性將使用免費 OpenStreetMap 設施資料初步辨識，仍需人工確認。</div><button type="submit">＋ 新增空舖並定位</button><div class="vacancy-note">紀錄僅儲存在本裝置瀏覽器，尚未雲端同步。</div><div class="vacancy-error" role="status"></div>';
  form.onsubmit=async e=>{
   e.preventDefault();const input=form.querySelector('input'),btn=form.querySelector('button'),error=form.querySelector('.vacancy-error');
   const address=input.value.trim(),rentText=form.querySelector('#vacancyRent').value.trim(),rent=Number(rentText);if(!address)return;if(!rentText||!Number.isFinite(rent)||rent<0){error.textContent='請輸入有效月租金';return}
@@ -394,6 +431,7 @@ function showVacancies(){
   if(!ok){error.textContent='無法定位此地址，請輸入完整縣市、區域與門牌';btn.disabled=false;btn.textContent='＋ 新增空舖並定位';return}
   vacancies.unshift(v);if(!saveVacancies()){btn.disabled=false;return}
   refreshVacancyMarkers();showVacancies();
+  detectAreaType(v).then(()=>{if(nav.level==='vacancies')showVacancies()});
  };
  drawerBody.appendChild(form);
  if(!vacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent='尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
@@ -402,7 +440,13 @@ function showVacancies(){
   const rented=v.status==='rented';
   const regionText=[v.region?.city,v.region?.district,v.region?.neighborhood].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
-  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(v.areaType||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">'+(rented?'改為空舖':'設為已租')+'</button><button type="button" data-act="delete" class="danger">刪除</button></div>';
+  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(v.areaType||'待調查')+'</div><div class="vacancy-note" style="margin:4px 0 0 29px">'+esc(v.areaAnalysis?.error||((v.areaAnalysis?.source||'尚未分析')+'｜500m｜'+(v.areaAnalysis?.featureCount??'—')+' 筆設施｜'+(v.areaAnalysis?.confidence||'待分析')))+'</div><div class="vacancy-item-actions"><button type="button" data-act="analyze">免費辨識</button><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">'+(rented?'改為空舖':'設為已租')+'</button><button type="button" data-act="delete" class="danger">刪除</button></div>';
+  const editor=document.createElement('div');editor.className='vacancy-area-editor';
+  editor.innerHTML='<label>商圈屬性（可人工修正）</label><select aria-label="商圈屬性">'+AREA_TYPES.map(t=>'<option value="'+t+'">'+t+'</option>').join('')+'</select>';
+  item.appendChild(editor);
+  editor.querySelector('select').value=AREA_TYPES.includes(v.areaType)?v.areaType:'待調查';
+  editor.querySelector('select').onchange=e=>{v.areaType=e.target.value;v.areaManual=true;saveVacancies();showVacancies()};
+  item.querySelector('[data-act="analyze"]').onclick=async e=>{const b=e.currentTarget;b.disabled=true;b.textContent='分析中…';await detectAreaType(v,true);if(nav.level==='vacancies')showVacancies()};
   item.querySelector('[data-act="locate"]').onclick=()=>locateVacancy(v);
   item.querySelector('[data-act="status"]').onclick=()=>{v.status=rented?'vacant':'rented';saveVacancies();refreshVacancyMarkers();showVacancies()};
   item.querySelector('[data-act="delete"]').onclick=()=>{if(!confirm('確定刪除這筆空舖紀錄？\n'+v.address))return;vacancies=vacancies.filter(x=>x.id!==v.id);saveVacancies();refreshVacancyMarkers();showVacancies()};
