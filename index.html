@@ -115,7 +115,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .drawer:has(.protection-panel){height:auto!important;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 90px)!important}
 .drawer:has(.protection-panel) .drawerbody{flex:0 1 auto;min-height:0;overflow-y:auto;padding-bottom:12px}
 .drawer:has(.protection-panel) .drawerhead{flex-shrink:0}
-</style>
+.lead-filter{margin:8px 2px 14px}.lead-filter label{display:block;font-size:13px;font-weight:800}.lead-filter select{display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #ddd4ce;border-radius:10px;background:white}.lead-controls-three{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:7px!important;align-items:center}.lead-controls-three select{min-width:0;width:100%;padding:9px 4px}.lead-controls-three button{width:auto!important;white-space:nowrap;padding:9px 12px!important}.lead-edit-form{margin-top:12px}.lead-edit-form button[type=submit]{width:100%}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -531,29 +531,43 @@ function leadCityOptions(selected=''){return '<option value="">請選擇城市</
 function leadDistrictOptions(city,selected=''){return '<option value="">請選擇區域</option>'+(LEAD_DISTRICTS[city]||[]).map(d=>'<option value="'+esc(d)+'" '+(d===selected?'selected':'')+'>'+esc(d)+'</option>').join('')}
 function setLeadDistrictSelector(cityEl,districtEl,selected=''){districtEl.innerHTML=leadDistrictOptions(cityEl.value,selected);districtEl.disabled=!cityEl.value}
 function leadLocation(v){return [v.city||'',v.district||''].filter(Boolean).join('')||v.region||'未填區域'}
-const LEAD_STAGES=['新名單','已聯繫','洽談中','已簽約','暫緩'];
+const LEAD_STAGES=['新名單','已聯繫','洽談中','已簽約','受訓中','暫緩'];
+let franchisePanelMode='',franchiseStageFilter='',franchiseEditId=null;
+function linkedVacancyAddress(lead){const found=vacancies.filter(v=>String(v.franchiseLeadId||'')===String(lead.id));return found.length?found.map(v=>v.address).join('；'):''}
+function leadEditorForm(v){
+ const form=document.createElement('form');form.className='vacancy-form lead-edit-form';
+ form.innerHTML='<label>加盟主姓名<input name="name" maxlength="70" required value="'+esc(v.name||'')+'"></label><label>聯絡電話<input name="phone" type="tel" maxlength="35" required value="'+esc(v.phone||'')+'"></label><label>通訊軟體帳號<input name="messenger" maxlength="120" placeholder="LINE、WeChat、其他" value="'+esc(v.messenger||'')+'"></label><label>意向城市<select name="city" required>'+leadCityOptions(v.city||'')+'</select></label><label>意向區域<select name="district" required></select></label><label>展店地址<input name="storeAddress" maxlength="250" placeholder="尚未選定展店地址" value="'+esc(linkedVacancyAddress(v)||v.storeAddress||'')+'"></label><label>備註<textarea name="note" rows="3" maxlength="500" placeholder="洽談紀錄">'+esc(v.note||'')+'</textarea></label><button type="submit">儲存修改</button>';
+ const c=form.querySelector('[name="city"]'),d=form.querySelector('[name="district"]');setLeadDistrictSelector(c,d,v.district||'');c.onchange=()=>setLeadDistrictSelector(c,d);
+ const matched=linkedVacancyAddress(v);if(matched){const input=form.querySelector('[name="storeAddress"]');input.value=matched;input.readOnly=true;input.title='此地址由空舖媒合自動帶入，請在空舖管理修改媒合'}
+ form.onsubmit=e=>{e.preventDefault();const fd=new FormData(form),previous={...v};for(const key of ['name','phone','messenger','city','district','storeAddress','note'])v[key]=String(fd.get(key)||'').trim();v.region=v.city+v.district;if(!v.name||!v.phone||!v.city||!v.district){Object.assign(v,previous);return}if(saveFranchise()){franchiseEditId=null;showFranchise()}else Object.assign(v,previous)};
+ return form
+}
 function showFranchise(){
  nav={level:'franchise',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='加盟主名單 ('+franchiseLeads.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
- const form=document.createElement('form');form.className='vacancy-form';
- form.innerHTML='<label>加盟主姓名<input name="name" maxlength="70" required placeholder="姓名"></label><label>聯絡電話<input name="phone" type="tel" maxlength="35" required placeholder="電話"></label><label>通訊軟體帳號<input name="messenger" maxlength="120" placeholder="LINE、WeChat、其他"></label><label>意向城市<select name="city" required>'+leadCityOptions()+'</select></label><label>意向區域<select name="district" required disabled><option value="">請先選擇城市</option></select></label><label>洽談進度<select name="stage">'+LEAD_STAGES.map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>備註<textarea name="note" rows="2" maxlength="500" placeholder="洽談紀錄"></textarea></label><button type="submit">＋ 新增加盟主</button><div class="vacancy-note">加盟主個資僅存於本機瀏覽器，請勿在共用裝置建檔。</div><div class="vacancy-error"></div>';
- const citySelectLead=form.querySelector('[name="city"]'),districtSelectLead=form.querySelector('[name="district"]');citySelectLead.onchange=()=>setLeadDistrictSelector(citySelectLead,districtSelectLead);
- form.onsubmit=e=>{e.preventDefault();const d=new FormData(form);const lead={id:Date.now()+'-'+Math.random().toString(36).slice(2),name:String(d.get('name')||'').trim(),phone:String(d.get('phone')||'').trim(),messenger:String(d.get('messenger')||'').trim(),city:String(d.get('city')||''),district:String(d.get('district')||''),region:String(d.get('city')||'')+String(d.get('district')||''),stage:String(d.get('stage')||'新名單'),note:String(d.get('note')||'').trim()};if(!lead.name||!lead.phone)return;franchiseLeads.unshift(lead);if(saveFranchise())showFranchise()};
- drawerBody.appendChild(form);
- franchiseLeads.forEach(v=>{
+ const tabs=document.createElement('div');tabs.className='vacancy-tabs';tabs.innerHTML='<button type="button" data-mode="add">＋ 新增</button><button type="button" data-mode="list">☷ 清單 ('+franchiseLeads.length+')</button>';drawerBody.appendChild(tabs);
+ tabs.querySelectorAll('button').forEach(btn=>{btn.classList.toggle('active',btn.dataset.mode===franchisePanelMode);btn.onclick=()=>{franchisePanelMode=franchisePanelMode===btn.dataset.mode?'':btn.dataset.mode;franchiseEditId=null;showFranchise()}});
+ if(franchisePanelMode==='add'){
+  const form=document.createElement('form');form.className='vacancy-form';
+  form.innerHTML='<label>加盟主姓名<input name="name" maxlength="70" required placeholder="姓名"></label><label>聯絡電話<input name="phone" type="tel" maxlength="35" required placeholder="電話"></label><label>通訊軟體帳號<input name="messenger" maxlength="120" placeholder="LINE、WeChat、其他"></label><label>意向城市<select name="city" required>'+leadCityOptions()+'</select></label><label>意向區域<select name="district" required disabled><option value="">請先選擇城市</option></select></label><label>洽談進度<select name="stage">'+LEAD_STAGES.map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>備註<textarea name="note" rows="2" maxlength="500" placeholder="洽談紀錄"></textarea></label><button type="submit">＋ 新增加盟主</button><div class="vacancy-note">加盟主個資僅存於本機瀏覽器，請勿在共用裝置建檔。</div>';
+  const c=form.querySelector('[name="city"]'),d=form.querySelector('[name="district"]');c.onchange=()=>setLeadDistrictSelector(c,d);
+  form.onsubmit=e=>{e.preventDefault();const fd=new FormData(form);const lead={id:Date.now()+'-'+Math.random().toString(36).slice(2),name:String(fd.get('name')||'').trim(),phone:String(fd.get('phone')||'').trim(),messenger:String(fd.get('messenger')||'').trim(),city:String(fd.get('city')||''),district:String(fd.get('district')||''),stage:String(fd.get('stage')||'新名單'),note:String(fd.get('note')||'').trim(),storeAddress:''};lead.region=lead.city+lead.district;if(!lead.name||!lead.phone||!lead.city||!lead.district)return;franchiseLeads.unshift(lead);if(saveFranchise()){franchisePanelMode='list';showFranchise()}else franchiseLeads.shift()};
+  drawerBody.appendChild(form);return
+ }
+ if(franchisePanelMode!=='list')return;
+ const filter=document.createElement('div');filter.className='lead-filter';filter.innerHTML='<label>篩選加盟主狀態<select><option value="">全部狀態</option>'+LEAD_STAGES.map(x=>'<option value="'+esc(x)+'" '+(franchiseStageFilter===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>';drawerBody.appendChild(filter);
+ filter.querySelector('select').onchange=e=>{franchiseStageFilter=e.target.value;showFranchise()};
+ const rows=franchiseLeads.filter(v=>!franchiseStageFilter||v.stage===franchiseStageFilter);
+ if(!rows.length){const empty=document.createElement('p');empty.className='vacancy-note';empty.textContent='目前沒有符合條件的加盟主資料';drawerBody.appendChild(empty)}
+ rows.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';
-  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-item-address">'+esc(v.name)+'</span><span class="vacancy-status">'+esc(v.stage)+'</span></div><div class="vacancy-note">'+esc(v.phone)+(v.messenger?'｜'+esc(v.messenger):'')+'｜'+esc(leadLocation(v))+'</div><div class="vacancy-note">'+esc(v.note||'')+'</div><div class="lead-controls"><select aria-label="更新洽談進度">'+LEAD_STAGES.map(x=>'<option '+(v.stage===x?'selected':'')+'>'+x+'</option>').join('')+'</select><button type="button">刪除</button></div>';
-  const edit=document.createElement('button');edit.type='button';edit.className='small-edit-btn';edit.textContent='編輯加盟主資料';item.appendChild(edit);edit.onclick=()=>{
- const old=item.querySelector('.lead-location-editor');if(old){old.remove();return}
- const loc=document.createElement('div');loc.className='lead-location-editor vacancy-form';
- loc.innerHTML='<label>意向城市<select name="city">'+leadCityOptions(v.city||'')+'</select></label><label>意向區域<select name="district"></select></label><button type="button">儲存意向區域</button>';
- item.appendChild(loc);const c=loc.querySelector('[name="city"]'),d=loc.querySelector('[name="district"]');setLeadDistrictSelector(c,d,v.district||'');c.onchange=()=>setLeadDistrictSelector(c,d);
- loc.querySelector('button').onclick=()=>{if(!c.value||!d.value){alert('請選擇城市及區域');return}v.city=c.value;v.district=d.value;v.region=c.value+d.value;if(saveFranchise())showFranchise()};
- makeEditor(item,v,[['name','姓名'],['phone','電話','tel'],['messenger','通訊軟體帳號'],['note','洽談備註','textarea']],saveFranchise,showFranchise)
-};
-  item.querySelector('select').onchange=e=>{v.stage=e.target.value;saveFranchise();showFranchise()};
-  item.querySelector('button').onclick=()=>{if(!confirm('刪除此加盟主資料？'))return;franchiseLeads=franchiseLeads.filter(x=>x.id!==v.id);saveFranchise();showFranchise()};
-  drawerBody.appendChild(item);
- });
+  const linked=linkedVacancyAddress(v);
+  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-item-address">'+esc(v.name)+'</span></div><div class="vacancy-note">'+esc(v.phone)+(v.messenger?'｜'+esc(v.messenger):'')+'｜'+esc(leadLocation(v))+'</div>'+(linked||v.storeAddress?'<div class="vacancy-note">展店地址：'+esc(linked||v.storeAddress)+'</div>':'')+(v.note?'<div class="vacancy-note">'+esc(v.note)+'</div>':'')+'<div class="lead-controls lead-controls-three"><select aria-label="更新洽談進度">'+LEAD_STAGES.map(x=>'<option '+(v.stage===x?'selected':'')+'>'+x+'</option>').join('')+'</select><button type="button" data-act="edit">編輯</button><button type="button" data-act="delete">刪除</button></div>';
+  item.querySelector('select').onchange=e=>{const previous=v.stage;v.stage=e.target.value;if(saveFranchise())showFranchise();else v.stage=previous};
+  item.querySelector('[data-act="edit"]').onclick=()=>{franchiseEditId=franchiseEditId===v.id?null:v.id;showFranchise()};
+  item.querySelector('[data-act="delete"]').onclick=()=>{if(!confirm('刪除此加盟主資料？'))return;const old=[...franchiseLeads];franchiseLeads=franchiseLeads.filter(x=>x.id!==v.id);if(saveFranchise())showFranchise();else franchiseLeads=old};
+  if(franchiseEditId===v.id)item.appendChild(leadEditorForm(v));
+  drawerBody.appendChild(item)
+ })
 }
 document.getElementById('openFranchise').onclick=showFranchise;
 function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
