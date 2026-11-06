@@ -124,6 +124,7 @@ window.initMap=function(){
   map=new google.maps.Map(document.getElementById('map'),{
     center:{lat:23.72,lng:120.96},
     zoom:7,
+    renderingType: google.maps.RenderingType.RASTER,
     mapTypeControl:true,
     streetViewControl:true,
     fullscreenControl:false,
@@ -132,6 +133,7 @@ window.initMap=function(){
   });
   geocoder=new google.maps.Geocoder();
   infoWindow=new google.maps.InfoWindow();
+  google.maps.event.addListenerOnce(map,'tilesloaded',()=>{statusEl.textContent='Google Maps 已載入 · 已定位 '+markers.size+' / '+stores.length+' 間門市'});
 
   for(const [addr,p] of Object.entries(cache)){
     const s=stores.find(x=>x.address===addr);
@@ -210,6 +212,6 @@ function showStore(s){
 }
 showCities();
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&language=zh-TW&region=TW"></script>
+<script>window.gm_authFailure=function(){const s=document.getElementById('status');if(s)s.textContent='Google Maps 驗證失敗：請檢查 API Key／計費／網站限制';}</script><script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&language=zh-TW&region=TW"></script>
 </body>
 </html>
