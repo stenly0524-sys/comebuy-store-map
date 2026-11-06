@@ -110,7 +110,7 @@ const PREFIX=[["台北市","台北市"],["新北市","新北市"],["桃園市","
 function normalizeCity(s){if(CITY_ORDER.includes(s.city))return s.city;for(const [p,c] of PREFIX){if((s.address||"").startsWith(p))return c}return s.city||""}
 function districtOf(s){let a=(s.address||"").replace(normalizeCity(s),"");let m=a.match(/^(.+?(?:區|鄉|鎮|市))/);return m?m[1]:"其他"}
 const stores=raw.map((s,i)=>({...s,idx:i,city:normalizeCity(s),districtName:districtOf(s)}));
-document.querySelector('#total').textContent=stores.length;
+const totalEl=document.getElementById('total');if(totalEl)totalEl.textContent=stores.length;
 const counts=Object.fromEntries(CITY_ORDER.map(c=>[c,0]));stores.forEach(s=>{if(counts[s.city]!==undefined)counts[s.city]++});
 
 var map,geocoder,infoWindow;
