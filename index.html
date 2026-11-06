@@ -321,7 +321,7 @@ citySelect.onchange=()=>{
 q.oninput=refreshMarkers;
 
 const drawer=document.querySelector('#drawer'),drawerBody=document.querySelector('#drawerBody'),drawerTitle=document.querySelector('#drawerTitle'),backBtn=document.querySelector('#backBtn');
-function setDrawerLayout(mode){drawer.classList.toggle('drawer-compact',mode==='compact');drawer.classList.toggle('drawer-protection',mode==='protection');if(mode==='protection'){const nav=document.querySelector('.bottom-nav');if(nav){const rect=nav.getBoundingClientRect();drawer.style.setProperty('--protection-top',Math.max(8,Math.round(rect.bottom+8))+'px')}}}
+function setDrawerLayout(mode){drawer.classList.toggle('drawer-compact',mode==='compact');drawer.classList.toggle('drawer-protection',mode==='protection');if(mode==='protection'){const nav=document.querySelector('.bottom-nav');if(nav){const rect=nav.getBoundingClientRect();drawer.style.setProperty('--protection-top',Math.max(8,Math.round(rect.bottom+16))+'px')}}}
 
 document.querySelector('#openList').onclick=()=>{drawer.classList.add('open');showCities()};
 document.querySelector('#closeBtn').onclick=()=>drawer.classList.remove('open');
