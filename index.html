@@ -173,11 +173,13 @@ window.initMap=function(){
     zoom:7,
     renderingType: google.maps.RenderingType.RASTER,
     mapTypeControl:false,
+    mapTypeControlOptions:{position:google.maps.ControlPosition.TOP_LEFT},
     streetViewControl:true,
     fullscreenControl:false,
     gestureHandling:'greedy',
     clickableIcons:true
   });
+  map.setOptions({mapTypeControl:false});
   window.__comebuyMap=map;
   geocoder=new google.maps.Geocoder();
   infoWindow=new google.maps.InfoWindow();
