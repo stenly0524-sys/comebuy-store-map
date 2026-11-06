@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -165,6 +165,8 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .training-date-actions button{min-width:0}
 /* Training pending button matches unpaid deposit button exactly. */
 .lead-unpaid-card>.lead-controls-with-deposit [data-act="training"]{position:absolute!important;top:0!important;right:0!important;width:115px!important;min-height:42px!important;margin:0!important;grid-column:auto!important;grid-row:auto!important;justify-self:stretch!important;align-self:stretch!important;color:var(--red)!important;background:#fff4f4!important;border:1px solid var(--red)!important;border-radius:9px!important}
+/* Prevent accidental double-tap page zoom on interactive controls. */
+html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
 </style>
 </head>
 <body>
