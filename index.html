@@ -148,6 +148,14 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .lead-unpaid-card>.lead-controls-with-deposit [data-act="deposit"]{position:absolute!important;right:0;top:0;grid-column:auto!important;grid-row:auto!important;width:115px!important;min-height:42px;margin:0!important}
 .lead-unpaid-card>.lead-controls-with-deposit [data-act="edit"]{grid-column:2!important;grid-row:1!important}
 .lead-unpaid-card>.lead-controls-with-deposit [data-act="delete"]{grid-column:3!important;grid-row:1!important}
+/* Fix franchise lead card overlap: normal document flow for details and controls. */
+.lead-unpaid-card{display:block!important;position:relative!important}
+.lead-unpaid-card>.lead-info{display:block!important;position:static!important;max-width:calc(100% - 125px)!important;min-width:0!important;margin:0 0 8px!important}
+.lead-unpaid-card>.lead-controls-with-deposit{display:grid!important;position:static!important;grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-rows:42px!important;gap:6px!important;margin-top:0!important;align-items:stretch!important;pointer-events:auto!important}
+.lead-unpaid-card>.lead-controls-with-deposit select{grid-column:1!important;grid-row:1!important;height:42px!important;min-height:42px!important}
+.lead-unpaid-card>.lead-controls-with-deposit [data-act="deposit"]{position:absolute!important;top:0!important;right:0!important;width:115px!important;min-height:42px!important;grid-column:auto!important;grid-row:auto!important}
+.lead-unpaid-card>.lead-controls-with-deposit [data-act="edit"]{grid-column:2!important;grid-row:1!important}
+.lead-unpaid-card>.lead-controls-with-deposit [data-act="delete"]{grid-column:3!important;grid-row:1!important}
 </style>
 </head>
 <body>
