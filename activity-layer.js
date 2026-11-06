@@ -5,7 +5,7 @@ let map=null,layer=null,points=[],meta=null,enabled=false,loaded=false;
 const button=document.getElementById('activityToggle');
 const info=document.getElementById('activityInfo');
 if(!button||!info)return;
-function message(t){info.textContent=t}
+function message(t){info.textContent=t;info.style.display='block';info.style.color='#211d1d';info.style.fontWeight='700';info.style.padding='10px 12px';info.setAttribute('role','status')}
 function valid(p){return p&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lng)&&Number.isFinite(+p.score)&&+p.score>=0&&+p.score<=100}
 class ActivityOverlay extends google.maps.OverlayView{
  constructor(){super();this.canvas=null}
@@ -35,14 +35,15 @@ async function load(){
  }catch(e){points=[];message('尚無商圈活躍度資料｜非實測人流');}
 }
 async function toggle(){
+ message(enabled?'正在關閉商圈圖層…':'正在檢查商圈活躍度資料…');
  enabled=!enabled;button.setAttribute('aria-pressed',String(enabled));button.style.background=enabled?'#242424':'#d71920';
  if(!enabled){layer?.setMap(null);message('代理指標｜非實測人流');return}
  await load();
- if(!points.length){enabled=false;button.setAttribute('aria-pressed','false');button.style.background='#d71920';return}
+ if(!points.length){message('尚無商圈活躍度代理指標資料，無法顯示熱力圖｜非實測人流');enabled=false;button.setAttribute('aria-pressed','false');button.style.background='#d71920';return}
  if(!layer)layer=new ActivityOverlay();
  layer.setMap(map);
  message('商圈活躍度代理指標｜非實測人流｜'+(meta.source||'資料來源未註明')+'｜'+(meta.updated_at||'日期未註明'));
 }
-button.addEventListener('click',()=>{if(map)toggle();else message('地圖尚未載入')});
+button.addEventListener('click',()=>{message('正在檢查商圈活躍度資料…');if(map)toggle().catch(e=>message('圖層發生錯誤：'+e.message));else message('地圖尚未載入，請稍候再試')});
 window.COMEBUY_ACTIVITY={attach(m){map=m},setData(data){if(!data||!Array.isArray(data.points))return;points=data.points.filter(valid);meta=data;loaded=true;if(enabled&&layer)layer.draw()}};
 })();
