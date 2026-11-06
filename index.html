@@ -110,7 +110,12 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .gm-style .gm-style-iw-ch{display:none!important}
 .gm-style .gm-style-iw-chr button{position:absolute!important;top:4px;right:4px;margin:0!important}
 .gm-style .gm-style-iw-d{padding-top:0!important}
-.storecard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.storecard-top h2{flex:1}.store-edit-button{background:#d71920;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:800;flex-shrink:0}.storecard .vacancy-form{margin-top:10px}.vacancy-visibility{justify-content:flex-start}.vacancy-visibility button{width:auto!important;flex:none!important;padding:7px 11px!important;font-size:12px!important}.vacancy-tabs{display:flex;gap:9px;margin:10px 2px 14px}.vacancy-tabs button{flex:1;background:#fff;border:1px solid #ddd4ce;border-radius:12px;padding:12px;font-size:14px;font-weight:850;color:#2f2926}.vacancy-tabs button.active{background:#d71920;border-color:#d71920;color:#fff}.vacancy-detail-panel[hidden]{display:none!important}.vacancy-detail-panel{padding:12px 8px;margin-top:10px;background:#f8f6f4;border:1px solid #e8e0da;border-radius:12px}.vacancy-item-actions button{min-width:0;font-size:11px;padding:10px 2px}</style>
+.storecard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.storecard-top h2{flex:1}.store-edit-button{background:#d71920;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:800;flex-shrink:0}.storecard .vacancy-form{margin-top:10px}.vacancy-visibility{justify-content:flex-start}.vacancy-visibility button{width:auto!important;flex:none!important;padding:7px 11px!important;font-size:12px!important}.vacancy-tabs{display:flex;gap:9px;margin:10px 2px 14px}.vacancy-tabs button{flex:1;background:#fff;border:1px solid #ddd4ce;border-radius:12px;padding:12px;font-size:14px;font-weight:850;color:#2f2926}.vacancy-tabs button.active{background:#d71920;border-color:#d71920;color:#fff}.vacancy-detail-panel[hidden]{display:none!important}.vacancy-detail-panel{padding:12px 8px;margin-top:10px;background:#f8f6f4;border:1px solid #e8e0da;border-radius:12px}.vacancy-item-actions button{min-width:0;font-size:11px;padding:10px 2px}
+/* Protection drawer only: fit the header and controls without unused blank space. */
+.drawer:has(.protection-panel){height:auto!important;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 90px)!important}
+.drawer:has(.protection-panel) .drawerbody{flex:0 1 auto;min-height:0;overflow-y:auto;padding-bottom:12px}
+.drawer:has(.protection-panel) .drawerhead{flex-shrink:0}
+</style>
 </head>
 <body>
 <div id="map"></div>
