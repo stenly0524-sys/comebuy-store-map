@@ -153,7 +153,7 @@ window.initMap=function(){
   });
   // Load activity overlay only after the Google Maps API is available.
   const activityScript=document.createElement('script');
-  activityScript.src='/activity-layer.js?v=2';
+  activityScript.src='/activity-layer.js?v=3';
   activityScript.onload=()=>window.COMEBUY_ACTIVITY?.attach(map);
   activityScript.onerror=()=>console.warn('Activity layer unavailable');
   document.body.appendChild(activityScript);
