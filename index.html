@@ -104,7 +104,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 /* Brand filter: white by default, selected brand uses COMEBUY red. */
 .brand-filter button,.brand-filter button[data-brand="COMEBUY TEA"]{background:#fff!important;color:#292321!important;border:1px solid #e2dcd6!important}
 .brand-filter button.active,.brand-filter button[data-brand="COMEBUY TEA"].active{background:#d71920!important;color:#fff!important;border-color:#d71920!important}
-.vacancy-area-editor{display:flex;flex-direction:column;gap:5px;margin:9px 4px}.vacancy-area-editor label{font-size:12px;font-weight:800}.vacancy-area-editor select{width:100%;height:40px;border:1px solid #ddd4ce;border-radius:9px;background:white;padding:5px}.vacancy-item-actions{display:flex!important;flex-wrap:nowrap!important;gap:6px}.vacancy-item-actions button{min-width:0!important;flex:1 1 0!important;white-space:nowrap;font-size:12px!important;padding:9px 2px!important}.vacancy-area-field{border:0;margin:3px 0;padding:0;min-width:0}.vacancy-area-field legend{font-size:13px;font-weight:800;margin-bottom:8px}.vacancy-area-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.vacancy-area-options label{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e3dbd6;border-radius:9px;padding:9px 7px;font-size:12px;font-weight:700;cursor:pointer}.vacancy-area-options input{width:16px!important;height:16px!important;accent-color:#d71920;flex:none}.vacancy-area-options label:has(input:checked){border-color:#d71920;background:#fff4f4;color:#b5121a}.vacancy-region-filter{padding:12px 4px 8px;margin-top:12px;border-top:1px solid #e8e0da}.vacancy-region-title{font-size:14px;font-weight:900;margin-bottom:8px}.vacancy-region-selects{display:grid;grid-template-columns:1fr 1fr;gap:8px}.vacancy-region-selects select{min-width:0;width:100%;height:42px;border:1px solid #ded7d2;border-radius:10px;background:white;padding:0 7px;font-size:13px}</style>
+.vacancy-area-editor{display:flex;flex-direction:column;gap:5px;margin:9px 4px}.vacancy-area-editor label{font-size:12px;font-weight:800}.vacancy-area-editor select{width:100%;height:40px;border:1px solid #ddd4ce;border-radius:9px;background:white;padding:5px}.vacancy-item-actions{display:flex!important;flex-wrap:nowrap!important;gap:6px}.vacancy-item-actions button{min-width:0!important;flex:1 1 0!important;white-space:nowrap;font-size:12px!important;padding:9px 2px!important}.vacancy-area-field{border:0;margin:3px 0;padding:0;min-width:0}.vacancy-area-field legend{font-size:13px;font-weight:800;margin-bottom:8px}.vacancy-area-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.vacancy-area-options label{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e3dbd6;border-radius:9px;padding:9px 7px;font-size:12px;font-weight:700;cursor:pointer}.vacancy-area-options input{width:16px!important;height:16px!important;accent-color:#d71920;flex:none}.vacancy-area-options label:has(input:checked){border-color:#d71920;background:#fff4f4;color:#b5121a}.vacancy-region-filter{padding:12px 4px 8px;margin-top:12px;border-top:1px solid #e8e0da}.vacancy-region-title{font-size:14px;font-weight:900;margin-bottom:8px}.vacancy-region-selects{display:grid;grid-template-columns:1fr 1fr;gap:8px}.vacancy-region-selects select{min-width:0;width:100%;height:42px;border:1px solid #ded7d2;border-radius:10px;background:white;padding:0 7px;font-size:13px}.top .card>.bottom-nav{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}.top .card>.bottom-nav button{font-size:clamp(10px,2.6vw,13px)!important;padding:9px 2px!important}.extra-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.extra-fields label{min-width:0}.vacancy-form select,.vacancy-form textarea,.lead-controls select{width:100%;border:1px solid #ded7d2;border-radius:10px;background:white;padding:9px;font-size:14px}.vacancy-extra-summary{font-size:12px;color:#645c57;line-height:1.7;margin:7px 0 0 29px}.vacancy-extra-summary img{display:block;max-width:160px;max-height:120px;object-fit:cover;border-radius:9px;margin-top:6px}.lead-controls{display:flex;gap:8px;margin-top:8px}.lead-controls select{flex:1}.lead-controls button{border:1px solid #e0d6d0;border-radius:9px;background:white;color:#b5121a;padding:8px 14px}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -117,7 +117,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
       <select id="citySelect"></select>
     </div>
     <div class="brand-filter" aria-label="品牌篩選"><button type="button" data-brand="all">全部品牌</button><button type="button" data-brand="COMEBUY">● COMEBUY</button><button type="button" data-brand="COMEBUY TEA">◆ COMEBUY TEA</button></div>
-    <nav class="bottom-nav" aria-label="地圖功能列"><button id="openList" type="button">☷ 清單</button><button id="openVacancies" type="button">⌂ 空舖</button><button id="openProtection" type="button">◉ 保障範圍</button></nav>
+    <nav class="bottom-nav" aria-label="地圖功能列"><button id="openList" type="button">☷ 清單</button><button id="openVacancies" type="button">⌂ 空舖</button><button id="openProtection" type="button">◉ 保障範圍</button><button id="openFranchise" type="button">♧ 加盟主</button></nav>
   </div>
 </div>
 
@@ -386,13 +386,17 @@ function showVacancies(){
  nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const visibilityWrap=document.createElement('div');visibilityWrap.className='vacancy-visibility';visibilityWrap.innerHTML='<button type="button" id="vacancyVisibility" aria-pressed="'+String(vacancyVisible)+'">'+(vacancyVisible?'🏠 隱藏空舖標記':'🏠 顯示空舖標記')+'</button>';drawerBody.appendChild(visibilityWrap);vacancyVisibility=visibilityWrap.querySelector('button');vacancyVisibility.onclick=()=>{vacancyVisible=!vacancyVisible;refreshVacancyMarkers()};
  const form=document.createElement('form');form.className='vacancy-form';
- form.innerHTML='<label for="vacancyAddress">新增空舖地址</label><input id="vacancyAddress" name="address" autocomplete="street-address" placeholder="例如：台北市內湖區行善路62號" required maxlength="220"><label for="vacancyRent">每月租金（新台幣元）</label><input id="vacancyRent" type="number" inputmode="numeric" min="0" step="1" placeholder="例如：60000" required><div class="vacancy-note">地址定位後自動帶入縣市、行政區；商圈屬性可複選 8 項，建檔後顯示於空舖清單及地圖。</div><fieldset class="vacancy-area-field"><legend>商圈屬性（可複選）</legend><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" name="areaTypes" value="'+t+'"><span>'+t+'</span></label>').join('')+'</div></fieldset><button type="submit">＋ 新增空舖並定位</button><div class="vacancy-note">紀錄僅儲存在本裝置瀏覽器，尚未雲端同步。</div><div class="vacancy-error" role="status"></div>';
+ form.innerHTML='<label for="vacancyAddress">新增空舖地址</label><input id="vacancyAddress" name="address" autocomplete="street-address" placeholder="例如：台北市內湖區行善路62號" required maxlength="220"><div class="extra-fields"><label>坪數<input id="vacancySize" type="number" min="0" step="0.1" placeholder="例如 25"></label><label>面寬（公尺）<input id="vacancyFront" type="number" min="0" step="0.1" placeholder="例如 5"></label><label>樓層<input id="vacancyFloor" type="text" maxlength="30" placeholder="例如 1F"></label><label>聯絡人<input id="vacancyContact" type="text" maxlength="60" placeholder="房東或仲介"></label><label>聯絡電話<input id="vacancyPhone" type="tel" maxlength="35" placeholder="聯絡電話"></label></div><label>現場照片（選填）<input id="vacancyPhoto" type="file" accept="image/*"></label><label for="vacancyRent">每月租金（新台幣元）</label><input id="vacancyRent" type="number" inputmode="numeric" min="0" step="1" placeholder="例如：60000" required><div class="vacancy-note">地址定位後自動帶入縣市、行政區；商圈屬性可複選 8 項，建檔後顯示於空舖清單及地圖。</div><fieldset class="vacancy-area-field"><legend>商圈屬性（可複選）</legend><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" name="areaTypes" value="'+t+'"><span>'+t+'</span></label>').join('')+'</div></fieldset><button type="submit">＋ 新增空舖並定位</button><div class="vacancy-note">紀錄僅儲存在本裝置瀏覽器，尚未雲端同步。</div><div class="vacancy-error" role="status"></div>';
  form.onsubmit=async e=>{
   e.preventDefault();const input=form.querySelector('input'),btn=form.querySelector('button'),error=form.querySelector('.vacancy-error');
   const address=input.value.trim(),rentText=form.querySelector('#vacancyRent').value.trim(),rent=Number(rentText);if(!address)return;if(!rentText||!Number.isFinite(rent)||rent<0){error.textContent='請輸入有效月租金';return}
   if(vacancies.some(v=>v.address.replace(/\s/g,'')===address.replace(/\s/g,''))){error.textContent='此地址已建檔';return}
   btn.disabled=true;btn.textContent='正在定位地址…';error.textContent='';
-  const v={id:String(Date.now())+'-'+Math.random().toString(36).slice(2,8),address,rent,status:'vacant',position:null,areaTypes:[...form.querySelectorAll('input[name="areaTypes"]:checked')].map(el=>el.value),areaManual:true};
+  const photoFile=form.querySelector('#vacancyPhoto').files[0];
+  let photo='';
+  if(photoFile){if(photoFile.size>2*1024*1024){error.textContent='照片請小於 2MB（儲存在本機）';return}photo=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve('');reader.readAsDataURL(photoFile)});if(!photo){error.textContent='照片讀取失敗';return}}
+  const extra={size:form.querySelector('#vacancySize').value,front:form.querySelector('#vacancyFront').value,floor:form.querySelector('#vacancyFloor').value.trim(),contact:form.querySelector('#vacancyContact').value.trim(),phone:form.querySelector('#vacancyPhone').value.trim(),photo};
+  const v={...extra,id:String(Date.now())+'-'+Math.random().toString(36).slice(2,8),address,rent,status:'vacant',position:null,areaTypes:[...form.querySelectorAll('input[name="areaTypes"]:checked')].map(el=>el.value),areaManual:true};
   const ok=await geocodeVacancy(v);
   if(!ok){error.textContent='無法定位此地址，請輸入完整縣市、區域與門牌';btn.disabled=false;btn.textContent='＋ 新增空舖並定位';return}
   vacancies.unshift(v);if(!saveVacancies()){btn.disabled=false;return}
@@ -418,6 +422,9 @@ function showVacancies(){
   const regionText=[v.region?.city,v.region?.district,v.region?.neighborhood].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
   item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">'+(rented?'改為空舖':'設為已租')+'</button><button type="button" data-act="delete" class="danger">刪除</button></div>';
+  const detail=document.createElement('div');detail.className='vacancy-extra-summary';
+  detail.innerHTML='<div>'+esc([v.size&&'坪數 '+v.size+' 坪',v.front&&'面寬 '+v.front+' m',v.floor&&'樓層 '+v.floor].filter(Boolean).join('｜'))+'</div><div>'+esc([v.contact&&'聯絡人 '+v.contact,v.phone&&'電話 '+v.phone].filter(Boolean).join('｜'))+'</div>'+(v.photo?'<img alt="空舖現場照片" src="'+esc(v.photo)+'">':'');
+  item.appendChild(detail);
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
   editor.innerHTML='<label>商圈屬性（可複選修改）</label><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" value="'+t+'" '+(vacancyAreaNames(v).includes(t)?'checked':'')+'><span>'+t+'</span></label>').join('')+'</div>';
   editor.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.onchange=()=>{v.areaTypes=[...editor.querySelectorAll('input:checked')].map(x=>x.value);v.areaManual=true;saveVacancies();showVacancies()});
@@ -428,6 +435,26 @@ function showVacancies(){
  });
 }
 document.getElementById('openVacancies').onclick=showVacancies;
+
+const FRANCHISE_KEY='comebuy_franchise_leads_v1';
+let franchiseLeads=[];try{const raw=JSON.parse(localStorage.getItem(FRANCHISE_KEY)||'[]');if(Array.isArray(raw))franchiseLeads=raw}catch(e){}
+function saveFranchise(){try{localStorage.setItem(FRANCHISE_KEY,JSON.stringify(franchiseLeads));return true}catch(e){alert('儲存失敗，請檢查本機儲存空間');return false}}
+const LEAD_STAGES=['新名單','已聯繫','洽談中','已簽約','暫緩'];
+function showFranchise(){
+ nav={level:'franchise',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='加盟主名單 ('+franchiseLeads.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
+ const form=document.createElement('form');form.className='vacancy-form';
+ form.innerHTML='<label>加盟主姓名<input name="name" maxlength="70" required placeholder="姓名"></label><label>聯絡電話<input name="phone" type="tel" maxlength="35" required placeholder="電話"></label><label>預算（萬元）<input name="budget" type="number" min="0" step="1" placeholder="例如 300"></label><label>意向區域<input name="region" maxlength="100" placeholder="例如 台北市內湖區"></label><label>洽談進度<select name="stage">'+LEAD_STAGES.map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>備註<textarea name="note" rows="2" maxlength="500" placeholder="洽談紀錄"></textarea></label><button type="submit">＋ 新增加盟主</button><div class="vacancy-note">加盟主個資僅存於本機瀏覽器，請勿在共用裝置建檔。</div><div class="vacancy-error"></div>';
+ form.onsubmit=e=>{e.preventDefault();const d=new FormData(form);const lead={id:Date.now()+'-'+Math.random().toString(36).slice(2),name:String(d.get('name')||'').trim(),phone:String(d.get('phone')||'').trim(),budget:String(d.get('budget')||''),region:String(d.get('region')||'').trim(),stage:String(d.get('stage')||'新名單'),note:String(d.get('note')||'').trim()};if(!lead.name||!lead.phone)return;franchiseLeads.unshift(lead);if(saveFranchise())showFranchise()};
+ drawerBody.appendChild(form);
+ franchiseLeads.forEach(v=>{
+  const item=document.createElement('div');item.className='vacancy-item';
+  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-item-address">'+esc(v.name)+'</span><span class="vacancy-status">'+esc(v.stage)+'</span></div><div class="vacancy-note">'+esc(v.phone)+'｜預算 '+esc(v.budget||'未填')+' 萬｜'+esc(v.region||'未填區域')+'</div><div class="vacancy-note">'+esc(v.note||'')+'</div><div class="lead-controls"><select aria-label="更新洽談進度">'+LEAD_STAGES.map(x=>'<option '+(v.stage===x?'selected':'')+'>'+x+'</option>').join('')+'</select><button type="button">刪除</button></div>';
+  item.querySelector('select').onchange=e=>{v.stage=e.target.value;saveFranchise();showFranchise()};
+  item.querySelector('button').onclick=()=>{if(!confirm('刪除此加盟主資料？'))return;franchiseLeads=franchiseLeads.filter(x=>x.id!==v.id);saveFranchise();showFranchise()};
+  drawerBody.appendChild(item);
+ });
+}
+document.getElementById('openFranchise').onclick=showFranchise;
 function showProtection(){
  nav={level:'protection',city:null,district:null};
  drawer.classList.add('open');drawerTitle.textContent='門市保障範圍';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
@@ -440,9 +467,9 @@ function showProtection(){
  protectionToggle.onclick=toggleProtection;
 }
 document.getElementById('openProtection').onclick=showProtection;
-const actionButtons=[document.getElementById('openList'),document.getElementById('openVacancies'),document.getElementById('openProtection')];
+const actionButtons=[document.getElementById('openList'),document.getElementById('openVacancies'),document.getElementById('openProtection'),document.getElementById('openFranchise')];
 function syncActionButtons(){
- const active=drawer.classList.contains('open')?(nav.level==='vacancies'?'openVacancies':nav.level==='protection'?'openProtection':'openList'):null;
+ const active=drawer.classList.contains('open')?(nav.level==='vacancies'?'openVacancies':nav.level==='protection'?'openProtection':nav.level==='franchise'?'openFranchise':'openList'):null;
  actionButtons.forEach(btn=>{const on=btn.id===active;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on))});
 }
 const drawerStateObserver=new MutationObserver(syncActionButtons);
