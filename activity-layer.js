@@ -2,14 +2,9 @@
 (function(){
 'use strict';
 let map=null,layer=null,points=[],meta=null,enabled=false,loaded=false;
-const panel=document.createElement('div');
-panel.id='activityPanel';
-panel.innerHTML='<button type="button" id="activityToggle" aria-pressed="false">商圈活躍度</button><div id="activityInfo" role="status">代理指標｜非實測人流</div>';
-panel.style.cssText='position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 184px);z-index:22;display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none';
-document.body.appendChild(panel);
-const button=panel.querySelector('button'),info=panel.querySelector('#activityInfo');
-button.style.cssText='pointer-events:auto;border:0;border-radius:13px;padding:11px 13px;background:#d71920;color:white;font-weight:800;box-shadow:0 3px 12px #0002';
-info.style.cssText='pointer-events:auto;max-width:245px;padding:7px 10px;border-radius:10px;background:#fff;color:#403a38;font-size:11px;box-shadow:0 2px 10px #0002';
+const button=document.getElementById('activityToggle');
+const info=document.getElementById('activityInfo');
+if(!button||!info)return;
 function message(t){info.textContent=t}
 function valid(p){return p&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lng)&&Number.isFinite(+p.score)&&+p.score>=0&&+p.score<=100}
 class ActivityOverlay extends google.maps.OverlayView{
