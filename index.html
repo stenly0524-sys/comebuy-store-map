@@ -113,7 +113,7 @@ const stores=raw.map((s,i)=>({...s,idx:i,city:normalizeCity(s),districtName:dist
 document.querySelector('#total').textContent=stores.length;
 const counts=Object.fromEntries(CITY_ORDER.map(c=>[c,0]));stores.forEach(s=>{if(counts[s.city]!==undefined)counts[s.city]++});
 
-let map,geocoder,infoWindow;
+var map,geocoder,infoWindow;
 let protectionVisible=false;
 const protectionCircles=new Map();
 const diameterSelect=document.getElementById('protectionDiameter');
