@@ -115,7 +115,14 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .drawer:has(.protection-panel){height:auto!important;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 90px)!important}
 .drawer:has(.protection-panel) .drawerbody{flex:0 1 auto;min-height:0;overflow-y:auto;padding-bottom:12px}
 .drawer:has(.protection-panel) .drawerhead{flex-shrink:0}
-.lead-filter{margin:8px 2px 14px}.lead-filter label{display:block;font-size:13px;font-weight:800}.lead-filter select{display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #ddd4ce;border-radius:10px;background:white}.lead-controls-three{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:7px!important;align-items:center}.lead-controls-three select{min-width:0;width:100%;padding:9px 4px}.lead-controls-three button{width:auto!important;white-space:nowrap;padding:9px 12px!important}.lead-edit-form{margin-top:12px}.lead-edit-form button[type=submit]{width:100%}</style>
+.lead-filter{margin:8px 2px 14px}.lead-filter label{display:block;font-size:13px;font-weight:800}.lead-filter select{display:block;width:100%;margin-top:6px;padding:10px;border:1px solid #ddd4ce;border-radius:10px;background:white}.lead-controls-three{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:7px!important;align-items:center}.lead-controls-three select{min-width:0;width:100%;padding:9px 4px}.lead-controls-three button{width:auto!important;white-space:nowrap;padding:9px 12px!important}.lead-edit-form{margin-top:12px}.lead-edit-form button[type=submit]{width:100%}
+/* Content-sized management drawers, with scrolling only when necessary. */
+.drawer.drawer-compact{height:max-content!important;max-height:calc(100dvh - 115px)!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;top:auto!important}
+.drawer.drawer-compact .drawerbody{flex:0 1 auto!important;min-height:0;overflow-y:auto;padding-bottom:10px}
+/* Protection controls sit immediately beneath the main navigation. */
+.drawer.drawer-protection{height:max-content!important;max-height:calc(100dvh - var(--protection-top,300px) - 10px)!important;top:var(--protection-top,300px)!important;bottom:auto!important}
+.drawer.drawer-protection .drawerbody{flex:0 1 auto!important;min-height:0;overflow-y:auto;padding-bottom:10px}
+</style>
 </head>
 <body>
 <div id="map"></div>
@@ -314,6 +321,8 @@ citySelect.onchange=()=>{
 q.oninput=refreshMarkers;
 
 const drawer=document.querySelector('#drawer'),drawerBody=document.querySelector('#drawerBody'),drawerTitle=document.querySelector('#drawerTitle'),backBtn=document.querySelector('#backBtn');
+function setDrawerLayout(mode){drawer.classList.toggle('drawer-compact',mode==='compact');drawer.classList.toggle('drawer-protection',mode==='protection');if(mode==='protection'){const nav=document.querySelector('.bottom-nav');if(nav){const rect=nav.getBoundingClientRect();drawer.style.setProperty('--protection-top',Math.max(8,Math.round(rect.bottom+8))+'px')}}}
+
 document.querySelector('#openList').onclick=()=>{drawer.classList.add('open');showCities()};
 document.querySelector('#closeBtn').onclick=()=>drawer.classList.remove('open');
 backBtn.onclick=()=>{if(nav.level==='vacancies'){showVacancies();return}if(nav.level==='store')showStores(nav.city,nav.district);else if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
@@ -324,6 +333,7 @@ function menuRow(title,sub,count,onClick){
   b.onclick=onClick;return b
 }
 function showCities(){
+ setDrawerLayout('normal');
   nav={level:'cities',city:null,district:null};drawerTitle.textContent='城市';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
   CITY_ORDER.forEach(c=>drawerBody.appendChild(menuRow(c,counts[c]?'查看區域與門市':'目前 0 間門市',counts[c],()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));showDistricts(c)})))
 }
@@ -345,6 +355,7 @@ const OFFICIAL_OPENING_SOURCES=[["新莊中華","2026-08","https://www.comebuy20
 function getOpeningEvidence(s){const name=(s.name||'').replace(/^COMEBUY(?: TEA)?\s*/,'').replace(/\s+/g,'');const found=OFFICIAL_OPENING_SOURCES.find(x=>x[0]===name);if(found)return {month:found[1],url:found[2],label:'官方公告開幕月份'};const local=getStoreOpeningDate(s);if(local)return {date:local,label:'本機先前建檔（未經官方驗證）'};return null}
 function openingEvidenceHtml(s){const e=getOpeningEvidence(s);if(!e)return '<div class="opening-evidence"><strong>開業日期：待查證</strong><small>尚未找到可核對的官方開幕資料</small></div>';return '<div class="opening-evidence"><strong>開業資訊：'+esc(e.month?e.month.replace('-','年')+'月':e.date)+'</strong><small>'+esc(e.label)+'</small>'+(e.url?'<a href="'+esc(e.url)+'" target="_blank" rel="noopener">查看官方公告</a>':'')+'</div>'}
 function showStore(s){
+ setDrawerLayout('normal');
  nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';
  drawerBody.innerHTML='<div class="storecard"><div class="storecard-top"><h2>'+esc(s.name)+'</h2><button type="button" id="editStore" class="store-edit-button">編輯</button></div><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+(s.basis?esc(s.basis):'')+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="'+esc(storeGoogleMapsUrl(s))+'">查看詳情</a></div></div>';
  document.querySelector('#editStore').onclick=()=>editStore(s);
@@ -437,6 +448,7 @@ function makeEditor(target,record,fields,save,refresh){
 let vacancyPanelMode='';
 let vacancyDetailOpenId=null;
 function showVacancies(){
+ setDrawerLayout('compact');
  nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const visibilityWrap=document.createElement('div');visibilityWrap.className='vacancy-visibility';visibilityWrap.innerHTML='<button type="button" id="vacancyVisibility" aria-pressed="'+String(vacancyVisible)+'">'+(vacancyVisible?'🏠 隱藏空舖標記':'🏠 顯示空舖標記')+'</button>';drawerBody.appendChild(visibilityWrap);vacancyVisibility=visibilityWrap.querySelector('button');vacancyVisibility.onclick=()=>{vacancyVisible=!vacancyVisible;refreshVacancyMarkers()};
  const navTabs=document.createElement('div');navTabs.className='vacancy-tabs';
@@ -543,6 +555,7 @@ function leadEditorForm(v){
  return form
 }
 function showFranchise(){
+ setDrawerLayout('compact');
  nav={level:'franchise',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='加盟主名單 ('+franchiseLeads.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const tabs=document.createElement('div');tabs.className='vacancy-tabs';tabs.innerHTML='<button type="button" data-mode="add">＋ 新增</button><button type="button" data-mode="list">☷ 清單 ('+franchiseLeads.length+')</button>';drawerBody.appendChild(tabs);
  tabs.querySelectorAll('button').forEach(btn=>{btn.classList.toggle('active',btn.dataset.mode===franchisePanelMode);btn.onclick=()=>{franchisePanelMode=franchisePanelMode===btn.dataset.mode?'':btn.dataset.mode;franchiseEditId=null;showFranchise()}});
@@ -571,9 +584,10 @@ function showFranchise(){
 }
 document.getElementById('openFranchise').onclick=showFranchise;
 function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function showDashboard(){nav={level:'dashboard',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='開發概況';backBtn.style.visibility='hidden';drawerBody.innerHTML='';const d=new Date(),today=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),due=vacancies.filter(v=>v.followUpDate&&v.followUpDate<=today&&!['已開幕','放棄開發'].includes(v.developmentStage)),active=vacancies.filter(v=>!['已開幕','放棄開發'].includes(v.developmentStage||'待評估'));const cards=document.createElement('div');cards.className='dashboard-grid';[['開發中空舖',active.length],['加盟主名單',franchiseLeads.length],['今日及逾期待追蹤',due.length],['已簽約案件',vacancies.filter(v=>v.developmentStage==='已簽約').length]].forEach(([name,num])=>{const el=document.createElement('div');el.className='dashboard-card';el.innerHTML='<span>'+esc(name)+'</span><strong>'+num+'</strong>';cards.appendChild(el)});drawerBody.appendChild(cards);const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出空舖與加盟主備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);const h=document.createElement('h3');h.textContent='今日及逾期追蹤（'+due.length+'）';drawerBody.appendChild(h);due.sort((a,b)=>a.followUpDate.localeCompare(b.followUpDate)).forEach(v=>{const el=document.createElement('button');el.className='dashboard-follow';el.innerHTML='<strong>'+esc(v.address)+'</strong><span>'+esc(v.followUpDate)+'｜'+esc(v.developmentStage||'待評估')+'</span>';el.onclick=()=>{vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';showVacancies()};drawerBody.appendChild(el)})}
+function showDashboard(){setDrawerLayout('normal');nav={level:'dashboard',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='開發概況';backBtn.style.visibility='hidden';drawerBody.innerHTML='';const d=new Date(),today=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),due=vacancies.filter(v=>v.followUpDate&&v.followUpDate<=today&&!['已開幕','放棄開發'].includes(v.developmentStage)),active=vacancies.filter(v=>!['已開幕','放棄開發'].includes(v.developmentStage||'待評估'));const cards=document.createElement('div');cards.className='dashboard-grid';[['開發中空舖',active.length],['加盟主名單',franchiseLeads.length],['今日及逾期待追蹤',due.length],['已簽約案件',vacancies.filter(v=>v.developmentStage==='已簽約').length]].forEach(([name,num])=>{const el=document.createElement('div');el.className='dashboard-card';el.innerHTML='<span>'+esc(name)+'</span><strong>'+num+'</strong>';cards.appendChild(el)});drawerBody.appendChild(cards);const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出空舖與加盟主備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);const h=document.createElement('h3');h.textContent='今日及逾期追蹤（'+due.length+'）';drawerBody.appendChild(h);due.sort((a,b)=>a.followUpDate.localeCompare(b.followUpDate)).forEach(v=>{const el=document.createElement('button');el.className='dashboard-follow';el.innerHTML='<strong>'+esc(v.address)+'</strong><span>'+esc(v.followUpDate)+'｜'+esc(v.developmentStage||'待評估')+'</span>';el.onclick=()=>{vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';showVacancies()};drawerBody.appendChild(el)})}
 document.getElementById('openDashboard').onclick=showDashboard;
 function showProtection(){
+ setDrawerLayout('protection');
  nav={level:'protection',city:null,district:null};
  drawer.classList.add('open');drawerTitle.textContent='門市保障範圍';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const wrap=document.createElement('div');wrap.className='protection-panel';
