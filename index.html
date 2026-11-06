@@ -110,7 +110,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .gm-style .gm-style-iw-ch{display:none!important}
 .gm-style .gm-style-iw-chr button{position:absolute!important;top:4px;right:4px;margin:0!important}
 .gm-style .gm-style-iw-d{padding-top:0!important}
-.storecard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.storecard-top h2{flex:1}.store-edit-button{background:#d71920;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:800;flex-shrink:0}.storecard .vacancy-form{margin-top:10px}</style>
+.storecard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.storecard-top h2{flex:1}.store-edit-button{background:#d71920;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:800;flex-shrink:0}.storecard .vacancy-form{margin-top:10px}.vacancy-visibility{justify-content:flex-start}.vacancy-visibility button{width:auto!important;flex:none!important;padding:7px 11px!important;font-size:12px!important}.vacancy-tabs{display:flex;gap:9px;margin:10px 2px 14px}.vacancy-tabs button{flex:1;background:#fff;border:1px solid #ddd4ce;border-radius:12px;padding:12px;font-size:14px;font-weight:850;color:#2f2926}.vacancy-tabs button.active{background:#d71920;border-color:#d71920;color:#fff}.vacancy-detail-panel[hidden]{display:none!important}.vacancy-detail-panel{padding:12px 8px;margin-top:10px;background:#f8f6f4;border:1px solid #e8e0da;border-radius:12px}.vacancy-item-actions button{min-width:0;font-size:11px;padding:10px 2px}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -429,9 +429,16 @@ function makeEditor(target,record,fields,save,refresh){
  if(save()){refresh()}else Object.assign(record,old)};
  target.appendChild(form);
 }
+let vacancyPanelMode='';
+let vacancyDetailOpenId=null;
 function showVacancies(){
  nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const visibilityWrap=document.createElement('div');visibilityWrap.className='vacancy-visibility';visibilityWrap.innerHTML='<button type="button" id="vacancyVisibility" aria-pressed="'+String(vacancyVisible)+'">'+(vacancyVisible?'🏠 隱藏空舖標記':'🏠 顯示空舖標記')+'</button>';drawerBody.appendChild(visibilityWrap);vacancyVisibility=visibilityWrap.querySelector('button');vacancyVisibility.onclick=()=>{vacancyVisible=!vacancyVisible;refreshVacancyMarkers()};
+ const navTabs=document.createElement('div');navTabs.className='vacancy-tabs';
+ navTabs.innerHTML='<button type="button" data-mode="add">＋ 新增</button><button type="button" data-mode="list">☷ 清單 ('+vacancies.length+')</button>';
+ drawerBody.appendChild(navTabs);
+ navTabs.querySelectorAll('button').forEach(btn=>{btn.classList.toggle('active',btn.dataset.mode===vacancyPanelMode);btn.onclick=()=>{vacancyPanelMode=vacancyPanelMode===btn.dataset.mode?'':btn.dataset.mode;vacancyDetailOpenId=null;showVacancies()}});
+
  const form=document.createElement('form');form.className='vacancy-form';
  form.innerHTML='<label for="vacancyAddress">新增空舖地址</label><input id="vacancyAddress" name="address" autocomplete="street-address" placeholder="例如：台北市內湖區行善路62號" required maxlength="220"><div class="extra-fields"><label>坪數<input id="vacancySize" type="number" min="0" step="0.1" placeholder="例如 25"></label><label>面寬（公尺）<input id="vacancyFront" type="number" min="0" step="0.1" placeholder="例如 5"></label><label>樓層<input id="vacancyFloor" type="text" maxlength="30" placeholder="例如 1F"></label><label>聯絡人<input id="vacancyContact" type="text" maxlength="60" placeholder="房東或仲介"></label><label>聯絡電話<input id="vacancyPhone" type="tel" maxlength="35" placeholder="聯絡電話"></label></div><label>現場照片（選填）<input id="vacancyPhoto" type="file" accept="image/*"></label><label for="vacancyRent">每月租金（新台幣元）</label><input id="vacancyRent" type="number" inputmode="numeric" min="0" step="1" placeholder="例如：60000" required><div class="vacancy-note">地址定位後自動帶入縣市、行政區；商圈屬性可複選 8 項，建檔後顯示於空舖清單及地圖。</div><fieldset class="vacancy-area-field"><legend>商圈屬性（可複選）</legend><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" name="areaTypes" value="'+t+'"><span>'+t+'</span></label>').join('')+'</div></fieldset><button type="submit">＋ 新增空舖並定位</button><div class="vacancy-note">紀錄僅儲存在本裝置瀏覽器，尚未雲端同步。</div><div class="vacancy-error" role="status"></div>';
  form.onsubmit=async e=>{
@@ -447,9 +454,10 @@ function showVacancies(){
   const ok=await geocodeVacancy(v);
   if(!ok){error.textContent='無法定位此地址，請輸入完整縣市、區域與門牌';btn.disabled=false;btn.textContent='＋ 新增空舖並定位';return}
   vacancies.unshift(v);if(!saveVacancies()){btn.disabled=false;return}
-  refreshVacancyMarkers();showVacancies();
+  refreshVacancyMarkers();vacancyPanelMode='list';showVacancies();
  };
- drawerBody.appendChild(form);
+ if(vacancyPanelMode==='add')drawerBody.appendChild(form);
+ if(vacancyPanelMode!=='list')return;
  const cities=[...new Set(vacancies.map(v=>v.region?.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
  if(vacancyFilterCity&&!cities.includes(vacancyFilterCity)){vacancyFilterCity='';vacancyFilterDistrict=''}
  const districts=[...new Set(vacancies.filter(v=>!vacancyFilterCity||v.region?.city===vacancyFilterCity).map(v=>v.region?.district).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
@@ -469,13 +477,13 @@ function showVacancies(){
   const rented=v.status==='rented';
   const regionText=[v.region?.city,v.region?.district,v.region?.neighborhood].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
-  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">'+(rented?'改為空舖':'設為已租')+'</button><button type="button" data-act="delete" class="danger">刪除</button></div>';
+  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">'+(rented?'改為空舖':'設為已租')+'</button><button type="button" data-act="detail">詳情</button><button type="button" data-act="delete" class="danger">刪除</button></div>';
   const detail=document.createElement('div');detail.className='vacancy-extra-summary';
   detail.innerHTML='<div>'+esc([v.size&&'坪數 '+v.size+' 坪',v.front&&'面寬 '+v.front+' m',v.floor&&'樓層 '+v.floor].filter(Boolean).join('｜'))+'</div><div>'+esc([v.contact&&'聯絡人 '+v.contact,v.phone&&'電話 '+v.phone].filter(Boolean).join('｜'))+'</div>'+(v.photo?'<img alt="空舖現場照片" src="'+esc(v.photo)+'">':'');
-  item.appendChild(detail);
-  const edit=document.createElement('button');edit.type='button';edit.className='small-edit-btn';edit.textContent='編輯空舖資料';item.appendChild(edit);
+  const detailPanel=document.createElement('div');detailPanel.className='vacancy-detail-panel';detailPanel.hidden=vacancyDetailOpenId!==v.id;item.appendChild(detailPanel);detailPanel.appendChild(detail);
+  const edit=document.createElement('button');edit.type='button';edit.className='small-edit-btn';edit.textContent='編輯空舖資料';detailPanel.appendChild(edit);
   edit.onclick=()=>makeEditor(item,v,[['address','地址'],['rent','月租金','number'],['size','坪數','number'],['front','面寬（公尺）','number'],['floor','樓層'],['contact','聯絡人'],['phone','聯絡電話']],saveVacancies,()=>{refreshVacancyMarkers();showVacancies()});
-  const photoEdit=document.createElement('label');photoEdit.className='small-edit-btn';photoEdit.textContent='更換照片 ';const photoInput=document.createElement('input');photoInput.type='file';photoInput.accept='image/*';photoInput.style.maxWidth='100%';photoEdit.appendChild(photoInput);item.appendChild(photoEdit);photoInput.onchange=()=>{const file=photoInput.files[0];if(!file)return;if(file.size>2*1024*1024){alert('照片不得超過 2MB');return}const reader=new FileReader();reader.onload=()=>{const old=v.photo;v.photo=reader.result;if(saveVacancies())showVacancies();else v.photo=old};reader.readAsDataURL(file)};
+  const photoEdit=document.createElement('label');photoEdit.className='small-edit-btn';photoEdit.textContent='更換照片 ';const photoInput=document.createElement('input');photoInput.type='file';photoInput.accept='image/*';photoInput.style.maxWidth='100%';photoEdit.appendChild(photoInput);detailPanel.appendChild(photoEdit);photoInput.onchange=()=>{const file=photoInput.files[0];if(!file)return;if(file.size>2*1024*1024){alert('照片不得超過 2MB');return}const reader=new FileReader();reader.onload=()=>{const old=v.photo;v.photo=reader.result;if(saveVacancies())showVacancies();else v.photo=old};reader.readAsDataURL(file)};
 
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
   editor.innerHTML='<label>商圈屬性（可複選修改）</label><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" value="'+t+'" '+(vacancyAreaNames(v).includes(t)?'checked':'')+'><span>'+t+'</span></label>').join('')+'</div>';
@@ -488,7 +496,7 @@ function showVacancies(){
    '<label>下次追蹤日期<input type="date" data-field="date"></label>'+
    '<label>開發備註<textarea data-field="note" rows="2" maxlength="1500" placeholder="現場勘查、租金洽談、後續待辦事項"></textarea></label>'+
    '<button type="button" data-act="saveProgress">儲存開發紀錄</button><span class="vacancy-progress-feedback" role="status"></span>';
-  item.appendChild(progress);
+  detailPanel.appendChild(editor);detailPanel.appendChild(progress);
   progress.querySelector('[data-field="stage"]').value=stages.includes(v.developmentStage)?v.developmentStage:'待評估';
   progress.querySelector('[data-field="lead"]').value=franchiseLeads.some(lead=>String(lead.id)===String(v.franchiseLeadId||''))?String(v.franchiseLeadId):'';
   progress.querySelector('[data-field="date"]').value=v.followUpDate||'';
@@ -502,6 +510,7 @@ function showVacancies(){
    if(saveVacancies())progress.querySelector('.vacancy-progress-feedback').textContent='已儲存';
    else{Object.assign(v,previous);progress.querySelector('.vacancy-progress-feedback').textContent='儲存失敗'}
   };
+  item.querySelector('[data-act="detail"]').onclick=()=>{vacancyDetailOpenId=vacancyDetailOpenId===v.id?null:v.id;showVacancies()};
   item.querySelector('[data-act="locate"]').onclick=()=>locateVacancy(v);
   item.querySelector('[data-act="status"]').onclick=()=>{v.status=rented?'vacant':'rented';saveVacancies();refreshVacancyMarkers();showVacancies()};
   item.querySelector('[data-act="delete"]').onclick=()=>{if(!confirm('確定刪除這筆空舖紀錄？\n'+v.address))return;vacancies=vacancies.filter(x=>x.id!==v.id);saveVacancies();refreshVacancyMarkers();showVacancies()};
