@@ -364,12 +364,7 @@ function openingEvidenceHtml(s){
 function showStore(s){
   nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';
   drawerBody.innerHTML='<div class="storecard"><h2>'+esc(s.name)+'</h2><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+esc(s.basis)+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.address+' '+s.name)+'">Google 地圖</a></div></div>';
-  const card=drawerBody.querySelector('.storecard'),evidence=document.createElement('div');evidence.innerHTML=openingEvidenceHtml(s);card.insertBefore(evidence,card.querySelector('.actions'));bindReviewOpening(s,evidence);const field=document.createElement('div');field.className='store-opening-field';field.style.display='none';
-  field.innerHTML='<label for="storeOpeningDate">開業日期</label><input id="storeOpeningDate" type="date"><button type="button" id="saveStoreOpening">儲存日期</button><span id="storeOpeningFeedback" role="status"></span>';
-  card.insertBefore(field,card.querySelector('.actions'));
-  const dateInput=field.querySelector('input');dateInput.value=getStoreOpeningDate(s);
-  field.querySelector('button').onclick=()=>{const key=storeOpeningId(s),old=storeOpeningDates[key];if(dateInput.value)storeOpeningDates[key]=dateInput.value;else delete storeOpeningDates[key];try{localStorage.setItem(STORE_OPENING_KEY,JSON.stringify(storeOpeningDates));field.querySelector('#storeOpeningFeedback').textContent='已儲存'}catch(e){if(old)storeOpeningDates[key]=old;else delete storeOpeningDates[key];field.querySelector('#storeOpeningFeedback').textContent='儲存失敗'}};
-  document.querySelector('#locate').onclick=async()=>{
+  const card=drawerBody.querySelector('.storecard'),evidence=document.createElement('div');evidence.innerHTML=openingEvidenceHtml(s);card.insertBefore(evidence,card.querySelector('.actions'));bindReviewOpening(s,evidence);document.querySelector('#locate').onclick=async()=>{
     if(!markers.has(s.idx))await geocodeOne(s);
     const m=markers.get(s.idx);if(m){map.panTo(m.getPosition());map.setZoom(17);openStorePopup(s,m);drawer.classList.remove('open')}
   }
