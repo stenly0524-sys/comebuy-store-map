@@ -68,7 +68,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
  .tools select{width:104px;flex-basis:104px}
  .bottom-nav button{font-size:11px}
 }
-</style>
+@media(orientation:portrait) and (max-width:759px){.brand-filter{display:flex;gap:5px;margin-top:7px}.brand-filter button{flex:1;min-width:0;padding:7px 2px;font-size:10px;white-space:nowrap}}.brand-filter{display:flex;gap:6px;margin-top:8px}.brand-filter button{flex:1;border:1px solid #e2dcd6;background:#fff;border-radius:9px;padding:7px 4px;font-size:11px;font-weight:800;color:#4b4540}.brand-filter button.active{background:#272327;color:#fff;border-color:#272327}.brand-filter button[data-brand="COMEBUY TEA"]{color:#087e87}.brand-filter button[data-brand="COMEBUY TEA"].active{background:#087e87;color:white;border-color:#087e87}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -80,8 +80,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
       <input id="q" placeholder="搜尋門市、地址或區域">
       <select id="citySelect"></select>
     </div>
-
-
+    <div class="brand-filter" aria-label="品牌篩選"><button type="button" data-brand="all" class="active">全部品牌</button><button type="button" data-brand="COMEBUY">● COMEBUY</button><button type="button" data-brand="COMEBUY TEA">◆ COMEBUY TEA</button></div>
   </div>
   <div class="status"><span class="dot"></span><span id="status">正在載入 Google Maps…</span></div>
 
@@ -120,7 +119,8 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 <script src="stores-5.js"></script>
 <script src="stores-6.js"></script>
 <script>
-const raw=(window.STORE_CHUNKS||[]).flat();
+const teaStores=[{"name":"COMEBUY TEA 莊敬旗艦店","address":"台北市信義區莊敬路330號","city":"台北市","brand":"COMEBUY TEA","rent":"待估","district":"商圈待調查","status":"品牌官網據點（營業狀態待核實）","basis":"COMEBUY TEA 官網地址；未查證即時營業狀態與租金"},{"name":"COMEBUY TEA 松菸文創店","address":"台北市信義區菸廠路88號1樓","city":"台北市","brand":"COMEBUY TEA","rent":"待估","district":"文創／商場","status":"品牌官網據點（營業狀態待核實）","basis":"COMEBUY TEA 官網地址；未查證即時營業狀態與租金"},{"name":"COMEBUY TEA 桃機國際店","address":"桃園市大園區航站南路9號F16櫃位","city":"桃園市","brand":"COMEBUY TEA","rent":"待估","district":"機場／特殊通路","status":"品牌官網據點（營業狀態待核實）","basis":"COMEBUY TEA 官網地址；未查證即時營業狀態與租金"}];
+const raw=[...(window.STORE_CHUNKS||[]).flat(),...teaStores];
 const CITY_ORDER=["基隆市","台北市","新北市","桃園市","新竹市","新竹縣","苗栗縣","台中市","彰化縣","南投縣","雲林縣","嘉義市","嘉義縣","台南市","高雄市","屏東縣","宜蘭縣","花蓮縣","台東縣","澎湖縣","金門縣","連江縣"];
 const CITY_CENTERS={
 "基隆市":[25.1276,121.7392,12],"台北市":[25.0375,121.5637,11],"新北市":[25.012,121.465,10],"桃園市":[24.9937,121.301,10],
@@ -150,7 +150,7 @@ function syncProtection(){
 
  markers.forEach((marker,idx)=>{
    let circle=protectionCircles.get(idx);
-   if(!circle){circle=new google.maps.Circle({strokeColor:'#d71920',strokeOpacity:.75,strokeWeight:1.5,fillColor:'#d71920',fillOpacity:.12,clickable:false});protectionCircles.set(idx,circle)}
+   if(!circle){const tea=stores[idx].brand==='COMEBUY TEA';circle=new google.maps.Circle({strokeColor:tea?'#087e87':'#d71920',strokeOpacity:.75,strokeWeight:1.5,fillColor:tea?'#087e87':'#d71920',fillOpacity:.12,clickable:false});protectionCircles.set(idx,circle)}
    circle.setCenter(marker.getPosition());circle.setRadius(radius);
    circle.setMap(protectionVisible&&selected.has(idx)?map:null);
  });
@@ -172,11 +172,14 @@ citySelect.innerHTML='<option value="">全台城市</option>'+CITY_ORDER.map(c=>
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function popupHtml(s){return '<div style="min-width:220px"><b style="font-size:16px">'+esc(s.name)+'</b><div style="margin-top:5px">'+esc(s.address)+'</div><div>區域：'+esc(s.districtName)+'</div><div>商圈：'+esc(s.district)+'</div><div>預估月租：'+esc(s.rent)+' 萬元</div><small>'+esc(s.basis)+'</small></div>'}
-function visibleStores(){let term=q.value.trim().toLowerCase(),c=citySelect.value;return stores.filter(s=>(!c||s.city===c)&&(!term||[s.name,s.address,s.city,s.districtName,s.district].join(' ').toLowerCase().includes(term)))}
+let selectedBrand="all";
+document.querySelectorAll(".brand-filter button").forEach(b=>b.onclick=()=>{selectedBrand=b.dataset.brand;document.querySelectorAll(".brand-filter button").forEach(x=>x.classList.toggle("active",x===b));refreshMarkers()});
+function visibleStores(){let term=q.value.trim().toLowerCase(),c=citySelect.value;return stores.filter(s=>(selectedBrand==="all"||(s.brand||"COMEBUY")===selectedBrand)&&(!c||s.city===c)&&(!term||[s.name,s.address,s.city,s.districtName,s.district].join(' ').toLowerCase().includes(term)))}
 function isVisible(s){return visibleStores().some(x=>x.idx===s.idx)}
 function addMarker(s,p){
   if(markers.has(s.idx)||!p)return;
-  const marker=new google.maps.Marker({position:p,map:isVisible(s)?map:null,title:s.name});
+  const tea=s.brand==='COMEBUY TEA';
+  const marker=new google.maps.Marker({position:p,map:isVisible(s)?map:null,title:s.name,icon:tea?{path:'M 0,-13 L 12,0 L 0,13 L -12,0 Z',fillColor:'#087e87',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:2,scale:1.15,anchor:new google.maps.Point(0,0)}:undefined});
   marker.addListener('click',()=>{infoWindow.setContent(popupHtml(s));infoWindow.open({map,anchor:marker})});
   markers.set(s.idx,marker);
   syncProtection();
@@ -268,13 +271,13 @@ function showCities(){
 }
 function showDistricts(c){
   nav={level:'districts',city:c,district:null};drawerTitle.textContent=c;backBtn.style.visibility='visible';drawerBody.innerHTML='';
-  const ds=[...new Set(stores.filter(s=>s.city===c).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  const ds=[...new Set(stores.filter(s=>s.city===c&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
   if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#766e69;text-align:center">目前沒有 COMEBUY 門市</div>';return}
-  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>showStores(c,d)))})
+  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>showStores(c,d)))})
 }
 function showStores(c,d){
   nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
-  stores.filter(s=>s.city===c&&s.districtName===d).forEach(s=>drawerBody.appendChild(menuRow(s.name,s.address,'',()=>showStore(s))))
+  stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).forEach(s=>drawerBody.appendChild(menuRow(s.name,s.address,'',()=>showStore(s))))
 }
 function showStore(s){
   nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';
