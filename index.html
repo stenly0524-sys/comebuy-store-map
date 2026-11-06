@@ -1,94 +1,215 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#ffffff"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="COMEBUY 地圖"><title>COMEBUY｜全台展店地圖</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><style>
-:root{--black:#241f1f;--red:#d71920;--red2:#ef3d43;--yellow:#ffd43b;--blue:#27a7e8;--green:#62c462;--paper:#fff;--line:#e9e4df;--soft:#f8f6f3;--muted:#746d69}
-*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;background:#ffffff;color:var(--black)}#map{position:absolute;inset:0;z-index:0}.leaflet-container{background:#f4f4f4}.leaflet-control-attribution{font-size:9px!important}.leaflet-control-zoom{margin-bottom:28px!important}
-.top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;right:12px;z-index:900;pointer-events:none}
-.brandbar{pointer-events:auto;background:rgba(255,255,255,.97);border:1px solid #eee6de;border-radius:22px;box-shadow:0 8px 28px #0002;padding:12px 12px 10px}
-.brandrow{display:flex;align-items:center;gap:10px}.logo{width:142px;height:auto;display:block}.brandcopy{flex:1;min-width:0}.title{font-size:14px;font-weight:800}.sub{font-size:11px;color:var(--muted);margin-top:2px}.branddots{display:flex;gap:3px;margin-top:5px}.branddots i{width:18px;height:4px;border-radius:4px;display:block;background:var(--red)}.branddots i:nth-child(2){opacity:.75}.branddots i:nth-child(3){opacity:.5}.branddots i:nth-child(4){opacity:.28}
-.btn{border:0;border-radius:13px;background:var(--red);color:#fff;padding:10px 12px;font-weight:800;font-size:13px}.btn.light{background:#fff;color:var(--black);border:1px solid #ded7d0}.tools{display:flex;gap:8px;margin-top:10px}.tools select,.tools input{height:43px;background:#fff;color:var(--black);border:1px solid #dcd5ce;border-radius:13px;padding:0 12px;font-size:14px}.tools input{flex:1;min-width:0}.tools select{width:132px}.status{pointer-events:auto;margin-top:8px;display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #e6ded7;border-radius:999px;padding:7px 11px;font-size:11px;color:#605954;box-shadow:0 4px 18px #0001}.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px #62c46222}
-.drawer{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));height:60dvh;z-index:1000;background:#fff;border-radius:24px;box-shadow:0 14px 50px #0005;border:1px solid #eee6de;overflow:hidden;transform:translateY(calc(100% + 30px));transition:transform .28s ease}.drawer.open{transform:translateY(0)}.drawerhead{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:9px 12px}.drawerhead strong{flex:1;font-size:16px}.drawerbody{height:calc(100% - 58px);overflow:auto;-webkit-overflow-scrolling:touch;padding:8px 10px 18px;background:#fff}.back{width:38px;height:38px;border-radius:12px;border:1px solid #e1d9d2;background:#fff;font-size:20px}.close{width:38px;height:38px;border-radius:12px;border:0;background:var(--red);color:#fff;font-size:18px}
-.row{width:100%;border:0;background:#fff;border-bottom:1px solid var(--line);padding:13px 8px;text-align:left;display:flex;align-items:center;gap:10px}.row:last-child{border-bottom:0}.rowmain{flex:1;min-width:0}.rowtitle{font-weight:800;font-size:15px}.rowsub{margin-top:3px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.countbadge{min-width:34px;padding:5px 8px;border-radius:999px;background:#f1ece7;text-align:center;font-weight:800;font-size:12px}.chev{font-size:22px;color:#9a918a}.storecard{padding:14px;border:1px solid #e8e0d9;border-radius:18px;background:var(--soft);margin:5px 2px}.storecard h2{font-size:20px;margin:0 0 8px}.kv{font-size:13px;line-height:1.65;color:#544d48}.storeactions{display:flex;gap:8px;margin-top:12px}.storeactions button,.storeactions a{flex:1;text-align:center;text-decoration:none;border-radius:13px;padding:11px;font-weight:800;font-size:13px}.primary{background:var(--red);color:#fff;border:0}.secondary{background:#fff;color:var(--black);border:1px solid #ddd4cd}
-.pin{width:18px;height:18px;border-radius:50% 50% 50% 0;background:var(--red);transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 8px #0005;position:relative}.pin:after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;top:4px;left:4px}.leaflet-div-icon{background:none;border:0}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:var(--black)}.leaflet-popup-content{line-height:1.55}.leaflet-popup-content b{font-size:16px}.leaflet-popup-content small{color:#766d67}
-@media(min-width:760px){.top{max-width:660px;left:18px}.drawer{width:430px;right:auto;left:18px}.logo{width:160px}}
-</style></head><body>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="COMEBUY 地圖">
+<title>COMEBUY｜全台展店地圖</title>
+<style>
+:root{--red:#d71920;--red2:#ef3d43;--ink:#211d1d;--paper:#fff;--line:#ebe5e1;--soft:#f8f6f4;--muted:#766e69}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;background:#fff;color:var(--ink)}
+#map{position:fixed;inset:0;background:#eee}
+.top{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;right:12px;z-index:20;pointer-events:none}
+.card{pointer-events:auto;background:rgba(255,255,255,.97);border:1px solid #eee7e2;border-radius:22px;box-shadow:0 8px 28px #0002;padding:12px}
+.row{display:flex;align-items:center;gap:10px}
+.logo{width:136px;height:auto;display:block}
+.copy{flex:1;min-width:0}.title{font-size:14px;font-weight:900}.sub{font-size:11px;color:var(--muted);margin-top:2px}
+.brandline{height:4px;width:72px;border-radius:4px;background:linear-gradient(90deg,var(--red),var(--red2));margin-top:5px}
+.btn{border:0;border-radius:13px;background:var(--red);color:#fff;padding:10px 13px;font-weight:900;font-size:13px}
+.tools{display:flex;gap:8px;margin-top:10px}
+.tools input,.tools select{height:43px;background:#fff;border:1px solid #ded7d2;border-radius:13px;padding:0 12px;font-size:14px;color:var(--ink)}
+.tools input{flex:1;min-width:0}.tools select{width:132px}
+.status{pointer-events:auto;margin-top:8px;display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #e9e1dc;border-radius:999px;padding:7px 11px;font-size:11px;color:#5d5652;box-shadow:0 4px 18px #0001}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px #d7192020}
+.drawer{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));height:60dvh;z-index:30;background:#fff;border-radius:24px;box-shadow:0 14px 50px #0005;border:1px solid #eee6de;overflow:hidden;transform:translateY(calc(100% + 30px));transition:transform .26s ease}
+.drawer.open{transform:translateY(0)}
+.drawerhead{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:9px 12px}
+.drawerhead strong{flex:1;font-size:16px}
+.back,.close{width:38px;height:38px;border-radius:12px;font-size:19px}
+.back{border:1px solid #e1d9d2;background:#fff}.close{border:0;background:var(--red);color:#fff}
+.drawerbody{height:calc(100% - 58px);overflow:auto;-webkit-overflow-scrolling:touch;padding:8px 10px 18px}
+.menurow{width:100%;border:0;background:#fff;border-bottom:1px solid var(--line);padding:13px 8px;text-align:left;display:flex;align-items:center;gap:10px}
+.rowmain{flex:1;min-width:0}.rowtitle{font-weight:900;font-size:15px}.rowsub{margin-top:3px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.count{min-width:34px;padding:5px 8px;border-radius:999px;background:#f3eeea;text-align:center;font-weight:900;font-size:12px}.chev{font-size:22px;color:#9d948e}
+.storecard{padding:14px;border:1px solid #e8e0da;border-radius:18px;background:var(--soft);margin:5px 2px}
+.storecard h2{font-size:20px;margin:0 0 8px}.kv{font-size:13px;line-height:1.7;color:#504945}.actions{display:flex;gap:8px;margin-top:12px}
+.actions button,.actions a{flex:1;text-align:center;text-decoration:none;border-radius:13px;padding:11px;font-weight:900;font-size:13px}
+.primary{background:var(--red);color:#fff;border:0}.secondary{background:#fff;color:var(--ink);border:1px solid #ddd4ce}
+@media(min-width:760px){.top{max-width:660px;left:18px}.drawer{width:430px;right:auto;left:18px}}
+</style>
+</head>
+<body>
 <div id="map"></div>
+
 <div class="top">
-  <div class="brandbar">
-    <div class="brandrow">
+  <div class="card">
+    <div class="row">
       <img class="logo" src="https://www.comebuy2002.com.tw/images/logo.png" alt="COMEBUY">
-      <div class="brandcopy"><div class="title">全台展店地圖</div><div class="sub"><span id="total">0</span> 筆門市資料 · 官方地址</div><div class="branddots"><i></i><i></i><i></i><i></i></div></div>
+      <div class="copy">
+        <div class="title">全台展店地圖</div>
+        <div class="sub"><span id="total">0</span> 間門市 · Google Maps</div>
+        <div class="brandline"></div>
+      </div>
       <button class="btn" id="openList">清單</button>
     </div>
-    <div class="tools"><input id="q" placeholder="搜尋門市、地址或區域"><select id="citySelect"></select></div>
+    <div class="tools">
+      <input id="q" placeholder="搜尋門市、地址或區域">
+      <select id="citySelect"></select>
+    </div>
   </div>
-  <div class="status"><span class="pulse"></span><span id="status">載入門市資料…</span></div>
+  <div class="status"><span class="dot"></span><span id="status">正在載入 Google Maps…</span></div>
 </div>
 
 <div class="drawer" id="drawer">
-  <div class="drawerhead"><button class="back" id="backBtn">‹</button><strong id="drawerTitle">城市</strong><button class="close" id="closeBtn">×</button></div>
+  <div class="drawerhead">
+    <button class="back" id="backBtn">‹</button>
+    <strong id="drawerTitle">城市</strong>
+    <button class="close" id="closeBtn">×</button>
+  </div>
   <div class="drawerbody" id="drawerBody"></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="stores-1.js"></script><script src="stores-2.js"></script><script src="stores-3.js"></script><script src="stores-4.js"></script><script src="stores-5.js"></script><script src="stores-6.js"></script>
+<script src="stores-1.js"></script>
+<script src="stores-2.js"></script>
+<script src="stores-3.js"></script>
+<script src="stores-4.js"></script>
+<script src="stores-5.js"></script>
+<script src="stores-6.js"></script>
 <script>
 const raw=(window.STORE_CHUNKS||[]).flat();
 const CITY_ORDER=["基隆市","台北市","新北市","桃園市","新竹市","新竹縣","苗栗縣","台中市","彰化縣","南投縣","雲林縣","嘉義市","嘉義縣","台南市","高雄市","屏東縣","宜蘭縣","花蓮縣","台東縣","澎湖縣","金門縣","連江縣"];
-const CITY_CENTERS={"基隆市":[25.1276,121.7392,12],"台北市":[25.0375,121.5637,11],"新北市":[25.012,121.465,10],"桃園市":[24.9937,121.301,10],"新竹市":[24.804,120.971,12],"新竹縣":[24.839,121.018,10],"苗栗縣":[24.56,120.82,10],"台中市":[24.1477,120.6736,10],"彰化縣":[24.0756,120.544,10],"南投縣":[23.916,120.684,9],"雲林縣":[23.708,120.542,10],"嘉義市":[23.4801,120.4491,12],"嘉義縣":[23.4518,120.2555,10],"台南市":[22.9997,120.227,10],"高雄市":[22.6273,120.3014,10],"屏東縣":[22.6761,120.4942,10],"宜蘭縣":[24.757,121.753,10],"花蓮縣":[23.9872,121.6015,10],"台東縣":[22.7554,121.1500,10],"澎湖縣":[23.5712,119.5793,11],"金門縣":[24.4494,118.3767,11],"連江縣":[26.1605,119.9517,11]};
-const CITY_PREFIX=[["台北市","台北市"],["新北市","新北市"],["桃園市","桃園市"],["新竹市","新竹市"],["新竹縣","新竹縣"],["苗栗縣","苗栗縣"],["台中市","台中市"],["彰化縣","彰化縣"],["南投縣","南投縣"],["雲林縣","雲林縣"],["嘉義市","嘉義市"],["嘉義縣","嘉義縣"],["台南市","台南市"],["高雄市","高雄市"],["屏東縣","屏東縣"],["宜蘭縣","宜蘭縣"],["宜蘭市","宜蘭縣"],["花蓮縣","花蓮縣"],["花蓮市","花蓮縣"],["台東縣","台東縣"],["台東市","台東縣"],["澎湖縣","澎湖縣"],["金門縣","金門縣"],["連江縣","連江縣"],["基隆市","基隆市"]];
-function normalizeCity(s){if(CITY_ORDER.includes(s.city))return s.city;for(const [p,c] of CITY_PREFIX){if((s.address||"").startsWith(p))return c}return s.city||""}
+const CITY_CENTERS={
+"基隆市":[25.1276,121.7392,12],"台北市":[25.0375,121.5637,11],"新北市":[25.012,121.465,10],"桃園市":[24.9937,121.301,10],
+"新竹市":[24.804,120.971,12],"新竹縣":[24.839,121.018,10],"苗栗縣":[24.56,120.82,10],"台中市":[24.1477,120.6736,10],
+"彰化縣":[24.0756,120.544,10],"南投縣":[23.916,120.684,9],"雲林縣":[23.708,120.542,10],"嘉義市":[23.4801,120.4491,12],
+"嘉義縣":[23.4518,120.2555,10],"台南市":[22.9997,120.227,10],"高雄市":[22.6273,120.3014,10],"屏東縣":[22.6761,120.4942,10],
+"宜蘭縣":[24.757,121.753,10],"花蓮縣":[23.9872,121.6015,10],"台東縣":[22.7554,121.15,10],"澎湖縣":[23.5712,119.5793,11],
+"金門縣":[24.4494,118.3767,11],"連江縣":[26.1605,119.9517,11]};
+const PREFIX=[["台北市","台北市"],["新北市","新北市"],["桃園市","桃園市"],["新竹市","新竹市"],["新竹縣","新竹縣"],["苗栗縣","苗栗縣"],["台中市","台中市"],["彰化縣","彰化縣"],["南投縣","南投縣"],["雲林縣","雲林縣"],["嘉義市","嘉義市"],["嘉義縣","嘉義縣"],["台南市","台南市"],["高雄市","高雄市"],["屏東縣","屏東縣"],["宜蘭縣","宜蘭縣"],["宜蘭市","宜蘭縣"],["花蓮縣","花蓮縣"],["花蓮市","花蓮縣"],["台東縣","台東縣"],["台東市","台東縣"],["澎湖縣","澎湖縣"],["金門縣","金門縣"],["連江縣","連江縣"],["基隆市","基隆市"]];
+function normalizeCity(s){if(CITY_ORDER.includes(s.city))return s.city;for(const [p,c] of PREFIX){if((s.address||"").startsWith(p))return c}return s.city||""}
 function districtOf(s){let a=(s.address||"").replace(normalizeCity(s),"");let m=a.match(/^(.+?(?:區|鄉|鎮|市))/);return m?m[1]:"其他"}
 const stores=raw.map((s,i)=>({...s,idx:i,city:normalizeCity(s),districtName:districtOf(s)}));
 document.querySelector('#total').textContent=stores.length;
-
-const map=L.map('map',{zoomControl:false,preferCanvas:true}).setView([23.72,120.96],7);
-L.control.zoom({position:'bottomright'}).addTo(map);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-const markerLayer=L.layerGroup().addTo(map),markers=new Map();
-const pinIcon=L.divIcon({className:'',html:'<div class="pin"></div>',iconSize:[18,18],iconAnchor:[9,18],popupAnchor:[0,-18]});
-let cache={};try{cache=JSON.parse(localStorage.getItem('comebuy_geocodes_v3')||'{}')}catch(e){}
-const statusEl=document.querySelector('#status'),q=document.querySelector('#q'),citySelect=document.querySelector('#citySelect');
-
 const counts=Object.fromEntries(CITY_ORDER.map(c=>[c,0]));stores.forEach(s=>{if(counts[s.city]!==undefined)counts[s.city]++});
+
+let map,geocoder,infoWindow;
+const markers=new Map();
+let cache={};try{cache=JSON.parse(localStorage.getItem('comebuy_google_geocodes_v1')||'{}')}catch(e){}
+const q=document.querySelector('#q'),citySelect=document.querySelector('#citySelect'),statusEl=document.querySelector('#status');
 citySelect.innerHTML='<option value="">全台城市</option>'+CITY_ORDER.map(c=>'<option value="'+c+'">'+c+' ('+counts[c]+')</option>').join('');
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function popup(s){return '<b>'+esc(s.name)+'</b><div>'+esc(s.address)+'</div><div>區域：'+esc(s.districtName)+'</div><div>商圈：'+esc(s.district)+'</div><div>預估月租：'+esc(s.rent)+' 萬元</div><small>'+esc(s.basis)+'</small>'}
-function addMarker(s,p){if(!p||!Number.isFinite(+p.lat)||!Number.isFinite(+p.lon))return;let m=L.marker([+p.lat,+p.lon],{icon:pinIcon,title:s.name}).bindPopup(popup(s));markers.set(s.idx,m);m.addTo(markerLayer)}
-Object.entries(cache).forEach(([addr,p])=>{let s=stores.find(x=>x.address===addr);if(s)addMarker(s,p)});
-
-function filteredStores(){let term=q.value.trim().toLowerCase();let c=citySelect.value;return stores.filter(s=>(!c||s.city===c)&&(!term||[s.name,s.address,s.city,s.districtName,s.district].join(' ').toLowerCase().includes(term)))}
-function refreshMarkers(){markerLayer.clearLayers();filteredStores().forEach(s=>{let m=markers.get(s.idx);if(m)m.addTo(markerLayer)})}
+function popupHtml(s){return '<div style="min-width:220px"><b style="font-size:16px">'+esc(s.name)+'</b><div style="margin-top:5px">'+esc(s.address)+'</div><div>區域：'+esc(s.districtName)+'</div><div>商圈：'+esc(s.district)+'</div><div>預估月租：'+esc(s.rent)+' 萬元</div><small>'+esc(s.basis)+'</small></div>'}
+function visibleStores(){let term=q.value.trim().toLowerCase(),c=citySelect.value;return stores.filter(s=>(!c||s.city===c)&&(!term||[s.name,s.address,s.city,s.districtName,s.district].join(' ').toLowerCase().includes(term)))}
+function isVisible(s){return visibleStores().some(x=>x.idx===s.idx)}
+function addMarker(s,p){
+  if(markers.has(s.idx)||!p)return;
+  const marker=new google.maps.Marker({position:p,map:isVisible(s)?map:null,title:s.name});
+  marker.addListener('click',()=>{infoWindow.setContent(popupHtml(s));infoWindow.open({map,anchor:marker})});
+  markers.set(s.idx,marker);
+}
+function refreshMarkers(){
+  const set=new Set(visibleStores().map(s=>s.idx));
+  markers.forEach((m,i)=>m.setMap(set.has(i)?map:null));
+  updateStatus();
+}
 function updateStatus(){statusEl.textContent='已定位 '+markers.size+' / '+stores.length+' 間門市';}
-updateStatus();refreshMarkers();
+function saveCache(){try{localStorage.setItem('comebuy_google_geocodes_v1',JSON.stringify(cache))}catch(e){}}
 
-citySelect.onchange=()=>{let c=citySelect.value;if(c&&CITY_CENTERS[c]){let [lat,lon,z]=CITY_CENTERS[c];map.flyTo([lat,lon],z,{duration:.6})}else map.flyTo([23.72,120.96],7,{duration:.6});refreshMarkers()};
+window.initMap=function(){
+  map=new google.maps.Map(document.getElementById('map'),{
+    center:{lat:23.72,lng:120.96},
+    zoom:7,
+    mapTypeControl:true,
+    streetViewControl:true,
+    fullscreenControl:false,
+    gestureHandling:'greedy',
+    clickableIcons:true
+  });
+  geocoder=new google.maps.Geocoder();
+  infoWindow=new google.maps.InfoWindow();
+
+  for(const [addr,p] of Object.entries(cache)){
+    const s=stores.find(x=>x.address===addr);
+    if(s&&p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng))addMarker(s,p);
+  }
+  refreshMarkers();
+  updateStatus();
+  setTimeout(()=>geocodeAll(),500);
+};
+
+async function geocodeOne(s){
+  if(markers.has(s.idx))return true;
+  return new Promise(resolve=>{
+    geocoder.geocode({address:s.address,region:'TW',componentRestrictions:{country:'TW'}},(results,status)=>{
+      if(status==='OK'&&results&&results[0]){
+        const loc=results[0].geometry.location;
+        const p={lat:loc.lat(),lng:loc.lng()};
+        cache[s.address]=p;saveCache();addMarker(s,p);updateStatus();resolve(true);
+      }else if(status==='OVER_QUERY_LIMIT'){resolve('retry')}
+      else resolve(false);
+    })
+  })
+}
+let running=false;
+async function geocodeAll(){
+  if(running)return;running=true;
+  for(const s of stores){
+    if(markers.has(s.idx))continue;
+    let r=await geocodeOne(s);
+    if(r==='retry'){await new Promise(res=>setTimeout(res,1400));r=await geocodeOne(s)}
+    await new Promise(res=>setTimeout(res,280));
+  }
+  running=false;updateStatus();
+}
+
+citySelect.onchange=()=>{
+  const c=citySelect.value;
+  if(c&&CITY_CENTERS[c]){
+    const [lat,lng,z]=CITY_CENTERS[c];map.panTo({lat,lng});map.setZoom(z);
+  }else{map.panTo({lat:23.72,lng:120.96});map.setZoom(7)}
+  refreshMarkers()
+};
 q.oninput=refreshMarkers;
 
-async function geocodeStore(s,priority=false){if(markers.has(s.idx))return true;
- const address=s.address.replace(/^COMEBUY\s*/,'').replaceAll('台','臺');
- try{
-  const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=tw&addressdetails=0&q='+encodeURIComponent(address);
-  const r=await fetch(url,{headers:{'Accept-Language':'zh-TW'}});
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  const a=await r.json();
-  if(a.length){const p={lat:+a[0].lat,lon:+a[0].lon};if(p.lat>21.5&&p.lat<26.5&&p.lon>118&&p.lon<123){cache[s.address]=p;try{localStorage.setItem('comebuy_geocodes_v3',JSON.stringify(cache))}catch(e){}addMarker(s,p);refreshMarkers();updateStatus();return true}}
- }catch(e){}
- return false
-}
-let geocodeBusy=false;
-async function geocodeAll(){if(geocodeBusy)return;geocodeBusy=true;for(const s of stores){if(markers.has(s.idx))continue;await geocodeStore(s);await new Promise(r=>setTimeout(r,1100))}geocodeBusy=false;updateStatus()}
-setTimeout(geocodeAll,800);
-
 const drawer=document.querySelector('#drawer'),drawerBody=document.querySelector('#drawerBody'),drawerTitle=document.querySelector('#drawerTitle'),backBtn=document.querySelector('#backBtn');
-let nav={level:'cities',city:null,district:null};
 document.querySelector('#openList').onclick=()=>{drawer.classList.add('open');showCities()};
 document.querySelector('#closeBtn').onclick=()=>drawer.classList.remove('open');
-backBtn.onclick=()=>{if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
-
-function row(title,sub,count,onClick){let b=document.createElement('button');b.className='row';b.innerHTML='<div class="rowmain"><div class="rowtitle">'+esc(title)+'</div><div class="rowsub">'+esc(sub||'')+'</div></div><div class="countbadge">'+count+'</div><div class="chev">›</div>';b.onclick=onClick;return b}
-function showCities(){nav={level:'cities',city:null,district:null};drawerTitle.textContent='城市';backBtn.style.visibility='hidden';drawerBody.innerHTML='';CITY_ORDER.forEach(c=>drawerBody.appendChild(row(c,counts[c]?'查看區域與門市':'目前 0 間門市',counts[c],()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));showDistricts(c)})))}
-function showDistricts(c){nav={level:'districts',city:c,district:null};drawerTitle.textContent=c;backBtn.style.visibility='visible';drawerBody.innerHTML='';let ds=[...new Set(stores.filter(s=>s.city===c).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#746d69;text-align:center">目前沒有 COMEBUY 門市</div>';return}ds.forEach(d=>{let n=stores.filter(s=>s.city===c&&s.districtName===d).length;drawerBody.appendChild(row(d,'查看分店',n,()=>showStores(c,d)))})}
-function showStores(c,d){nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';stores.filter(s=>s.city===c&&s.districtName===d).forEach(s=>drawerBody.appendChild(row(s.name,s.address,'',()=>showStoreInfo(s))))}
-function showStoreInfo(s){nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';drawerBody.innerHTML='<div class="storecard"><h2>'+esc(s.name)+'</h2><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+esc(s.basis)+'</div><div class="storeactions"><button class="primary" id="locateStore">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.address+' '+s.name)+'">Google 地圖</a></div></div>';document.querySelector('#locateStore').onclick=async()=>{let ok=markers.has(s.idx)||await geocodeStore(s,true);if(ok){let m=markers.get(s.idx);map.flyTo(m.getLatLng(),17,{duration:.7});setTimeout(()=>m.openPopup(),750);drawer.classList.remove('open')}else{statusEl.textContent='此地址暫時無法自動定位，請使用 Google 地圖核對'}}}
+backBtn.onclick=()=>{if(nav.level==='store')showStores(nav.city,nav.district);else if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
+let nav={level:'cities',city:null,district:null};
+function menuRow(title,sub,count,onClick){
+  const b=document.createElement('button');b.className='menurow';
+  b.innerHTML='<div class="rowmain"><div class="rowtitle">'+esc(title)+'</div><div class="rowsub">'+esc(sub||'')+'</div></div><div class="count">'+count+'</div><div class="chev">›</div>';
+  b.onclick=onClick;return b
+}
+function showCities(){
+  nav={level:'cities',city:null,district:null};drawerTitle.textContent='城市';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
+  CITY_ORDER.forEach(c=>drawerBody.appendChild(menuRow(c,counts[c]?'查看區域與門市':'目前 0 間門市',counts[c],()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));showDistricts(c)})))
+}
+function showDistricts(c){
+  nav={level:'districts',city:c,district:null};drawerTitle.textContent=c;backBtn.style.visibility='visible';drawerBody.innerHTML='';
+  const ds=[...new Set(stores.filter(s=>s.city===c).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#766e69;text-align:center">目前沒有 COMEBUY 門市</div>';return}
+  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>showStores(c,d)))})
+}
+function showStores(c,d){
+  nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
+  stores.filter(s=>s.city===c&&s.districtName===d).forEach(s=>drawerBody.appendChild(menuRow(s.name,s.address,'',()=>showStore(s))))
+}
+function showStore(s){
+  nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';
+  drawerBody.innerHTML='<div class="storecard"><h2>'+esc(s.name)+'</h2><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+esc(s.basis)+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.address+' '+s.name)+'">Google 地圖</a></div></div>';
+  document.querySelector('#locate').onclick=async()=>{
+    if(!markers.has(s.idx))await geocodeOne(s);
+    const m=markers.get(s.idx);if(m){map.panTo(m.getPosition());map.setZoom(17);infoWindow.setContent(popupHtml(s));infoWindow.open({map,anchor:m});drawer.classList.remove('open')}
+  }
+}
 showCities();
-</script></body></html>
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&language=zh-TW&region=TW"></script>
+</body>
+</html>
