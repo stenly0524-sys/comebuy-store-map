@@ -412,7 +412,7 @@ function showVacancies(){
  const filteredVacancies=vacancies.filter(v=>(!vacancyFilterCity||v.region?.city===vacancyFilterCity)&&(!vacancyFilterDistrict||v.region?.district===vacancyFilterDistrict));
  const resultCount=document.createElement('div');resultCount.className='vacancy-note';resultCount.textContent='符合區域：'+filteredVacancies.length+' 筆／總計 '+vacancies.length+' 筆';drawerBody.appendChild(resultCount);
  if(!vacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent='尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
- vacancies.forEach(v=>{
+ filteredVacancies.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';
   const rented=v.status==='rented';
   const regionText=[v.region?.city,v.region?.district,v.region?.neighborhood].filter(Boolean).join(' · ')||'區域待定位';
