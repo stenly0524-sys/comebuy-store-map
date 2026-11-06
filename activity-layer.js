@@ -23,23 +23,35 @@ class ActivityOverlay extends google.maps.OverlayView{
  onRemove(){this.canvas?.remove();this.canvas=null}
 }
 const categoryWeights={restaurant:3,cafe:3,fast_food:3,bar:2,bank:2,pharmacy:2,supermarket:4,convenience:3,department_store:5,mall:5,marketplace:4,school:3,university:4,hospital:3,clinic:2,cinema:3,bus_station:4,station:5};
+const endpoints=['https://overpass.kumi.systems/api/interpreter','https://overpass.nchc.org.tw/api/interpreter','https://overpass-api.de/api/interpreter'];
+const cache=new Map();
+async function queryEndpoint(endpoint,query){
+ const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),9000);
+ try{
+  const response=await fetch(endpoint,{method:'POST',body:'data='+encodeURIComponent(query),headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},signal:ctrl.signal});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const data=await response.json();
+  if(!Array.isArray(data.elements))throw Error('資料格式不符');
+  return data.elements;
+ }finally{clearTimeout(timer)}
+}
 async function load(){
  const center=map?.getCenter();
  if(!center){message('地圖尚未載入');return}
- const lat=center.lat(),lng=center.lng();
- const query='[out:json][timeout:20];(nwr(around:1200,'+lat+','+lng+')[amenity~"^(restaurant|cafe|fast_food|bar|bank|pharmacy|school|university|hospital|clinic|cinema|bus_station)$"];nwr(around:1200,'+lat+','+lng+')[shop~"^(supermarket|convenience|department_store|mall)$"];nwr(around:1200,'+lat+','+lng+')[railway=station];);out center 350;';
- const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),25000);
- try{
-  message('正在查詢 OpenStreetMap 公開商業設施資料…');
-  const response=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(query),headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},signal:ctrl.signal});
-  if(!response.ok)throw Error('公開資料服務暫時無法使用 ('+response.status+')');
-  const data=await response.json();if(!Array.isArray(data.elements))throw Error('資料格式不正確');
-  const items=data.elements.map(e=>{const lat=e.lat??e.center?.lat,lng=e.lon??e.center?.lon;const tag=e.tags||{};const category=tag.amenity||tag.shop||tag.railway;return {lat,lng,category,score:Math.min(100,25+(categoryWeights[category]||1)*13)}}).filter(valid);
-  const dedup=new Map();for(const p of items){const key=p.lat.toFixed(5)+','+p.lng.toFixed(5);if(!dedup.has(key))dedup.set(key,p)}
-  points=[...dedup.values()];meta={source:'OpenStreetMap / Overpass',updated_at:new Date().toLocaleDateString('zh-TW'),methodology:'設施種類加權的活躍度代理指標，不代表實測人流'};
-  if(!points.length)message('此範圍尚無可用的公開商業設施資料，請移動地圖再試');
- }catch(e){points=[];message('資料載入失敗：'+(e.name==='AbortError'?'查詢逾時，請稍後再試':e.message));}
- finally{clearTimeout(timer)}
+ if(map.getZoom()<12){message('請先放大至街道或商圈範圍（地圖縮放至少 12 級），再點擊商圈活躍度');points=[];return}
+ const lat=center.lat(),lng=center.lng(),key=lat.toFixed(2)+','+lng.toFixed(2);
+ if(cache.has(key)){points=cache.get(key);meta={source:'OpenStreetMap / Overpass（暫存）',updated_at:'本次瀏覽'};return}
+ const query='[out:json][timeout:12];(node(around:650,'+lat+','+lng+')[amenity~"^(restaurant|cafe|fast_food|bar|bank|pharmacy|school|university|hospital|clinic|cinema|bus_station)$"];node(around:650,'+lat+','+lng+')[shop~"^(supermarket|convenience|department_store|mall)$"];way(around:650,'+lat+','+lng+')[shop~"^(supermarket|department_store|mall)$"];node(around:650,'+lat+','+lng+')[railway=station];);out center 180;';
+ let elements=null;
+ for(let i=0;i<endpoints.length;i++){
+  try{message('正在查詢公開商業設施資料（來源 '+(i+1)+'/'+endpoints.length+'）…');elements=await queryEndpoint(endpoints[i],query);break}
+  catch(e){if(i===endpoints.length-1){message('公開資料服務目前繁忙，三個來源均未成功；請稍後重試');points=[];return}}
+ }
+ const items=elements.map(e=>{const lat=e.lat??e.center?.lat,lng=e.lon??e.center?.lon,tag=e.tags||{},category=tag.amenity||tag.shop||tag.railway;return {lat,lng,category,score:Math.min(100,25+(categoryWeights[category]||1)*13)}}).filter(valid);
+ const dedup=new Map();for(const p of items){const key=p.lat.toFixed(5)+','+p.lng.toFixed(5);if(!dedup.has(key))dedup.set(key,p)}
+ points=[...dedup.values()];meta={source:'OpenStreetMap / Overpass',updated_at:new Date().toLocaleDateString('zh-TW'),methodology:'公開設施種類加權，非實測人流'};
+ if(points.length)cache.set(key,points);
+ else message('此範圍未取得公開商業設施，請移至其他商圈再試');
 }
 async function toggle(){
  message(enabled?'正在關閉商圈圖層…':'正在檢查商圈活躍度資料…');
