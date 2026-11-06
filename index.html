@@ -104,7 +104,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 /* Brand filter: white by default, selected brand uses COMEBUY red. */
 .brand-filter button,.brand-filter button[data-brand="COMEBUY TEA"]{background:#fff!important;color:#292321!important;border:1px solid #e2dcd6!important}
 .brand-filter button.active,.brand-filter button[data-brand="COMEBUY TEA"].active{background:#d71920!important;color:#fff!important;border-color:#d71920!important}
-.vacancy-area-editor{display:flex;flex-direction:column;gap:5px;margin:9px 4px}.vacancy-area-editor label{font-size:12px;font-weight:800}.vacancy-area-editor select{width:100%;height:40px;border:1px solid #ddd4ce;border-radius:9px;background:white;padding:5px}.vacancy-item-actions{display:flex!important;flex-wrap:nowrap!important;gap:6px}.vacancy-item-actions button{min-width:0!important;flex:1 1 0!important;white-space:nowrap;font-size:12px!important;padding:9px 2px!important}.vacancy-area-field{border:0;margin:3px 0;padding:0;min-width:0}.vacancy-area-field legend{font-size:13px;font-weight:800;margin-bottom:8px}.vacancy-area-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.vacancy-area-options label{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e3dbd6;border-radius:9px;padding:9px 7px;font-size:12px;font-weight:700;cursor:pointer}.vacancy-area-options input{width:16px!important;height:16px!important;accent-color:#d71920;flex:none}.vacancy-area-options label:has(input:checked){border-color:#d71920;background:#fff4f4;color:#b5121a}</style>
+.vacancy-area-editor{display:flex;flex-direction:column;gap:5px;margin:9px 4px}.vacancy-area-editor label{font-size:12px;font-weight:800}.vacancy-area-editor select{width:100%;height:40px;border:1px solid #ddd4ce;border-radius:9px;background:white;padding:5px}.vacancy-item-actions{display:flex!important;flex-wrap:nowrap!important;gap:6px}.vacancy-item-actions button{min-width:0!important;flex:1 1 0!important;white-space:nowrap;font-size:12px!important;padding:9px 2px!important}.vacancy-area-field{border:0;margin:3px 0;padding:0;min-width:0}.vacancy-area-field legend{font-size:13px;font-weight:800;margin-bottom:8px}.vacancy-area-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.vacancy-area-options label{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e3dbd6;border-radius:9px;padding:9px 7px;font-size:12px;font-weight:700;cursor:pointer}.vacancy-area-options input{width:16px!important;height:16px!important;accent-color:#d71920;flex:none}.vacancy-area-options label:has(input:checked){border-color:#d71920;background:#fff4f4;color:#b5121a}.vacancy-region-filter{padding:12px 4px 8px;margin-top:12px;border-top:1px solid #e8e0da}.vacancy-region-title{font-size:14px;font-weight:900;margin-bottom:8px}.vacancy-region-selects{display:grid;grid-template-columns:1fr 1fr;gap:8px}.vacancy-region-selects select{min-width:0;width:100%;height:42px;border:1px solid #ded7d2;border-radius:10px;background:white;padding:0 7px;font-size:13px}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -343,7 +343,7 @@ function refreshVacancyMarkers(){
  if(!map)return;
  const ids=new Set(vacancies.map(v=>v.id));
  vacancyMarkers.forEach((m,id)=>{if(!ids.has(id)){m.setMap(null);vacancyMarkers.delete(id)}});
- vacancies.forEach(v=>{
+ filteredVacancies.forEach(v=>{
   if(!v.position||!Number.isFinite(+v.position.lat)||!Number.isFinite(+v.position.lng))return;
   let m=vacancyMarkers.get(v.id);
   if(!m){
@@ -381,6 +381,7 @@ async function locateVacancy(v){
  if(!vacancyVisible){vacancyVisible=true;refreshVacancyMarkers()}
  const m=vacancyMarkers.get(v.id);if(m){infoWindow.setContent('<div><b>🏠 '+(v.status==='rented'?'已租':'空舖')+'</b><p>'+esc(v.address)+'</p><p>月租：'+(v.rent===undefined?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW'))+'</p><p>'+esc([v.region?.city,v.region?.district].filter(Boolean).join(' · ')||'區域待定位')+'</p></div>');infoWindow.open({map,anchor:m})}
 }
+let vacancyFilterCity='',vacancyFilterDistrict='';
 function showVacancies(){
  nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const visibilityWrap=document.createElement('div');visibilityWrap.className='vacancy-visibility';visibilityWrap.innerHTML='<button type="button" id="vacancyVisibility" aria-pressed="'+String(vacancyVisible)+'">'+(vacancyVisible?'🏠 隱藏空舖標記':'🏠 顯示空舖標記')+'</button>';drawerBody.appendChild(visibilityWrap);vacancyVisibility=visibilityWrap.querySelector('button');vacancyVisibility.onclick=()=>{vacancyVisible=!vacancyVisible;refreshVacancyMarkers()};
@@ -398,6 +399,18 @@ function showVacancies(){
   refreshVacancyMarkers();showVacancies();
  };
  drawerBody.appendChild(form);
+ const cities=[...new Set(vacancies.map(v=>v.region?.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ if(vacancyFilterCity&&!cities.includes(vacancyFilterCity)){vacancyFilterCity='';vacancyFilterDistrict=''}
+ const districts=[...new Set(vacancies.filter(v=>!vacancyFilterCity||v.region?.city===vacancyFilterCity).map(v=>v.region?.district).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ if(vacancyFilterDistrict&&!districts.includes(vacancyFilterDistrict))vacancyFilterDistrict='';
+ const filter=document.createElement('div');filter.className='vacancy-region-filter';
+ filter.innerHTML='<div class="vacancy-region-title">建檔清單｜區域篩選</div><div class="vacancy-region-selects"><select aria-label="縣市篩選"><option value="">全部縣市</option>'+cities.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select><select aria-label="行政區篩選"><option value="">全部行政區</option>'+districts.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
+ drawerBody.appendChild(filter);
+ const [citySelect,districtSelect]=filter.querySelectorAll('select');citySelect.value=vacancyFilterCity;districtSelect.value=vacancyFilterDistrict;
+ citySelect.onchange=()=>{vacancyFilterCity=citySelect.value;vacancyFilterDistrict='';showVacancies()};
+ districtSelect.onchange=()=>{vacancyFilterDistrict=districtSelect.value;showVacancies()};
+ const filteredVacancies=vacancies.filter(v=>(!vacancyFilterCity||v.region?.city===vacancyFilterCity)&&(!vacancyFilterDistrict||v.region?.district===vacancyFilterDistrict));
+ const resultCount=document.createElement('div');resultCount.className='vacancy-note';resultCount.textContent='符合區域：'+filteredVacancies.length+' 筆／總計 '+vacancies.length+' 筆';drawerBody.appendChild(resultCount);
  if(!vacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent='尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
  vacancies.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';
