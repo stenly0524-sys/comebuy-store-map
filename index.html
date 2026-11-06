@@ -129,7 +129,13 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
  overflow-y:auto;
  padding-bottom:10px;
 }
-.vacancy-tabs{flex-wrap:wrap}.vacancy-tabs button{min-width:calc(33.333% - 7px);font-size:13px;padding:11px 5px}.vacancy-item-actions button:disabled{background:#e5e5e5!important;color:#8d8d8d!important;border-color:#d6d6d6!important;opacity:.75;cursor:not-allowed}</style>
+.vacancy-tabs{flex-wrap:wrap}.vacancy-tabs button{min-width:calc(33.333% - 7px);font-size:13px;padding:11px 5px}.vacancy-item-actions button:disabled{background:#e5e5e5!important;color:#8d8d8d!important;border-color:#d6d6d6!important;opacity:.75;cursor:not-allowed}
+/* Soft brand-red filters distinguish controls from vacancy records. */
+.vacancy-region-filter{background:#fff1f2;border:1px solid #f4cdd1;border-bottom:0;border-radius:12px 12px 0 0;padding:12px 10px 5px;margin-top:12px}
+.vacancy-stage-filter{background:#fff1f2;border:1px solid #f4cdd1;border-top:0;border-radius:0 0 12px 12px;padding:5px 10px 12px;margin:0 0 12px}
+.vacancy-region-selects select,.vacancy-stage-filter select{background:#ffe3e6!important;border:1px solid #e8aeb5!important;color:#8e202a!important;font-weight:750}
+.vacancy-region-selects select:focus,.vacancy-stage-filter select:focus{outline:2px solid #d71920;outline-offset:1px}
+</style>
 </head>
 <body>
 <div id="map"></div>
@@ -489,7 +495,7 @@ function showVacancies(){
  const districts=[...new Set(visibleVacancies.filter(v=>!vacancyFilterCity||v.region?.city===vacancyFilterCity).map(v=>v.region?.district).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
  if(vacancyFilterDistrict&&!districts.includes(vacancyFilterDistrict))vacancyFilterDistrict='';
  const filter=document.createElement('div');filter.className='vacancy-region-filter';
- filter.innerHTML='<div class="vacancy-region-title">'+(isArchive?'封存店鋪':'建檔清單')+'｜區域篩選</div><div class="vacancy-region-selects"><select aria-label="縣市篩選"><option value="">全部縣市</option>'+cities.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select><select aria-label="行政區篩選"><option value="">全部行政區</option>'+districts.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
+ filter.innerHTML='<div class="vacancy-region-selects"><select aria-label="縣市篩選"><option value="">全部縣市</option>'+cities.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select><select aria-label="行政區篩選"><option value="">全部行政區</option>'+districts.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
  drawerBody.appendChild(filter);
  const [citySelect,districtSelect]=filter.querySelectorAll('select');citySelect.value=vacancyFilterCity;districtSelect.value=vacancyFilterDistrict;
  citySelect.onchange=()=>{vacancyFilterCity=citySelect.value;vacancyFilterDistrict='';showVacancies()};
