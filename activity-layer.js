@@ -38,7 +38,7 @@ async function queryEndpoint(endpoint,query){
 async function load(){
  const center=map?.getCenter();
  if(!center){message('地圖尚未載入');return}
- if(map.getZoom()<12){message('請先放大至街道或商圈範圍（地圖縮放至少 12 級），再點擊商圈活躍度');points=[];return}
+ if(map.getZoom()<14){message('正在自動放大至商圈分析範圍…');map.setZoom(15);await new Promise(resolve=>google.maps.event.addListenerOnce(map,'idle',resolve));}
  const lat=center.lat(),lng=center.lng(),key=lat.toFixed(2)+','+lng.toFixed(2);
  if(cache.has(key)){points=cache.get(key);meta={source:'OpenStreetMap / Overpass（暫存）',updated_at:'本次瀏覽'};return}
  const query='[out:json][timeout:12];(node(around:650,'+lat+','+lng+')[amenity~"^(restaurant|cafe|fast_food|bar|bank|pharmacy|school|university|hospital|clinic|cinema|bus_station)$"];node(around:650,'+lat+','+lng+')[shop~"^(supermarket|convenience|department_store|mall)$"];way(around:650,'+lat+','+lng+')[shop~"^(supermarket|department_store|mall)$"];node(around:650,'+lat+','+lng+')[railway=station];);out center 180;';
