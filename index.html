@@ -42,6 +42,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .actions button,.actions a{flex:1;text-align:center;text-decoration:none;border-radius:13px;padding:11px;font-weight:900;font-size:13px}
 .primary{background:var(--red);color:#fff;border:0}.secondary{background:#fff;color:var(--ink);border:1px solid #ddd4ce}
 .protection-controls{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.protection-controls label{font-size:12px;font-weight:800}.protection-controls select{flex:1;min-width:110px;height:38px;border:1px solid #ded7d2;border-radius:10px;background:white;padding:0 7px;font-size:12px}.protection-controls button{background:#d71920;color:#fff;border:0;border-radius:10px;padding:10px;font-size:12px;font-weight:800}.protection-hint{font-size:11px;color:#766e69;margin-top:7px}
+.vacancy-top-btn{background:#514b48}.vacancy-visibility{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}.vacancy-visibility button{border:1px solid #ddd4ce;background:#fff;color:#332e2b;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:800}.vacancy-visibility span{font-size:11px;color:#766e69}.vacancy-form{display:flex;flex-direction:column;gap:9px;padding:13px;background:#f8f6f4;border:1px solid #e8e0da;border-radius:16px;margin:5px 2px 12px}.vacancy-form label{font-size:13px;font-weight:800}.vacancy-form input{width:100%;height:43px;border:1px solid #ded7d2;border-radius:11px;padding:0 12px;font-size:15px;background:white}.vacancy-form button{border:0;background:#d71920;color:white;border-radius:11px;padding:11px;font-weight:900}.vacancy-form button:disabled{opacity:.55}.vacancy-note{font-size:11px;color:#766e69;line-height:1.5}.vacancy-item{border-bottom:1px solid #e9e1dc;padding:12px 5px}.vacancy-item-head{display:flex;align-items:center;gap:8px}.vacancy-house{font-size:20px}.vacancy-item-address{font-size:14px;font-weight:800;flex:1;overflow-wrap:anywhere}.vacancy-status{font-size:12px;border-radius:99px;padding:5px 8px;font-weight:900}.vacancy-item-actions{display:flex;gap:6px;margin-top:10px}.vacancy-item-actions button{flex:1;border-radius:10px;border:1px solid #ded7d2;background:white;padding:9px 4px;font-size:12px;font-weight:800}.vacancy-item-actions .danger{color:#b5121a}.vacancy-error{color:#b5121a;font-size:12px}
 @media(min-width:760px){.top{max-width:660px;left:18px}.drawer{width:430px;right:auto;left:18px}}
 </style>
 </head>
@@ -57,14 +58,14 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
         <div class="sub"><span id="total">0</span> 間門市 · Google Maps</div>
         <div class="brandline"></div>
       </div>
-      <button class="btn" id="openList">清單</button>
+      <button class="btn vacancy-top-btn" id="openVacancies">空舖</button><button class="btn" id="openList">清單</button>
     </div>
     <div class="tools">
       <input id="q" placeholder="搜尋門市、地址或區域">
       <select id="citySelect"></select>
     </div>
 
-    <div class="protection-controls"><label for="protectionDiameter">保障直徑</label><select id="protectionDiameter"><option value="500">500 公尺</option><option value="1000" selected>1,000 公尺</option><option value="1500">1,500 公尺</option><option value="2000">2,000 公尺</option><option value="3000">3,000 公尺</option></select><button id="protectionToggle" type="button" aria-pressed="false">顯示保障圈</button></div><div class="protection-hint" id="protectionHint">以門市為中心，直徑 1,000 公尺（半徑 500 公尺）</div>
+    <div class="protection-controls"><label for="protectionDiameter">保障直徑</label><select id="protectionDiameter"><option value="500">500 公尺</option><option value="1000" selected>1,000 公尺</option><option value="1500">1,500 公尺</option><option value="2000">2,000 公尺</option><option value="3000">3,000 公尺</option></select><button id="protectionToggle" type="button" aria-pressed="false">顯示保障圈</button></div><div class="vacancy-visibility"><button id="vacancyVisibility" type="button" aria-pressed="true">🏠 隱藏空舖標記</button><span id="vacancyLegend">灰色＝空舖｜黃色＝已租</span></div><div class="protection-hint" id="protectionHint">以門市為中心，直徑 1,000 公尺（半徑 500 公尺）</div>
   </div>
   <div class="status"><span class="dot"></span><span id="status">正在載入 Google Maps…</span></div>
 
@@ -191,6 +192,7 @@ window.initMap=function(){
     if(s&&p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng))addMarker(s,p);
   }
   refreshMarkers();
+  refreshVacancyMarkers();
   updateStatus();
   setTimeout(()=>geocodeAll(),500);
 };
@@ -232,7 +234,7 @@ q.oninput=refreshMarkers;
 const drawer=document.querySelector('#drawer'),drawerBody=document.querySelector('#drawerBody'),drawerTitle=document.querySelector('#drawerTitle'),backBtn=document.querySelector('#backBtn');
 document.querySelector('#openList').onclick=()=>{drawer.classList.add('open');showCities()};
 document.querySelector('#closeBtn').onclick=()=>drawer.classList.remove('open');
-backBtn.onclick=()=>{if(nav.level==='store')showStores(nav.city,nav.district);else if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
+backBtn.onclick=()=>{if(nav.level==='vacancies'){showVacancies();return}if(nav.level==='store')showStores(nav.city,nav.district);else if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
 let nav={level:'cities',city:null,district:null};
 function menuRow(title,sub,count,onClick){
   const b=document.createElement('button');b.className='menurow';
@@ -261,6 +263,84 @@ function showStore(s){
     const m=markers.get(s.idx);if(m){map.panTo(m.getPosition());map.setZoom(17);infoWindow.setContent(popupHtml(s));infoWindow.open({map,anchor:m});drawer.classList.remove('open')}
   }
 }
+
+const VACANCY_KEY='comebuy_vacancies_v1';
+let vacancies=[];try{const saved=JSON.parse(localStorage.getItem(VACANCY_KEY)||'[]');if(Array.isArray(saved))vacancies=saved.filter(v=>v&&typeof v.address==='string'&&typeof v.id==='string')}catch(e){}
+const vacancyMarkers=new Map();
+let vacancyVisible=true;
+const vacancyVisibility=document.getElementById('vacancyVisibility');
+function saveVacancies(){try{localStorage.setItem(VACANCY_KEY,JSON.stringify(vacancies));return true}catch(e){alert('本機儲存失敗，請檢查 Safari 儲存空間或隱私模式');return false}}
+function vacancyIcon(status){
+ const color=status==='rented'?'#e9b52b':'#8b9099';
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="46" height="52" viewBox="0 0 46 52"><path d="M23 1 44 17v24a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V17Z" fill="'+color+'" stroke="#fff" stroke-width="3"/><path d="M15 45V29h16v16M10 22l13-11 13 11" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M23 51 18 44h10Z" fill="'+color+'"/></svg>';
+ return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(38,43),anchor:new google.maps.Point(19,43)};
+}
+function refreshVacancyMarkers(){
+ if(!map)return;
+ const ids=new Set(vacancies.map(v=>v.id));
+ vacancyMarkers.forEach((m,id)=>{if(!ids.has(id)){m.setMap(null);vacancyMarkers.delete(id)}});
+ vacancies.forEach(v=>{
+  if(!v.position||!Number.isFinite(+v.position.lat)||!Number.isFinite(+v.position.lng))return;
+  let m=vacancyMarkers.get(v.id);
+  if(!m){
+   m=new google.maps.Marker({position:v.position,map:vacancyVisible?map:null,title:v.address,icon:vacancyIcon(v.status),zIndex:200});
+   m.addListener('click',()=>{const item=vacancies.find(x=>x.id===v.id);if(!item)return;infoWindow.setContent('<div style="min-width:170px"><b>🏠 '+(item.status==='rented'?'已租':'空舖')+'</b><p>'+esc(item.address)+'</p></div>');infoWindow.open({map,anchor:m})});
+   vacancyMarkers.set(v.id,m);
+  }
+  m.setIcon(vacancyIcon(v.status));m.setMap(vacancyVisible?map:null);
+ });
+ vacancyVisibility.textContent=vacancyVisible?'🏠 隱藏空舖標記':'🏠 顯示空舖標記';
+ vacancyVisibility.setAttribute('aria-pressed',String(vacancyVisible));
+}
+vacancyVisibility.onclick=()=>{vacancyVisible=!vacancyVisible;refreshVacancyMarkers()};
+function geocodeVacancy(v){
+ return new Promise(resolve=>{
+  if(!geocoder){resolve(false);return}
+  geocoder.geocode({address:v.address,region:'TW',componentRestrictions:{country:'TW'}},(results,status)=>{
+   if(status==='OK'&&results?.[0]){
+    const loc=results[0].geometry.location;
+    v.position={lat:loc.lat(),lng:loc.lng()};
+    saveVacancies();refreshVacancyMarkers();resolve(true);
+   }else resolve(false);
+  });
+ });
+}
+async function locateVacancy(v){
+ if(!v.position){const ok=await geocodeVacancy(v);if(!ok){alert('地址定位失敗，請確認完整地址後再試');return}}
+ map.panTo(v.position);map.setZoom(17);
+ drawer.classList.remove('open');
+ if(!vacancyVisible){vacancyVisible=true;refreshVacancyMarkers()}
+ const m=vacancyMarkers.get(v.id);if(m){infoWindow.setContent('<div><b>🏠 '+(v.status==='rented'?'已租':'空舖')+'</b><p>'+esc(v.address)+'</p></div>');infoWindow.open({map,anchor:m})}
+}
+function showVacancies(){
+ nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
+ const form=document.createElement('form');form.className='vacancy-form';
+ form.innerHTML='<label for="vacancyAddress">新增空舖地址</label><input id="vacancyAddress" name="address" autocomplete="street-address" placeholder="例如：台北市內湖區行善路62號" required maxlength="220"><button type="submit">＋ 新增空舖並定位</button><div class="vacancy-note">灰色＝空舖｜黃色＝已租。紀錄僅儲存在本裝置瀏覽器，尚未雲端同步。</div><div class="vacancy-error" role="status"></div>';
+ form.onsubmit=async e=>{
+  e.preventDefault();const input=form.querySelector('input'),btn=form.querySelector('button'),error=form.querySelector('.vacancy-error');
+  const address=input.value.trim();if(!address)return;
+  if(vacancies.some(v=>v.address.replace(/\s/g,'')===address.replace(/\s/g,''))){error.textContent='此地址已建檔';return}
+  btn.disabled=true;btn.textContent='正在定位地址…';error.textContent='';
+  const v={id:String(Date.now())+'-'+Math.random().toString(36).slice(2,8),address,status:'vacant',position:null};
+  const ok=await geocodeVacancy(v);
+  if(!ok){error.textContent='無法定位此地址，請輸入完整縣市、區域與門牌';btn.disabled=false;btn.textContent='＋ 新增空舖並定位';return}
+  vacancies.unshift(v);if(!saveVacancies()){btn.disabled=false;return}
+  refreshVacancyMarkers();showVacancies();
+ };
+ drawerBody.appendChild(form);
+ if(!vacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent='尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
+ vacancies.forEach(v=>{
+  const item=document.createElement('div');item.className='vacancy-item';
+  const rented=v.status==='rented';
+  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">'+(rented?'改為空舖':'設為已租')+'</button><button type="button" data-act="delete" class="danger">刪除</button></div>';
+  item.querySelector('[data-act="locate"]').onclick=()=>locateVacancy(v);
+  item.querySelector('[data-act="status"]').onclick=()=>{v.status=rented?'vacant':'rented';saveVacancies();refreshVacancyMarkers();showVacancies()};
+  item.querySelector('[data-act="delete"]').onclick=()=>{if(!confirm('確定刪除這筆空舖紀錄？\n'+v.address))return;vacancies=vacancies.filter(x=>x.id!==v.id);saveVacancies();refreshVacancyMarkers();showVacancies()};
+  drawerBody.appendChild(item);
+ });
+}
+document.getElementById('openVacancies').onclick=showVacancies;
+
 showCities();
 </script>
 <script>window.gm_authFailure=function(){const s=document.getElementById('status');if(s)s.textContent='Google Maps 驗證失敗：請檢查 API Key／計費／網站限制';}</script><script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&language=zh-TW&region=TW"></script>
