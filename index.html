@@ -440,10 +440,19 @@ function geocodeVacancy(v){
   });
  });
 }
+let archivedLocateMarker=null;
+function archivedVacancyIcon(){const svg='<svg xmlns="http://www.w3.org/2000/svg" width="46" height="52" viewBox="0 0 46 52"><path d="M23 1 44 17v24a4 4 0 0 1-4 4H6a4 4 0 0 1-4 4V17Z" fill="#1e1e1e" stroke="#fff" stroke-width="3"/><path d="M15 45V29h16v16M10 22l13-11 13 11" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M23 51 18 44h10Z" fill="#1e1e1e"/></svg>';return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(38,43),anchor:new google.maps.Point(19,43)}}
 async function locateVacancy(v){
  if(!v.position){const ok=await geocodeVacancy(v);if(!ok){alert('地址定位失敗，請確認完整地址後再試');return}}
  map.panTo(v.position);map.setZoom(17);
  drawer.classList.remove('open');
+ if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}
+ if(v.archived){
+  archivedLocateMarker=new google.maps.Marker({position:v.position,map,title:v.address,icon:archivedVacancyIcon(),zIndex:300});
+  const content='<div style="min-width:190px"><b>🏠 封存店鋪</b><p>地址：'+esc(v.address)+'</p><p>月租：'+(v.rent===undefined?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW'))+'</p><p>區域：'+esc([v.region?.city,v.region?.district].filter(Boolean).join(' · ')||'區域待定位')+'</p><p>商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</p><p>開發進度：'+esc(v.developmentStage||'待評估')+'</p></div>';
+  archivedLocateMarker.addListener('click',()=>{infoWindow.setContent(content);infoWindow.open({map,anchor:archivedLocateMarker})});
+  infoWindow.setContent(content);infoWindow.open({map,anchor:archivedLocateMarker});return;
+ }
  if(!vacancyVisible){vacancyVisible=true;refreshVacancyMarkers()}
  const m=vacancyMarkers.get(v.id);if(m){infoWindow.setContent('<div><b>🏠 '+(v.status==='rented'?'已租':'空舖')+'</b><p>'+esc(v.address)+'</p><p>月租：'+(v.rent===undefined?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW'))+'</p><p>'+esc([v.region?.city,v.region?.district].filter(Boolean).join(' · ')||'區域待定位')+'</p></div>');infoWindow.open({map,anchor:m})}
 }
