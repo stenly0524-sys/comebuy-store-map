@@ -135,7 +135,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .vacancy-stage-filter{background:#fff1f2;border:1px solid #f4cdd1;border-top:0;border-radius:0 0 12px 12px;padding:5px 10px 12px;margin:0 0 12px}
 .vacancy-region-selects select,.vacancy-stage-filter select{background:#ffe3e6!important;border:1px solid #e8aeb5!important;color:#8e202a!important;font-weight:750}
 .vacancy-region-selects select:focus,.vacancy-stage-filter select:focus{outline:2px solid #d71920;outline-offset:1px}
-</style>
+.archive-confirm-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;background:#0006}.archive-confirm-box{width:min(100%,360px);background:#fff;border-radius:18px;padding:25px 20px 18px;box-shadow:0 14px 45px #0003;text-align:center}.archive-confirm-message{font-size:17px;line-height:1.6;font-weight:800;color:var(--red);margin:0 0 23px}.archive-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.archive-confirm-actions button{padding:12px 8px;border-radius:10px;font-size:15px;font-weight:800}.archive-confirm-cancel{background:#fff;color:var(--red);border:1px solid #e9b3b6}.archive-confirm-accept{background:var(--red);color:#fff;border:1px solid var(--red)}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -458,6 +458,7 @@ function makeEditor(target,record,fields,save,refresh){
  if(save()){refresh()}else Object.assign(record,old)};
  target.appendChild(form);
 }
+function confirmArchiveVacancy(){return new Promise(resolve=>{const overlay=document.createElement('div');overlay.className='archive-confirm-overlay';overlay.innerHTML='<div class="archive-confirm-box" role="dialog" aria-modal="true" aria-labelledby="archiveConfirmMessage"><p class="archive-confirm-message" id="archiveConfirmMessage">將空舖移至「封存店鋪」？</p><div class="archive-confirm-actions"><button type="button" class="archive-confirm-cancel">取消</button><button type="button" class="archive-confirm-accept">確認</button></div></div>';document.body.appendChild(overlay);const cancel=overlay.querySelector('.archive-confirm-cancel'),accept=overlay.querySelector('.archive-confirm-accept');const finish=value=>{document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};const onKey=e=>{if(e.key==='Escape')finish(false)};document.addEventListener('keydown',onKey);cancel.onclick=()=>finish(false);accept.onclick=()=>finish(true);overlay.onclick=e=>{if(e.target===overlay)finish(false)};cancel.focus()})}
 let vacancyPanelMode='';
 let vacancyDetailOpenId=null;
 function showVacancies(){
@@ -544,13 +545,13 @@ function showVacancies(){
   item.querySelector('[data-act="detail"]').onclick=()=>{vacancyDetailOpenId=vacancyDetailOpenId===v.id?null:v.id;showVacancies()};
   item.querySelector('[data-act="locate"]').onclick=()=>locateVacancy(v);
   item.querySelector('[data-act="status"]').onclick=()=>{if(isArchive)return;v.status=rented?'vacant':'rented';saveVacancies();refreshVacancyMarkers();showVacancies()};
-  item.querySelector('[data-act="delete"]').onclick=()=>{
+  item.querySelector('[data-act="delete"]').onclick=async()=>{
    if(isArchive){
     if(!confirm('確定完全刪除這筆封存店鋪？刪除後無法復原。\\n'+v.address))return;
     const original=vacancies;vacancies=vacancies.filter(x=>x.id!==v.id);
     if(!saveVacancies()){vacancies=original;return}
    }else{
-    if(!confirm('將此空舖移至「封存店鋪」？\\n'+v.address))return;
+    if(!await confirmArchiveVacancy())return;
     v.archived=true;v.archivedAt=new Date().toISOString();
     if(!saveVacancies()){delete v.archived;delete v.archivedAt;return}
    }
