@@ -290,7 +290,10 @@ window.initMap=function(){
   window.__comebuyMap=map;
   geocoder=new google.maps.Geocoder();
   infoWindow=new google.maps.InfoWindow();
-  infoWindow.addListener('closeclick',()=>{if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}});
+  // Google Maps uses "close" for both the X button and programmatic dismissal.
+  const clearArchivedLocateMarker=()=>{if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}};
+  infoWindow.addListener('close',clearArchivedLocateMarker);
+  infoWindow.addListener('closeclick',clearArchivedLocateMarker);
   google.maps.event.addListenerOnce(map,'tilesloaded',()=>{statusEl.textContent='Google Maps 已載入 · 已定位 '+markers.size+' / '+stores.length+' 間門市'});
 
   for(const [addr,p] of Object.entries(cache)){
