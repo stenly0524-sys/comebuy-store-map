@@ -481,8 +481,6 @@ function showVacancies(){
   const detail=document.createElement('div');detail.className='vacancy-extra-summary';
   detail.innerHTML='<div>'+esc([v.size&&'坪數 '+v.size+' 坪',v.front&&'面寬 '+v.front+' m',v.floor&&'樓層 '+v.floor].filter(Boolean).join('｜'))+'</div><div>'+esc([v.contact&&'聯絡人 '+v.contact,v.phone&&'電話 '+v.phone].filter(Boolean).join('｜'))+'</div>'+(v.photo?'<img alt="空舖現場照片" src="'+esc(v.photo)+'">':'');
   const detailPanel=document.createElement('div');detailPanel.className='vacancy-detail-panel';detailPanel.hidden=vacancyDetailOpenId!==v.id;item.appendChild(detailPanel);detailPanel.appendChild(detail);
-  const edit=document.createElement('button');edit.type='button';edit.className='small-edit-btn';edit.textContent='編輯空舖資料';detailPanel.appendChild(edit);
-  edit.onclick=()=>makeEditor(item,v,[['address','地址'],['rent','月租金','number'],['size','坪數','number'],['front','面寬（公尺）','number'],['floor','樓層'],['contact','聯絡人'],['phone','聯絡電話']],saveVacancies,()=>{refreshVacancyMarkers();showVacancies()});
   const photoEdit=document.createElement('label');photoEdit.className='small-edit-btn';photoEdit.textContent='更換照片 ';const photoInput=document.createElement('input');photoInput.type='file';photoInput.accept='image/*';photoInput.style.maxWidth='100%';photoEdit.appendChild(photoInput);detailPanel.appendChild(photoEdit);photoInput.onchange=()=>{const file=photoInput.files[0];if(!file)return;if(file.size>2*1024*1024){alert('照片不得超過 2MB');return}const reader=new FileReader();reader.onload=()=>{const old=v.photo;v.photo=reader.result;if(saveVacancies())showVacancies();else v.photo=old};reader.readAsDataURL(file)};
 
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
@@ -497,6 +495,7 @@ function showVacancies(){
    '<label>開發備註<textarea data-field="note" rows="2" maxlength="1500" placeholder="現場勘查、租金洽談、後續待辦事項"></textarea></label>'+
    '<button type="button" data-act="saveProgress">儲存開發紀錄</button><span class="vacancy-progress-feedback" role="status"></span>';
   detailPanel.appendChild(editor);detailPanel.appendChild(progress);
+  if(vacancyDetailOpenId===v.id)makeEditor(detailPanel,v,[['address','地址'],['rent','月租金','number'],['size','坪數','number'],['front','面寬（公尺）','number'],['floor','樓層'],['contact','聯絡人'],['phone','聯絡電話']],saveVacancies,()=>{refreshVacancyMarkers();showVacancies()});
   progress.querySelector('[data-field="stage"]').value=stages.includes(v.developmentStage)?v.developmentStage:'待評估';
   progress.querySelector('[data-field="lead"]').value=franchiseLeads.some(lead=>String(lead.id)===String(v.franchiseLeadId||''))?String(v.franchiseLeadId):'';
   progress.querySelector('[data-field="date"]').value=v.followUpDate||'';
