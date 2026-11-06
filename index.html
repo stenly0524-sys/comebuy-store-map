@@ -100,6 +100,10 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .map-header .status #status{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .map-header .status .dot{flex:0 0 7px}
 @media(orientation:portrait) and (max-width:759px){.map-header{gap:6px}.map-header .map-brand{font-size:clamp(15px,4.1vw,18px)}.map-header .status{font-size:10px;padding:5px 6px}}
+
+/* Brand filter: white by default, selected brand uses COMEBUY red. */
+.brand-filter button,.brand-filter button[data-brand="COMEBUY TEA"]{background:#fff!important;color:#292321!important;border:1px solid #e2dcd6!important}
+.brand-filter button.active,.brand-filter button[data-brand="COMEBUY TEA"].active{background:#d71920!important;color:#fff!important;border-color:#d71920!important}
 </style>
 </head>
 <body>
@@ -112,7 +116,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
       <input id="q" placeholder="搜尋門市、地址或區域">
       <select id="citySelect"></select>
     </div>
-    <div class="brand-filter" aria-label="品牌篩選"><button type="button" data-brand="all" class="active">全部品牌</button><button type="button" data-brand="COMEBUY">● COMEBUY</button><button type="button" data-brand="COMEBUY TEA">◆ COMEBUY TEA</button></div>
+    <div class="brand-filter" aria-label="品牌篩選"><button type="button" data-brand="all">全部品牌</button><button type="button" data-brand="COMEBUY">● COMEBUY</button><button type="button" data-brand="COMEBUY TEA">◆ COMEBUY TEA</button></div>
     <nav class="bottom-nav" aria-label="地圖功能列"><button id="openList" type="button">☷ 清單</button><button id="openVacancies" type="button">⌂ 空舖</button><button id="openProtection" type="button">◉ 保障範圍</button></nav>
   </div>
 </div>
