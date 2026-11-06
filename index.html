@@ -343,7 +343,7 @@ function refreshVacancyMarkers(){
  if(!map)return;
  const ids=new Set(vacancies.map(v=>v.id));
  vacancyMarkers.forEach((m,id)=>{if(!ids.has(id)){m.setMap(null);vacancyMarkers.delete(id)}});
- filteredVacancies.forEach(v=>{
+ vacancies.forEach(v=>{
   if(!v.position||!Number.isFinite(+v.position.lat)||!Number.isFinite(+v.position.lng))return;
   let m=vacancyMarkers.get(v.id);
   if(!m){
