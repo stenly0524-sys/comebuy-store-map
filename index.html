@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="COMEBUY 地圖">
 <title>COMEBUY｜全台展店地圖</title>
 <style>
 :root{--red:#d71920;--red2:#ef3d43;--ink:#211d1d;--paper:#fff;--line:#ebe5e1;--soft:#f8f6f4;--muted:#766e69}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;background:#8ad5e6;color:var(--ink)}
-#map{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;height:100lvh;min-height:var(--map-viewport-height,100vh);background:#8ad5e6}
+#map{position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#8ad5e6}
 .top{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;right:12px;z-index:20;pointer-events:none}
 .card{pointer-events:auto;background:rgba(255,255,255,.97);border:1px solid #eee7e2;border-radius:22px;box-shadow:0 8px 28px #0002;padding:12px}
 .row{display:flex;align-items:center;gap:10px}
@@ -75,19 +75,17 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 
 <script>
 (function(){
-  // iOS standalone Safari can report a shorter CSS viewport than the visible screen.
-  function fitMap(){
-    const h=Math.max(window.innerHeight||0,document.documentElement.clientHeight||0,window.visualViewport?.height||0,screen.height||0);
-    document.documentElement.style.setProperty('--map-viewport-height',h+'px');
+  // Standalone iOS: keep the map aligned with the actual layout viewport.
+  // Avoid screen.height, which is in a different coordinate system on iOS.
+  function fit(){
+    const h=document.documentElement.clientHeight || window.innerHeight;
     const el=document.getElementById('map');
-    if(el)el.style.height=h+'px';
-    if(window.map&&window.google?.maps)google.maps.event.trigger(window.map,'resize');
+    if(el && h>0)el.style.height=h+'px';
   }
-  window.addEventListener('resize',fitMap);
-  window.addEventListener('orientationchange',()=>requestAnimationFrame(fitMap));
-  window.visualViewport?.addEventListener('resize',fitMap);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)fitMap()});
-  fitMap();
+  window.addEventListener('resize',fit);
+  window.addEventListener('orientationchange',fit);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)fit()});
+  fit();
 })();
 </script>
 <script src="stores-1.js"></script>
