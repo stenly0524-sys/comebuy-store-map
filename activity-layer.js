@@ -1,0 +1,53 @@
+/* COMEBUY 商圈活躍度代理指標圖層。僅呈現經授權的指標資料，不代表實測人流。 */
+(function(){
+'use strict';
+let map=null,layer=null,points=[],meta=null,enabled=false,loaded=false;
+const panel=document.createElement('div');
+panel.id='activityPanel';
+panel.innerHTML='<button type="button" id="activityToggle" aria-pressed="false">商圈活躍度</button><div id="activityInfo" role="status">代理指標｜非實測人流</div>';
+panel.style.cssText='position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 184px);z-index:22;display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none';
+document.body.appendChild(panel);
+const button=panel.querySelector('button'),info=panel.querySelector('#activityInfo');
+button.style.cssText='pointer-events:auto;border:0;border-radius:13px;padding:11px 13px;background:#d71920;color:white;font-weight:800;box-shadow:0 3px 12px #0002';
+info.style.cssText='pointer-events:auto;max-width:245px;padding:7px 10px;border-radius:10px;background:#fff;color:#403a38;font-size:11px;box-shadow:0 2px 10px #0002';
+function message(t){info.textContent=t}
+function valid(p){return p&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lng)&&Number.isFinite(+p.score)&&+p.score>=0&&+p.score<=100}
+class ActivityOverlay extends google.maps.OverlayView{
+ constructor(){super();this.canvas=null}
+ onAdd(){this.canvas=document.createElement('canvas');this.canvas.style.cssText='position:absolute;pointer-events:none;opacity:.62';this.getPanes().overlayLayer.appendChild(this.canvas)}
+ draw(){
+  if(!this.canvas)return;
+  const projection=this.getProjection(),bounds=map.getBounds();if(!projection||!bounds)return;
+  const ne=projection.fromLatLngToDivPixel(bounds.getNorthEast()),sw=projection.fromLatLngToDivPixel(bounds.getSouthWest());
+  const left=Math.min(ne.x,sw.x),top=Math.min(ne.y,sw.y),w=Math.max(1,Math.abs(ne.x-sw.x)),h=Math.max(1,Math.abs(ne.y-sw.y));
+  const dpr=Math.min(devicePixelRatio||1,2);this.canvas.style.left=left+'px';this.canvas.style.top=top+'px';this.canvas.style.width=w+'px';this.canvas.style.height=h+'px';
+  this.canvas.width=Math.ceil(w*dpr);this.canvas.height=Math.ceil(h*dpr);
+  const ctx=this.canvas.getContext('2d');ctx.scale(dpr,dpr);
+  for(const p of points){const pixel=projection.fromLatLngToDivPixel(new google.maps.LatLng(+p.lat,+p.lng));if(!pixel)continue;const x=pixel.x-left,y=pixel.y-top;const radius=Math.max(25,Math.min(85,32+ +p.score*.5));const g=ctx.createRadialGradient(x,y,0,x,y,radius);g.addColorStop(0,'rgba(215,25,32,'+(.18+.7*(+p.score/100))+')');g.addColorStop(.35,'rgba(255,150,0,.45)');g.addColorStop(.7,'rgba(255,224,0,.18)');g.addColorStop(1,'rgba(255,224,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill()}
+ }
+ onRemove(){this.canvas?.remove();this.canvas=null}
+}
+async function load(){
+ if(loaded)return;loaded=true;
+ try{
+  const response=await fetch('/activity-data.json',{cache:'no-store'});
+  if(!response.ok)throw Error('資料尚未提供');
+  const data=await response.json();
+  if(data.type!=='commercial_activity_proxy'||!Array.isArray(data.points))throw Error('資料格式不符');
+  const arr=data.points.filter(valid);
+  if(!arr.length)throw Error('尚無有效商圈活躍度資料');
+  points=arr;meta=data;
+ }catch(e){points=[];message('尚無商圈活躍度資料｜非實測人流');}
+}
+async function toggle(){
+ enabled=!enabled;button.setAttribute('aria-pressed',String(enabled));button.style.background=enabled?'#242424':'#d71920';
+ if(!enabled){layer?.setMap(null);message('代理指標｜非實測人流');return}
+ await load();
+ if(!points.length){enabled=false;button.setAttribute('aria-pressed','false');button.style.background='#d71920';return}
+ if(!layer)layer=new ActivityOverlay();
+ layer.setMap(map);
+ message('商圈活躍度代理指標｜非實測人流｜'+(meta.source||'資料來源未註明')+'｜'+(meta.updated_at||'日期未註明'));
+}
+button.addEventListener('click',()=>{if(map)toggle();else message('地圖尚未載入')});
+window.COMEBUY_ACTIVITY={attach(m){map=m},setData(data){if(!data||!Array.isArray(data.points))return;points=data.points.filter(valid);meta=data;loaded=true;if(enabled&&layer)layer.draw()}};
+})();
