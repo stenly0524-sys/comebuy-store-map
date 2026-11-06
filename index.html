@@ -80,17 +80,17 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
   // Standalone iOS: keep the map aligned with the actual layout viewport.
   // Avoid screen.height, which is in a different coordinate system on iOS.
   function fit(){
-    const h=document.documentElement.clientHeight || window.innerHeight;
+    const h=window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
     const el=document.getElementById('map');
-    if(el && h>0)el.style.height=h+'px';
+    if(el && h>0){el.style.height=Math.ceil(h)+'px';if(window.google?.maps && window.__comebuyMap)google.maps.event.trigger(window.__comebuyMap,'resize');}
   }
   window.addEventListener('resize',fit);
+  window.visualViewport?.addEventListener('resize',fit);
   window.addEventListener('orientationchange',fit);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)fit()});
   fit();
 })();
 </script>
-<script src="activity-layer.js?v=1"></script>
 <script src="stores-1.js"></script>
 <script src="stores-2.js"></script>
 <script src="stores-3.js"></script>
@@ -149,7 +149,13 @@ window.initMap=function(){
     gestureHandling:'greedy',
     clickableIcons:true
   });
-  window.COMEBUY_ACTIVITY?.attach(map);
+  // Load activity overlay only after the Google Maps API is available.
+  const activityScript=document.createElement('script');
+  activityScript.src='/activity-layer.js?v=2';
+  activityScript.onload=()=>window.COMEBUY_ACTIVITY?.attach(map);
+  activityScript.onerror=()=>console.warn('Activity layer unavailable');
+  document.body.appendChild(activityScript);
+  window.__comebuyMap=map;
   geocoder=new google.maps.Geocoder();
   infoWindow=new google.maps.InfoWindow();
   google.maps.event.addListenerOnce(map,'tilesloaded',()=>{statusEl.textContent='Google Maps 已載入 · 已定位 '+markers.size+' / '+stores.length+' 間門市'});
