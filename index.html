@@ -176,10 +176,14 @@ let selectedBrand="all";
 document.querySelectorAll(".brand-filter button").forEach(b=>b.onclick=()=>{selectedBrand=b.dataset.brand;document.querySelectorAll(".brand-filter button").forEach(x=>x.classList.toggle("active",x===b));refreshMarkers()});
 function visibleStores(){let term=q.value.trim().toLowerCase(),c=citySelect.value;return stores.filter(s=>(selectedBrand==="all"||(s.brand||"COMEBUY")===selectedBrand)&&(!c||s.city===c)&&(!term||[s.name,s.address,s.city,s.districtName,s.district].join(' ').toLowerCase().includes(term)))}
 function isVisible(s){return visibleStores().some(x=>x.idx===s.idx)}
+function comebuyCupIcon(){
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="48" height="62" viewBox="0 0 48 62"><path d="M24 60 19 51h10Z" fill="#c91922" stroke="white" stroke-width="2"/><path d="M26 5 29 1h5" fill="none" stroke="#c91922" stroke-width="3" stroke-linecap="round"/><path d="M10 14h28l-3 35c-.2 3-3 5-6 5H19c-3 0-5.8-2-6-5Z" fill="#d71920" stroke="white" stroke-width="2.5" stroke-linejoin="round"/><rect x="8" y="11" width="32" height="6" rx="3" fill="#d71920" stroke="white" stroke-width="2"/><path d="M15 22h18" stroke="white" stroke-width="1.4" opacity=".7"/><text x="24" y="34" fill="white" font-family="Arial,sans-serif" font-size="7.1" font-weight="900" text-anchor="middle" letter-spacing="-.3">COMEBUY</text><path d="M18 39h12" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>';
+ return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(38,49),anchor:new google.maps.Point(19,49)};
+}
 function addMarker(s,p){
   if(markers.has(s.idx)||!p)return;
   const tea=s.brand==='COMEBUY TEA';
-  const marker=new google.maps.Marker({position:p,map:isVisible(s)?map:null,title:s.name,icon:tea?{path:'M 0,-13 L 12,0 L 0,13 L -12,0 Z',fillColor:'#087e87',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:2,scale:1.15,anchor:new google.maps.Point(0,0)}:undefined});
+  const marker=new google.maps.Marker({position:p,map:isVisible(s)?map:null,title:s.name,icon:tea?{path:'M 0,-13 L 12,0 L 0,13 L -12,0 Z',fillColor:'#087e87',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:2,scale:1.15,anchor:new google.maps.Point(0,0)}:comebuyCupIcon()});
   marker.addListener('click',()=>{infoWindow.setContent(popupHtml(s));infoWindow.open({map,anchor:marker})});
   markers.set(s.idx,marker);
   syncProtection();
