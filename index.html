@@ -514,6 +514,7 @@ async function locateVacancy(v){
  if(!v.position){const ok=await geocodeVacancy(v);if(!ok){alert('地址定位失敗，請確認完整地址後再試');return}}
  map.panTo(v.position);map.setZoom(17);
  drawer.classList.remove('open');
+ google.maps.event.addListenerOnce(infoWindow,'domready',centerStorePopupInViewport);
  if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}
  if(v.archived){
   const googleMapsUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.address);
