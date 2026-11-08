@@ -583,13 +583,31 @@ async function fillVacancyMapAddress(point){
   const result=await new Promise((resolve,reject)=>geocoder.geocode({location:point,language:'zh-TW'},(items,status)=>status==='OK'&&items&&items.length?resolve(items):reject(Error(status))));
   if(pendingVacancyMapPoint!==point||!document.contains(address))return;
   const best=result.find(x=>x.types.includes('street_address'))||result.find(x=>x.types.includes('premise'))||result[0];
-  const parts=best.address_components||[];
-  const getType=t=>parts.find(x=>x.types.includes(t))?.long_name||'';
-  let foundCity=getType('administrative_area_level_1')||getType('locality');
-  foundCity=foundCity.replace('台','臺');
-  const foundDistrict=getType('administrative_area_level_3')||getType('sublocality_level_1');
-  if([...city.options].some(o=>o.value===foundCity)){city.value=foundCity;setLeadDistrictSelector(city,district);if(foundDistrict){if(![...district.options].some(o=>o.value===foundDistrict))district.add(new Option(foundDistrict,foundDistrict));district.value=foundDistrict;district.disabled=false}}
-  address.value=best.formatted_address.replace(/^台灣(?:省)?\s*(?:\d{3,5}\s*)?/,'').trim();
+  const normalize=v=>String(v||'').replace(/台/g,'臺').replace(/\s/g,'').trim();
+  const components=result.flatMap(x=>x.address_components||[]);
+  const typed=(types)=>{for(const t of types){const c=components.find(x=>x.types.includes(t));if(c)return c.long_name}return ''};
+  const formatted=best.formatted_address||'';
+  const cityCandidates=[typed(['administrative_area_level_1']),typed(['locality']),...components.map(x=>x.long_name)];
+  const cityOption=[...city.options].find(o=>o.value&&cityCandidates.some(v=>normalize(v)===normalize(o.value)))||
+    [...city.options].find(o=>o.value&&normalize(formatted).includes(normalize(o.value)));
+  if(cityOption){
+   city.value=cityOption.value;
+   setLeadDistrictSelector(city,district);
+   const districtCandidates=[typed(['administrative_area_level_3']),typed(['sublocality_level_1','sublocality_level_2']),...components.map(x=>x.long_name)];
+   let districtOption=[...district.options].find(o=>o.value&&districtCandidates.some(v=>normalize(v)===normalize(o.value)));
+   if(!districtOption){
+    districtOption=[...district.options].find(o=>o.value&&normalize(formatted).includes(normalize(o.value)));
+   }
+   if(!districtOption){
+    const named=districtCandidates.find(v=>/([區鄉鎮市])$/.test(v)&&normalize(v)!==normalize(city.value));
+    if(named){district.add(new Option(named,named));districtOption=[...district.options].find(o=>o.value===named)}
+   }
+   if(districtOption){district.disabled=false;district.value=districtOption.value;district.dispatchEvent(new Event('change',{bubbles:true}))}
+  }
+  address.value=formatted.replace(/^台灣(?:省)?\s*(?:\d{3,5}\s*)?/,'').trim();
+  const error=document.querySelector('.vacancy-form .vacancy-error');
+  if(error)error.textContent=city.value&&district.value?'':'已填入地址，但無法完整判定城市或區域，請手動確認';
+
   address.placeholder='請核對地址與門牌';
  }catch(e){address.placeholder='無法自動取得地址，請手動輸入';const msg=document.querySelector('.vacancy-form .vacancy-error');if(msg)msg.textContent='無法判定完整地址，請手動選擇城市、區域及地址'}
 }
