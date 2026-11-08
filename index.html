@@ -839,9 +839,9 @@ function loadVacancyZip(){
  }).catch(e=>{vacancyZipPromise=null;throw e});
  return vacancyZipPromise;
 }
-// A1 landscape (84.1 x 59.4 cm); fixed column widths total 60.00 cm.
-// OOXML uses integer twips, so each requested cm value is rounded to the nearest twip.
-const VACANCY_DOC_WIDTHS=[2835,2835,11339,2835,2835,2835,2835,5669];
+// Word's maximum page width is 22 inches (55.88 cm), so scale requested 60 cm columns proportionally to 53.88 cm.
+// Ratios remain 5:5:20:5:5:5:5:10; table fills the available page width.
+const VACANCY_DOC_WIDTHS=[2546,2546,10182,2546,2546,2546,2546,5092];
 function vacancyDocCell(value,index,header=false,alternate=false){
  const width=VACANCY_DOC_WIDTHS[index],text=vacancyXmlEscape(value);
  const shade=header?'C8202D':alternate?'F5F5F5':'FFFFFF';
@@ -853,12 +853,12 @@ function vacancyDocRow(cells,header=false,alternate=false){
 async function generateVacancyDoc(){
  const JSZip=await loadVacancyZip(),zip=new JSZip();
  const rows=[vacancyDocRow(VACANCY_DOC_HEADERS,true)];
- for(let i=0;i<12;i++)rows.push(vacancyDocRow(VACANCY_DOC_HEADERS.map(()=>''),false,i%2===1));
+ for(let i=0;i<8;i++)rows.push(vacancyDocRow(VACANCY_DOC_HEADERS.map(()=>''),false,i%2===1));
  const title='<w:p><w:pPr><w:spacing w:after="130"/></w:pPr><w:r><w:rPr><w:b/><w:rFonts w:ascii="Arial" w:eastAsia="Microsoft JhengHei"/><w:color w:val="C8202D"/><w:sz w:val="38"/></w:rPr><w:t>COMEBUY</w:t></w:r><w:r><w:rPr><w:b/><w:rFonts w:eastAsia="Microsoft JhengHei"/><w:color w:val="222222"/><w:sz w:val="30"/></w:rPr><w:t>  ｜ 空舖資料表</w:t></w:r></w:p>';
- const intro='<w:p><w:pPr><w:spacing w:after="210"/></w:pPr><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft JhengHei"/><w:color w:val="666666"/><w:sz w:val="19"/></w:rPr><w:t>一列一間空舖｜必填：城市、區域、空舖地址、月租金｜其餘選填｜請勿修改欄位名稱</w:t></w:r></w:p>';
+ const intro='<w:p><w:pPr><w:spacing w:after="210"/></w:pPr><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft JhengHei"/><w:color w:val="666666"/><w:sz w:val="19"/></w:rPr><w:t>每列填寫一間空舖。必填：城市、區域、地址、月租金。</w:t></w:r></w:p>';
  const grid='<w:tblGrid>'+VACANCY_DOC_WIDTHS.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
  const borders='<w:tblBorders><w:top w:val="single" w:sz="5" w:color="D7D7D7"/><w:left w:val="single" w:sz="5" w:color="D7D7D7"/><w:bottom w:val="single" w:sz="5" w:color="D7D7D7"/><w:right w:val="single" w:sz="5" w:color="D7D7D7"/><w:insideH w:val="single" w:sz="4" w:color="DDDDDD"/><w:insideV w:val="single" w:sz="4" w:color="DDDDDD"/></w:tblBorders>';
- const documentXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+title+intro+'<w:tbl><w:tblPr><w:tblW w:w="34018" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+borders+'</w:tblPr>'+grid+rows.join('')+'</w:tbl><w:sectPr><w:pgSz w:w="47679" w:h="33676" w:orient="landscape"/><w:pgMar w:top="650" w:right="450" w:bottom="650" w:left="450"/></w:sectPr></w:body></w:document>';
+ const documentXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+title+intro+'<w:tbl><w:tblPr><w:tblW w:w="30550" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+borders+'</w:tblPr>'+grid+rows.join('')+'</w:tbl><w:sectPr><w:pgSz w:w="31680" w:h="20160" w:orient="landscape"/><w:pgMar w:top="650" w:right="565" w:bottom="650" w:left="565"/></w:sectPr></w:body></w:document>';
  zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
  zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
  zip.file('word/document.xml',documentXml);
