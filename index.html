@@ -905,19 +905,34 @@ async function importVacancyXlsx(file){
  const entries=matrix.slice(headerIndex+1).map(row=>Object.fromEntries(VACANCY_DOC_HEADERS.map(h=>[h,String(row[header.indexOf(h)]??'').trim()]))).filter(row=>Object.values(row).some(Boolean));
  if(!entries.length)throw Error('表格內沒有填寫空舖資料');
  if(entries.length>100)throw Error('單次最多匯入 100 筆空舖');
- const normalizeAddress=v=>String(v??'').normalize('NFKC').replace(/台/g,'臺').replace(/[\s,，、.。-]/g,'').toLowerCase();
- const addressKey=(address,city='',district='')=>{let key=normalizeAddress(address),c=normalizeAddress(city),d=normalizeAddress(district);if(c&&key.startsWith(c))key=key.slice(c.length);if(d&&key.startsWith(d))key=key.slice(d.length);return key};
- const existingKeys=new Set(vacancies.map(v=>addressKey(v.address,v.region?.city,v.region?.district)));
- const seen=new Set(existingKeys);
+ const normalizeAddress=v=>String(v??'').normalize('NFKC').replace(/台/g,'臺').replace(/[\s,，、.。．.、\-－]/g,'').replace(/(?:臺灣省|臺灣|台灣|中華民國)/g,'').replace(/^(?:\d{3}|\d{5}|\d{6})/,'').toLowerCase();
+ const knownCities=['臺北市','新北市','桃園市','臺中市','臺南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','臺東縣','澎湖縣','金門縣','連江縣'];
+ const stripCity=v=>{let x=normalizeAddress(v);for(const city of knownCities){const c=normalizeAddress(city);if(x.startsWith(c))return {city:c,rest:x.slice(c.length)}}return {city:'',rest:x}};
+ const streetPart=v=>{let x=stripCity(v).rest;const m=x.match(/^(?:.{1,5}?[區鄉鎮市])(.+)$/);if(m)x=m[1];return x};
+ const addressIdentity=(address,city='',district='')=>{
+  const raw=normalizeAddress(address),c=normalizeAddress(city),d=normalizeAddress(district);
+  const parsed=stripCity(raw);
+  let street=parsed.rest;
+  if(d&&street.startsWith(d))street=street.slice(d.length);
+  else street=streetPart(street);
+  return {city:parsed.city||c,street,raw};
+ };
+ const existing=vacancies.map(v=>addressIdentity(v.address,v.region?.city,v.region?.district));
+ const seen=[];
+ const isDuplicate=(candidate)=>[...existing,...seen].some(old=>{
+  if(!candidate.street||!old.street)return candidate.raw===old.raw;
+  if(candidate.city&&old.city&&candidate.city!==old.city)return false;
+  return candidate.street===old.street||candidate.raw===old.raw;
+ });
  const accepted=[],errors=[];let duplicateCount=0;
  for(let i=0;i<entries.length;i++){
   const row=entries[i],city=row['城市'],district=row['區域'],raw=row['空舖地址'];
   const rentText=row['月租金'].replace(/[,，元NT$\s]/g,''),rent=Number(rentText);
   if(!city||!district||!raw||!rentText||!Number.isFinite(rent)||rent<0){errors.push('第'+(headerIndex+i+2)+'列：缺少城市、區域、地址或有效租金');continue}
   const address=normalizeAddress(raw).startsWith(normalizeAddress(city))?raw:city+(normalizeAddress(raw).startsWith(normalizeAddress(district))?'':district)+raw;
-  const key=addressKey(address,city,district);
-  if(seen.has(key)){duplicateCount++;continue}
-  seen.add(key);
+  const key=addressIdentity(address,city,district);
+  if(isDuplicate(key)){duplicateCount++;continue}
+  seen.push(key);
   accepted.push({id:String(Date.now())+'-'+i+'-'+Math.random().toString(36).slice(2,7),address,rent,size:row['坪數'],front:row['面寬(公尺)'],contact:row['聯絡人'],phone:row['聯絡電話'],status:'vacant',position:null,region:{city,district},areaTypes:[],areaManual:true});
  }
  if(!accepted.length){const info=document.createElement('div');info.innerHTML='<p class="vacancy-import-summary">沒有需要新增的空舖資料</p>';const detail=document.createElement('p');detail.textContent='檔案：'+file.name+'｜已建檔或檔案內重複 '+duplicateCount+' 筆｜無效 '+errors.length+' 筆。既有資料不會重複建立。';info.appendChild(detail);if(errors.length){const p=document.createElement('p');p.className='vacancy-import-errors';p.textContent=errors.slice(0,8).join('；');info.appendChild(p)}await vacancyImportDialog('空舖資料比對結果',info,'完成',false);return;}
