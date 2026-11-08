@@ -335,6 +335,7 @@ window.initMap=function(){
   map.setOptions({mapTypeControl:false});
   window.__comebuyMap=map;
   geocoder=new google.maps.Geocoder();
+  installVacancyLongPress();
   infoWindow=new google.maps.InfoWindow();
   // Google Maps uses "close" for both the X button and programmatic dismissal.
   const clearArchivedLocateMarker=()=>{if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}};
@@ -543,6 +544,38 @@ function makeEditor(target,record,fields,save,refresh){
 function confirmRestoreVacancy(){return new Promise(resolve=>{const overlay=document.createElement('div');overlay.className='archive-confirm-overlay';overlay.innerHTML='<div class="archive-confirm-box" role="dialog" aria-modal="true" aria-labelledby="restoreConfirmMessage"><p class="archive-confirm-message" id="restoreConfirmMessage">是否恢復此空舖？</p><div class="archive-confirm-actions"><button type="button" class="archive-confirm-cancel">取消</button><button type="button" class="archive-confirm-accept">確認</button></div></div>';document.body.appendChild(overlay);const finish=value=>{document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};const onKey=e=>{if(e.key==='Escape')finish(false)};document.addEventListener('keydown',onKey);overlay.querySelector('.archive-confirm-cancel').onclick=()=>finish(false);overlay.querySelector('.archive-confirm-accept').onclick=()=>finish(true);overlay.onclick=e=>{if(e.target===overlay)finish(false)};overlay.querySelector('.archive-confirm-cancel').focus()})}
 function confirmArchiveVacancy(){return new Promise(resolve=>{const overlay=document.createElement('div');overlay.className='archive-confirm-overlay';overlay.innerHTML='<div class="archive-confirm-box" role="dialog" aria-modal="true" aria-labelledby="archiveConfirmMessage"><p class="archive-confirm-message" id="archiveConfirmMessage">將空舖移至「封存店鋪」？</p><div class="archive-confirm-actions"><button type="button" class="archive-confirm-cancel">取消</button><button type="button" class="archive-confirm-accept">確認</button></div></div>';document.body.appendChild(overlay);const cancel=overlay.querySelector('.archive-confirm-cancel'),accept=overlay.querySelector('.archive-confirm-accept');const finish=value=>{document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};const onKey=e=>{if(e.key==='Escape')finish(false)};document.addEventListener('keydown',onKey);cancel.onclick=()=>finish(false);accept.onclick=()=>finish(true);overlay.onclick=e=>{if(e.target===overlay)finish(false)};cancel.focus()})}
 let vacancyPanelMode='';
+let pendingVacancyMapPoint=null;
+function installVacancyLongPress(){
+ const el=document.getElementById('map');
+ const overlay=new google.maps.OverlayView();
+ overlay.onAdd=function(){};overlay.draw=function(){};overlay.onRemove=function(){};overlay.setMap(map);
+ let timer=null,start=null;
+ const cancel=()=>{if(timer){clearTimeout(timer);timer=null}start=null};
+ const openPoint=latLng=>{if(!latLng)return;pendingVacancyMapPoint={lat:latLng.lat(),lng:latLng.lng()};vacancyPanelMode='add';showVacancies();fillVacancyMapAddress(pendingVacancyMapPoint)};
+ map.addListener('rightclick',e=>{cancel();openPoint(e.latLng)});
+ el.addEventListener('touchstart',e=>{if(e.touches.length!==1){cancel();return}const t=e.touches[0];start={x:t.clientX,y:t.clientY};timer=setTimeout(()=>{timer=null;const rect=el.getBoundingClientRect(),projection=overlay.getProjection();if(!projection||!start)return;const point=new google.maps.Point(start.x-rect.left,start.y-rect.top);const ll=projection.fromContainerPixelToLatLng(point);start=null;openPoint(ll)},650)},{passive:true});
+ el.addEventListener('touchmove',e=>{if(!start||e.touches.length!==1){cancel();return}const t=e.touches[0];if(Math.hypot(t.clientX-start.x,t.clientY-start.y)>12)cancel()},{passive:true});
+ el.addEventListener('touchend',cancel,{passive:true});el.addEventListener('touchcancel',cancel,{passive:true});
+}
+async function fillVacancyMapAddress(point){
+ const city=document.getElementById('vacancyCity'),district=document.getElementById('vacancyDistrict'),address=document.getElementById('vacancyAddress');
+ if(!city||!district||!address||!geocoder)return;
+ address.placeholder='正在判定地圖位置…';
+ try{
+  const result=await new Promise((resolve,reject)=>geocoder.geocode({location:point,language:'zh-TW'},(items,status)=>status==='OK'&&items&&items.length?resolve(items):reject(Error(status))));
+  if(pendingVacancyMapPoint!==point||!document.contains(address))return;
+  const best=result.find(x=>x.types.includes('street_address'))||result.find(x=>x.types.includes('premise'))||result[0];
+  const parts=best.address_components||[];
+  const getType=t=>parts.find(x=>x.types.includes(t))?.long_name||'';
+  let foundCity=getType('administrative_area_level_1')||getType('locality');
+  foundCity=foundCity.replace('台','臺');
+  const foundDistrict=getType('administrative_area_level_3')||getType('sublocality_level_1');
+  if([...city.options].some(o=>o.value===foundCity)){city.value=foundCity;setLeadDistrictSelector(city,district);if(foundDistrict){if(![...district.options].some(o=>o.value===foundDistrict))district.add(new Option(foundDistrict,foundDistrict));district.value=foundDistrict;district.disabled=false}}
+  address.value=best.formatted_address.replace(/^台灣(?:省)?\s*(?:\d{3,5}\s*)?/,'').trim();
+  address.placeholder='請核對地址與門牌';
+ }catch(e){address.placeholder='無法自動取得地址，請手動輸入';const msg=document.querySelector('.vacancy-form .vacancy-error');if(msg)msg.textContent='無法判定完整地址，請手動選擇城市、區域及地址'}
+}
+
 let vacancyDetailOpenId=null;
 function showVacancies(){
  setDrawerLayout('compact');
