@@ -905,28 +905,30 @@ async function importVacancyXlsx(file){
  const entries=matrix.slice(headerIndex+1).map(row=>Object.fromEntries(VACANCY_DOC_HEADERS.map(h=>[h,String(row[header.indexOf(h)]??'').trim()]))).filter(row=>Object.values(row).some(Boolean));
  if(!entries.length)throw Error('表格內沒有填寫空舖資料');
  if(entries.length>100)throw Error('單次最多匯入 100 筆空舖');
- const normalizeAddress=v=>String(v).replace(/台/g,'臺').replace(/\s/g,'');
- const seen=new Set(vacancies.map(v=>normalizeAddress(v.address)));
- const accepted=[],errors=[];
+ const normalizeAddress=v=>String(v??'').normalize('NFKC').replace(/台/g,'臺').replace(/[\s,，、.。-]/g,'').toLowerCase();
+ const addressKey=(address,city='',district='')=>{let key=normalizeAddress(address),c=normalizeAddress(city),d=normalizeAddress(district);if(c&&key.startsWith(c))key=key.slice(c.length);if(d&&key.startsWith(d))key=key.slice(d.length);return key};
+ const existingKeys=new Set(vacancies.map(v=>addressKey(v.address,v.region?.city,v.region?.district)));
+ const seen=new Set(existingKeys);
+ const accepted=[],errors=[];let duplicateCount=0;
  for(let i=0;i<entries.length;i++){
   const row=entries[i],city=row['城市'],district=row['區域'],raw=row['空舖地址'];
   const rentText=row['月租金'].replace(/[,，元NT$\s]/g,''),rent=Number(rentText);
   if(!city||!district||!raw||!rentText||!Number.isFinite(rent)||rent<0){errors.push('第'+(headerIndex+i+2)+'列：缺少城市、區域、地址或有效租金');continue}
   const address=normalizeAddress(raw).startsWith(normalizeAddress(city))?raw:city+(normalizeAddress(raw).startsWith(normalizeAddress(district))?'':district)+raw;
-  const key=normalizeAddress(address);
-  if(seen.has(key)){errors.push('第'+(headerIndex+i+2)+'列：地址重複');continue}
+  const key=addressKey(address,city,district);
+  if(seen.has(key)){duplicateCount++;continue}
   seen.add(key);
   accepted.push({id:String(Date.now())+'-'+i+'-'+Math.random().toString(36).slice(2,7),address,rent,size:row['坪數'],front:row['面寬(公尺)'],contact:row['聯絡人'],phone:row['聯絡電話'],status:'vacant',position:null,region:{city,district},areaTypes:[],areaManual:true});
  }
- if(!accepted.length)throw Error('沒有可匯入的有效資料：'+errors.slice(0,3).join('；'));
- if(!await vacancyImportDialog('空舖資料匯入確認',vacancyImportPreview(accepted,errors),'確認並自動歸類'))return;
+ if(!accepted.length){const info=document.createElement('div');info.innerHTML='<p class="vacancy-import-summary">沒有需要新增的空舖資料</p>';const detail=document.createElement('p');detail.textContent='檔案：'+file.name+'｜已建檔或檔案內重複 '+duplicateCount+' 筆｜無效 '+errors.length+' 筆。既有資料不會重複建立。';info.appendChild(detail);if(errors.length){const p=document.createElement('p');p.className='vacancy-import-errors';p.textContent=errors.slice(0,8).join('；');info.appendChild(p)}await vacancyImportDialog('空舖資料比對結果',info,'完成',false);return;}
+ const preview=vacancyImportPreview(accepted,errors);const comparison=document.createElement('p');comparison.className='vacancy-import-hint';comparison.textContent='檔案：'+file.name+'｜自動跳過重複 '+duplicateCount+' 筆。即使檔名相同，也只新增尚未建檔的地址。';preview.insertBefore(comparison,preview.firstChild);if(!await vacancyImportDialog('空舖資料匯入確認',preview,'確認並自動歸類'))return;
  const previous=vacancies;vacancies=[...accepted,...vacancies];
  if(!saveVacancies()){vacancies=previous;throw Error('本機儲存失敗，未完成匯入')}
  refreshVacancyMarkers();
  let located=0;
  for(const v of accepted){if(await geocodeVacancy(v))located++}
  showDashboard();
- const result=document.createElement('div');result.innerHTML='<p class="vacancy-import-summary">已成功建檔 '+accepted.length+' 筆</p><p>依城市、區域歸類完成。地圖定位成功 '+located+' 筆，待定位 '+(accepted.length-located)+' 筆。</p>';await vacancyImportDialog('空舖資料建檔完成',result,'完成',false);
+ const result=document.createElement('div');result.innerHTML='<p class="vacancy-import-summary">已成功建檔 '+accepted.length+' 筆</p><p>依城市、區域歸類完成。地圖定位成功 '+located+' 筆，待定位 '+(accepted.length-located)+' 筆；跳過重複 '+duplicateCount+' 筆。</p>';await vacancyImportDialog('空舖資料建檔完成',result,'完成',false);
 }
 function addVacancyDocActions(){
  const generate=document.createElement('button');generate.className='dashboard-backup';generate.style.marginBottom='9px';generate.textContent='生成空舖資料表（XLSX）';
