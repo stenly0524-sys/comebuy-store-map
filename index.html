@@ -242,6 +242,7 @@ const counts=Object.fromEntries(CITY_ORDER.map(c=>[c,0]));stores.forEach(s=>{if(
 var map,geocoder,infoWindow;
 let protectionVisible=false;
 const protectionCircles=new Map();
+const vacancyProtectionCircles=new Map();
 let diameterSelect=null;
 let protectionToggle=null;
 let protectionDiameterValue=1000;
@@ -256,6 +257,17 @@ function syncProtection(){
    if(!circle){const tea=stores[idx].brand==='COMEBUY TEA';circle=new google.maps.Circle({strokeColor:tea?'#087e87':'#d71920',strokeOpacity:.75,strokeWeight:1.5,fillColor:tea?'#087e87':'#d71920',fillOpacity:.12,clickable:false});protectionCircles.set(idx,circle)}
    circle.setCenter(marker.getPosition());circle.setRadius(radius);
    circle.setMap(protectionVisible&&selected.has(idx)?map:null);
+ });
+ // 空舖使用相同的保障直徑；灰色為空舖、黃色為已租，封存不顯示。
+ const active=new Set(vacancies.filter(v=>!v.archived&&v.position&&Number.isFinite(+v.position.lat)&&Number.isFinite(+v.position.lng)).map(v=>v.id));
+ vacancyProtectionCircles.forEach((circle,id)=>{if(!active.has(id)){circle.setMap(null);vacancyProtectionCircles.delete(id)}});
+ vacancies.filter(v=>active.has(v.id)).forEach(v=>{
+  let circle=vacancyProtectionCircles.get(v.id);
+  const color=v.status==='rented'?'#e9b52b':'#8b9099';
+  if(!circle){circle=new google.maps.Circle({strokeOpacity:.8,strokeWeight:1.5,fillOpacity:.12,clickable:false});vacancyProtectionCircles.set(v.id,circle)}
+  circle.setOptions({strokeColor:color,fillColor:color});
+  circle.setCenter(v.position);circle.setRadius(radius);
+  circle.setMap(protectionVisible&&vacancyVisible?map:null);
  });
 }
 function toggleProtection(){
@@ -485,6 +497,7 @@ function refreshVacancyMarkers(){
   if(!m){m=new google.maps.Marker({position:v.position,map:null,title:v.address,icon:archivedVacancyIcon(),zIndex:190});m.addListener('click',()=>{const item=vacancies.find(x=>x.id===v.id);if(item)locateVacancy(item)});archivedVacancyMarkers.set(v.id,m)}
   m.setMap(archivedVacancyVisible?map:null);
  });
+ syncProtection();
  archivedVacancyVisibility.textContent=archivedVacancyVisible?'隱藏封存店舖':'顯示封存店舖';
  archivedVacancyVisibility.classList.toggle('active',archivedVacancyVisible);
  archivedVacancyVisibility.setAttribute('aria-pressed',String(archivedVacancyVisible));
@@ -960,9 +973,9 @@ document.getElementById('openDashboard').onclick=showDashboard;
 function showProtection(){
  setDrawerLayout('protection');
  nav={level:'protection',city:null,district:null};
- drawer.classList.add('open');drawerTitle.textContent='門市保障範圍';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
+ drawer.classList.add('open');drawerTitle.textContent='門市／空舖保障範圍';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const wrap=document.createElement('div');wrap.className='protection-panel';
- wrap.innerHTML='<label for="protectionDiameter">保障直徑（公尺）</label><select id="protectionDiameter"><option value="500">500 公尺</option><option value="1000">1,000 公尺</option><option value="1500">1,500 公尺</option><option value="2000">2,000 公尺</option><option value="3000">3,000 公尺</option></select><button id="protectionToggle" type="button" aria-pressed="'+String(protectionVisible)+'">'+(protectionVisible?'隱藏保障圈':'顯示保障圈')+'</button>';
+ wrap.innerHTML='<label for="protectionDiameter">保障直徑（公尺）｜門市及空舖共用</label><select id="protectionDiameter"><option value="500">500 公尺</option><option value="1000">1,000 公尺</option><option value="1500">1,500 公尺</option><option value="2000">2,000 公尺</option><option value="3000">3,000 公尺</option></select><button id="protectionToggle" type="button" aria-pressed="'+String(protectionVisible)+'">'+(protectionVisible?'隱藏保障圈':'顯示保障圈')+'</button>';
  drawerBody.appendChild(wrap);
  diameterSelect=wrap.querySelector('#protectionDiameter');protectionToggle=wrap.querySelector('#protectionToggle');
  diameterSelect.value=String(protectionDiameterValue);
