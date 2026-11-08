@@ -863,6 +863,35 @@ async function generateVacancyXlsx(){
  }
  const url=URL.createObjectURL(file),link=document.createElement('a');link.href=url;link.download=file.name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
+
+function vacancyImportDialog(title,content,confirmLabel='確認建檔',allowCancel=true){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');overlay.className='vacancy-import-overlay';
+  overlay.innerHTML='<section class="vacancy-import-dialog" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><header><strong>'+esc(title)+'</strong><button type="button" class="vacancy-import-close" aria-label="關閉">×</button></header><div class="vacancy-import-content"></div><footer>'+(allowCancel?'<button type="button" class="vacancy-import-cancel">取消</button>':'')+'<button type="button" class="vacancy-import-confirm">'+esc(confirmLabel)+'</button></footer></section>';
+  overlay.querySelector('.vacancy-import-content').appendChild(content);
+  const finish=ok=>{overlay.remove();resolve(ok)};
+  overlay.querySelector('.vacancy-import-close').onclick=()=>finish(false);
+  overlay.querySelector('.vacancy-import-cancel')?.addEventListener('click',()=>finish(false));
+  overlay.querySelector('.vacancy-import-confirm').onclick=()=>finish(true);
+  document.body.appendChild(overlay);
+ });
+}
+function vacancyImportPreview(accepted,errors){
+ const wrap=document.createElement('div');
+ const summary=document.createElement('p');summary.className='vacancy-import-summary';summary.textContent='可建檔 '+accepted.length+' 筆｜略過 '+errors.length+' 筆';wrap.appendChild(summary);
+ const tableWrap=document.createElement('div');tableWrap.className='vacancy-import-table-scroll';
+ const table=document.createElement('table');const thead=document.createElement('thead');thead.innerHTML='<tr><th>城市／區域</th><th>空舖地址</th><th>月租金</th><th>坪數</th><th>面寬</th><th>聯絡人</th><th>聯絡電話</th></tr>';table.appendChild(thead);
+ const tbody=document.createElement('tbody');
+ for(const v of accepted){const tr=document.createElement('tr');for(const value of [v.region.city+'／'+v.region.district,v.address,Number(v.rent).toLocaleString('zh-TW'),v.size||'—',v.front||'—',v.contact||'—',v.phone||'—']){const td=document.createElement('td');td.textContent=value;tr.appendChild(td)}tbody.appendChild(tr)}
+ table.appendChild(tbody);tableWrap.appendChild(table);wrap.appendChild(tableWrap);
+ if(errors.length){const note=document.createElement('p');note.className='vacancy-import-errors';note.textContent='略過資料：'+errors.join('；');wrap.appendChild(note)}
+ const note=document.createElement('p');note.className='vacancy-import-hint';note.textContent='確認後自動依城市、區域歸類至空舖清單，並嘗試地圖定位。';wrap.appendChild(note);
+ return wrap;
+}
+const vacancyImportCss=document.createElement('style');
+vacancyImportCss.textContent='.vacancy-import-overlay{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}.vacancy-import-dialog{background:#fff;color:#252525;border-radius:16px;width:min(96vw,680px);max-height:85dvh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 16px 60px #0004}.vacancy-import-dialog header{background:#c8202d;color:white;display:flex;justify-content:space-between;align-items:center;padding:13px 16px;font-size:17px}.vacancy-import-close{border:0;border-radius:50%;background:#fff;color:#c8202d;font-size:22px;width:31px;height:31px;line-height:1;flex-shrink:0}.vacancy-import-content{overflow:auto;padding:13px 15px}.vacancy-import-dialog footer{display:flex;gap:10px;justify-content:flex-end;padding:12px 15px;border-top:1px solid #ddd}.vacancy-import-dialog footer button{border:1px solid #ccc;background:#eee;color:#333;border-radius:9px;padding:10px 16px;font-weight:700}.vacancy-import-dialog footer .vacancy-import-confirm{background:#c8202d;border-color:#c8202d;color:white}.vacancy-import-summary{font-weight:700;margin:0 0 10px}.vacancy-import-table-scroll{overflow:auto;max-height:47dvh}.vacancy-import-table-scroll table{border-collapse:collapse;min-width:680px;width:100%;font-size:12px}.vacancy-import-table-scroll th{background:#eee;color:#333;text-align:left;white-space:nowrap}.vacancy-import-table-scroll td,.vacancy-import-table-scroll th{border:1px solid #ddd;padding:9px 8px}.vacancy-import-table-scroll tbody tr:nth-child(even){background:#f6f6f6}.vacancy-import-errors{color:#b4232d;font-size:12px}.vacancy-import-hint{font-size:12px;color:#666}';
+document.head.appendChild(vacancyImportCss);
+
 async function importVacancyXlsx(file){
  if(!file||!file.name.toLowerCase().endsWith('.xlsx'))throw Error('請選擇 XLSX 格式的空舖資料表');
  if(file.size>10*1024*1024)throw Error('檔案不可超過 10MB');
@@ -890,14 +919,14 @@ async function importVacancyXlsx(file){
   accepted.push({id:String(Date.now())+'-'+i+'-'+Math.random().toString(36).slice(2,7),address,rent,size:row['坪數'],front:row['面寬(公尺)'],contact:row['聯絡人'],phone:row['聯絡電話'],status:'vacant',position:null,region:{city,district},areaTypes:[],areaManual:true});
  }
  if(!accepted.length)throw Error('沒有可匯入的有效資料：'+errors.slice(0,3).join('；'));
- if(!confirm('讀取 '+entries.length+' 筆，預計新增 '+accepted.length+' 筆，略過 '+errors.length+' 筆。確認建檔？'))return;
+ if(!await vacancyImportDialog('空舖資料匯入確認',vacancyImportPreview(accepted,errors),'確認並自動歸類'))return;
  const previous=vacancies;vacancies=[...accepted,...vacancies];
  if(!saveVacancies()){vacancies=previous;throw Error('本機儲存失敗，未完成匯入')}
  refreshVacancyMarkers();
  let located=0;
  for(const v of accepted){if(await geocodeVacancy(v))located++}
  showDashboard();
- alert('已建檔 '+accepted.length+' 筆；成功地圖定位 '+located+' 筆；未定位 '+(accepted.length-located)+' 筆。'+(errors.length?'\n略過：'+errors.slice(0,8).join('；'):''));
+ const result=document.createElement('div');result.innerHTML='<p class="vacancy-import-summary">已成功建檔 '+accepted.length+' 筆</p><p>依城市、區域歸類完成。地圖定位成功 '+located+' 筆，待定位 '+(accepted.length-located)+' 筆。</p>';await vacancyImportDialog('空舖資料建檔完成',result,'完成',false);
 }
 function addVacancyDocActions(){
  const generate=document.createElement('button');generate.className='dashboard-backup';generate.style.marginBottom='9px';generate.textContent='生成空舖資料表（XLSX）';
