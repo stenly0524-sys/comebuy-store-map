@@ -549,14 +549,31 @@ function installVacancyLongPress(){
  const el=document.getElementById('map');
  const overlay=new google.maps.OverlayView();
  overlay.onAdd=function(){};overlay.draw=function(){};overlay.onRemove=function(){};overlay.setMap(map);
- let timer=null,start=null;
- const cancel=()=>{if(timer){clearTimeout(timer);timer=null}start=null};
- const openPoint=latLng=>{if(!latLng)return;pendingVacancyMapPoint={lat:latLng.lat(),lng:latLng.lng()};vacancyPanelMode='add';showVacancies();fillVacancyMapAddress(pendingVacancyMapPoint)};
- map.addListener('rightclick',e=>{cancel();openPoint(e.latLng)});
- el.addEventListener('touchstart',e=>{if(e.touches.length!==1){cancel();return}const t=e.touches[0];start={x:t.clientX,y:t.clientY};timer=setTimeout(()=>{timer=null;const rect=el.getBoundingClientRect(),projection=overlay.getProjection();if(!projection||!start)return;const point=new google.maps.Point(start.x-rect.left,start.y-rect.top);const ll=projection.fromContainerPixelToLatLng(point);start=null;openPoint(ll)},650)},{passive:true});
- el.addEventListener('touchmove',e=>{if(!start||e.touches.length!==1){cancel();return}const t=e.touches[0];if(Math.hypot(t.clientX-start.x,t.clientY-start.y)>12)cancel()},{passive:true});
- el.addEventListener('touchend',cancel,{passive:true});el.addEventListener('touchcancel',cancel,{passive:true});
+ let timer=null,start=null,opened=false;
+ const cancel=()=>{if(timer!==null)clearTimeout(timer);timer=null;start=null};
+ const openPoint=ll=>{if(!ll)return;cancel();opened=true;pendingVacancyMapPoint={lat:ll.lat(),lng:ll.lng()};vacancyPanelMode='add';showVacancies();fillVacancyMapAddress(pendingVacancyMapPoint)};
+ const withinMap=target=>target instanceof Node&&el.contains(target);
+ const begin=(x,y)=>{cancel();opened=false;start={x,y};timer=setTimeout(()=>{
+   timer=null;if(!start)return;
+   const rect=el.getBoundingClientRect(),projection=overlay.getProjection();
+   if(!projection)return;
+   const px=Math.max(0,Math.min(rect.width,start.x-rect.left)),py=Math.max(0,Math.min(rect.height,start.y-rect.top));
+   openPoint(projection.fromContainerPixelToLatLng(new google.maps.Point(px,py)));
+ },700)};
+ const move=(x,y)=>{if(start&&Math.hypot(x-start.x,y-start.y)>14)cancel()};
+ // Capture on document: Google Maps handles map gestures on its own nested panes.
+ document.addEventListener('touchstart',e=>{if(!withinMap(e.target))return;if(e.touches.length!==1){cancel();return}begin(e.touches[0].clientX,e.touches[0].clientY)},{capture:true,passive:true});
+ document.addEventListener('touchmove',e=>{if(!start)return;if(e.touches.length!==1){cancel();return}move(e.touches[0].clientX,e.touches[0].clientY)},{capture:true,passive:true});
+ document.addEventListener('touchend',cancel,{capture:true,passive:true});
+ document.addEventListener('touchcancel',cancel,{capture:true,passive:true});
+ // Pointer fallback for browsers where Maps intercepts touch events.
+ document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||!withinMap(e.target)||e.button!==0)return;begin(e.clientX,e.clientY)},true);
+ document.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')move(e.clientX,e.clientY)},true);
+ document.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')cancel()},true);
+ map.addListener('rightclick',e=>openPoint(e.latLng));
+ el.addEventListener('contextmenu',e=>{if(withinMap(e.target))e.preventDefault()},true);
 }
+
 async function fillVacancyMapAddress(point){
  const city=document.getElementById('vacancyCity'),district=document.getElementById('vacancyDistrict'),address=document.getElementById('vacancyAddress');
  if(!city||!district||!address||!geocoder)return;
