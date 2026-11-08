@@ -823,7 +823,97 @@ function showFranchise(){
 }
 document.getElementById('openFranchise').onclick=showFranchise;
 function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function showDashboard(){setDrawerLayout('dashboard');nav={level:'dashboard',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='開發概況';backBtn.style.visibility='hidden';drawerBody.innerHTML='';const d=new Date(),today=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),due=vacancies.filter(v=>v.followUpDate&&v.followUpDate<=today&&!['已開幕','放棄開發'].includes(v.developmentStage)),active=vacancies.filter(v=>!['已開幕','放棄開發'].includes(v.developmentStage||'待評估'));const cards=document.createElement('div');cards.className='dashboard-grid';[['開發中空舖',active.length],['加盟主名單',franchiseLeads.length],['未簽約',franchiseLeads.filter(v=>!['已簽約','受訓中'].includes(v.stage)).length],['已簽約',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)).length],['已簽約未付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&!v.depositReceived).length],['已簽約已付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&v.depositReceived).length],['今日及逾期待追蹤',due.length],['已簽約案件',vacancies.filter(v=>v.developmentStage==='已簽約').length]].forEach(([name,num])=>{const el=document.createElement('div');el.className='dashboard-card';el.innerHTML='<span>'+esc(name)+'</span><strong>'+num+'</strong>';cards.appendChild(el)});drawerBody.appendChild(cards);const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.style.marginBottom='9px';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showDashboard()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出空舖與加盟主備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);const h=document.createElement('h3');h.textContent='今日及逾期追蹤（'+due.length+'）';drawerBody.appendChild(h);due.sort((a,b)=>a.followUpDate.localeCompare(b.followUpDate)).forEach(v=>{const el=document.createElement('button');el.className='dashboard-follow';el.innerHTML='<strong>'+esc(v.address)+'</strong><span>'+esc(v.followUpDate)+'｜'+esc(v.developmentStage||'待評估')+'</span>';el.onclick=()=>{vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';showVacancies()};drawerBody.appendChild(el)})}
+
+const VACANCY_DOC_HEADERS=['城市','區域','空舖地址','月租金','坪數','面寬(公尺)','樓層','聯絡人','聯絡電話','商圈屬性'];
+const vacancyXmlEscape=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let vacancyZipPromise=null;
+function loadVacancyZip(){
+ if(window.JSZip)return Promise.resolve(window.JSZip);
+ if(vacancyZipPromise)return vacancyZipPromise;
+ vacancyZipPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  script.onload=()=>window.JSZip?resolve(window.JSZip):reject(Error('Word 檔案元件載入失敗'));
+  script.onerror=()=>reject(Error('無法載入 Word 檔案元件，請確認網路'));
+  document.head.appendChild(script);
+ }).catch(e=>{vacancyZipPromise=null;throw e});
+ return vacancyZipPromise;
+}
+function vacancyDocCell(value,header=false){
+ const text=vacancyXmlEscape(value);
+ return '<w:tc><w:tcPr><w:tcW w:w="1200" w:type="dxa"/>'+(header?'<w:shd w:fill="F2F2F2"/>':'')+'</w:tcPr><w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft JhengHei"/><w:sz w:val="18"/>'+(header?'<w:b/>':'')+'</w:rPr><w:t xml:space="preserve">'+text+'</w:t></w:r></w:p></w:tc>';
+}
+function vacancyDocRow(cells,header=false){return '<w:tr>'+cells.map(x=>vacancyDocCell(x,header)).join('')+'</w:tr>'}
+async function generateVacancyDoc(){
+ const JSZip=await loadVacancyZip(),zip=new JSZip();
+ const rows=[vacancyDocRow(VACANCY_DOC_HEADERS,true)];
+ for(let i=0;i<12;i++)rows.push(vacancyDocRow(VACANCY_DOC_HEADERS.map(()=>'')));
+ const documentXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:b/><w:rFonts w:eastAsia="Microsoft JhengHei"/><w:sz w:val="30"/></w:rPr><w:t>COMEBUY｜空舖資料表</w:t></w:r></w:p><w:p><w:r><w:t>每列填寫一間空舖；城市、區域、地址、月租金為必填。商圈屬性可留空。</w:t></w:r></w:p><w:tbl><w:tblPr><w:tblBorders><w:top w:val="single"/><w:left w:val="single"/><w:bottom w:val="single"/><w:right w:val="single"/><w:insideH w:val="single"/><w:insideV w:val="single"/></w:tblBorders></w:tblPr>'+rows.join('')+'</w:tbl><w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="700" w:right="450" w:bottom="700" w:left="450"/></w:sectPr></w:body></w:document>';
+ zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+ zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+ zip.file('word/document.xml',documentXml);
+ const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
+ const file=new File([blob],'空舖資料表.docx',{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+ if(navigator.share&&navigator.canShare?.({files:[file]})){
+  try{await navigator.share({files:[file],title:'空舖資料表'});return}catch(e){if(e.name==='AbortError')return}
+ }
+ const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=file.name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+async function importVacancyDoc(file){
+ if(!file||!file.name.toLowerCase().endsWith('.docx'))throw Error('請選擇「空舖資料表.docx」Word 檔案');
+ if(file.size>8*1024*1024)throw Error('Word 檔案不可超過 8MB');
+ const JSZip=await loadVacancyZip(),zip=await JSZip.loadAsync(file);
+ const xml=await zip.file('word/document.xml')?.async('string');
+ if(!xml)throw Error('無法讀取 Word 文件內容');
+ const doc=new DOMParser().parseFromString(xml,'application/xml');
+ if(doc.querySelector('parsererror'))throw Error('Word 文件格式不正確');
+ const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+ const tables=Array.from(doc.getElementsByTagNameNS(ns,'tbl'));
+ const table=tables.find(t=>{const first=t.getElementsByTagNameNS(ns,'tr')[0];return first&&Array.from(first.getElementsByTagNameNS(ns,'tc')).some(c=>c.textContent.includes('空舖地址'))});
+ if(!table)throw Error('找不到空舖資料表欄位，請使用系統產生的 Word 範本');
+ const rows=Array.from(table.getElementsByTagNameNS(ns,'tr'));
+ const cellText=c=>Array.from(c.getElementsByTagNameNS(ns,'t')).map(x=>x.textContent).join('').trim();
+ const headers=Array.from(rows[0].getElementsByTagNameNS(ns,'tc')).map(cellText);
+ const indices=VACANCY_DOC_HEADERS.map(h=>headers.indexOf(h));
+ if(indices.some(i=>i<0))throw Error('表格欄位不完整，請勿刪除範本標題');
+ const entries=rows.slice(1).map(row=>{const values=Array.from(row.getElementsByTagNameNS(ns,'tc')).map(cellText);return Object.fromEntries(VACANCY_DOC_HEADERS.map((h,i)=>[h,values[indices[i]]||'']))}).filter(v=>Object.values(v).some(Boolean));
+ if(!entries.length)throw Error('Word 表格內沒有填寫任何空舖資料');
+ if(entries.length>100)throw Error('單次最多匯入 100 筆空舖');
+ const seen=new Set(vacancies.map(v=>v.address.replace(/\s/g,'')));
+ const accepted=[],errors=[];
+ for(let i=0;i<entries.length;i++){
+  const row=entries[i],city=row['城市'].trim(),district=row['區域'].trim(),raw=row['空舖地址'].trim();
+  const rentText=row['月租金'].replace(/[,，元NT$\s]/g,''),rent=Number(rentText);
+  if(!city||!district||!raw||!rentText||!Number.isFinite(rent)||rent<0){errors.push('第'+(i+2)+'列：缺少城市、區域、地址或有效租金');continue}
+  const address=raw.startsWith(city)?raw:city+(raw.startsWith(district)?'':district)+raw;
+  const key=address.replace(/\s/g,'');
+  if(seen.has(key)){errors.push('第'+(i+2)+'列：地址重複');continue}
+  seen.add(key);
+  const areaTypes=row['商圈屬性'].split(/[、,，;；]/).map(x=>x.trim()).filter(x=>AREA_TYPES.includes(x));
+  accepted.push({id:String(Date.now())+'-'+i+'-'+Math.random().toString(36).slice(2,7),address,rent,size:row['坪數'],front:row['面寬(公尺)'],floor:row['樓層'],contact:row['聯絡人'],phone:row['聯絡電話'],status:'vacant',position:null,region:{city,district},areaTypes,areaManual:true});
+ }
+ if(!accepted.length)throw Error('沒有可匯入的有效資料：'+errors.slice(0,3).join('；'));
+ if(!confirm('讀取 '+entries.length+' 筆，預計新增 '+accepted.length+' 筆，略過 '+errors.length+' 筆。確認建檔？'))return;
+ const previous=vacancies;vacancies=[...accepted,...vacancies];
+ if(!saveVacancies()){vacancies=previous;throw Error('本機儲存失敗，未完成匯入')}
+ refreshVacancyMarkers();
+ let located=0;
+ for(const v of accepted){if(await geocodeVacancy(v))located++}
+ showDashboard();
+ alert('已建檔 '+accepted.length+' 筆；成功地圖定位 '+located+' 筆；未定位 '+(accepted.length-located)+' 筆。'+(errors.length?'\n略過：'+errors.slice(0,8).join('；'):''));
+}
+function addVacancyDocActions(){
+ const generate=document.createElement('button');generate.className='dashboard-backup';generate.style.marginBottom='9px';generate.textContent='生成空舖資料表';
+ generate.onclick=async()=>{generate.disabled=true;try{await generateVacancyDoc()}catch(e){alert('產生 Word 失敗：'+e.message)}finally{generate.disabled=false}};
+ drawerBody.appendChild(generate);
+ const upload=document.createElement('button');upload.className='dashboard-backup';upload.style.marginBottom='9px';upload.textContent='上傳空舖資料';
+ const picker=document.createElement('input');picker.type='file';picker.accept='.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';picker.hidden=true;
+ upload.onclick=()=>picker.click();
+ picker.onchange=async()=>{if(!picker.files?.[0])return;upload.disabled=true;upload.textContent='匯入處理中…';try{await importVacancyDoc(picker.files[0])}catch(e){alert('匯入失敗：'+e.message)}finally{upload.disabled=false;upload.textContent='上傳空舖資料';picker.value=''}};
+ drawerBody.append(upload,picker);
+}
+
+function showDashboard(){setDrawerLayout('dashboard');nav={level:'dashboard',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='開發概況';backBtn.style.visibility='hidden';drawerBody.innerHTML='';const d=new Date(),today=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),due=vacancies.filter(v=>v.followUpDate&&v.followUpDate<=today&&!['已開幕','放棄開發'].includes(v.developmentStage)),active=vacancies.filter(v=>!['已開幕','放棄開發'].includes(v.developmentStage||'待評估'));const cards=document.createElement('div');cards.className='dashboard-grid';[['開發中空舖',active.length],['加盟主名單',franchiseLeads.length],['未簽約',franchiseLeads.filter(v=>!['已簽約','受訓中'].includes(v.stage)).length],['已簽約',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)).length],['已簽約未付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&!v.depositReceived).length],['已簽約已付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&v.depositReceived).length],['今日及逾期待追蹤',due.length],['已簽約案件',vacancies.filter(v=>v.developmentStage==='已簽約').length]].forEach(([name,num])=>{const el=document.createElement('div');el.className='dashboard-card';el.innerHTML='<span>'+esc(name)+'</span><strong>'+num+'</strong>';cards.appendChild(el)});drawerBody.appendChild(cards);const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.style.marginBottom='9px';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showDashboard()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出空舖與加盟主備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);const h=document.createElement('h3');h.textContent='今日及逾期追蹤（'+due.length+'）';drawerBody.appendChild(h);due.sort((a,b)=>a.followUpDate.localeCompare(b.followUpDate)).forEach(v=>{const el=document.createElement('button');el.className='dashboard-follow';el.innerHTML='<strong>'+esc(v.address)+'</strong><span>'+esc(v.followUpDate)+'｜'+esc(v.developmentStage||'待評估')+'</span>';el.onclick=()=>{vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';showVacancies()};drawerBody.appendChild(el)})}
 document.getElementById('openDashboard').onclick=showDashboard;
 function showProtection(){
  setDrawerLayout('protection');
