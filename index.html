@@ -424,6 +424,24 @@ function menuRow(title,sub,count,onClick){
   b.innerHTML='<div class="rowmain"><div class="rowtitle">'+esc(title)+'</div><div class="rowsub">'+esc(sub||'')+'</div></div><div class="count">'+count+'</div><div class="chev">›</div>';
   b.onclick=onClick;return b
 }
+function focusDistrictMap(city,district){
+ if(!map||!geocoder)return;
+ const requestCity=city,requestDistrict=district;
+ geocoder.geocode({address:city+district,componentRestrictions:{country:'TW'}},(results,status)=>{
+  if(nav.city!==requestCity||nav.district!==requestDistrict)return;
+  const result=status==='OK'&&results?.[0];
+  if(result){
+   const geometry=result.geometry;
+   const viewport=geometry.viewport||geometry.bounds;
+   if(viewport){map.fitBounds(viewport,24);google.maps.event.addListenerOnce(map,'idle',()=>{if(map.getZoom()>15)map.setZoom(15)})}
+   else{map.panTo(geometry.location);map.setZoom(14)}
+   return;
+  }
+  const positions=stores.filter(x=>x.city===city&&x.districtName===district).map(x=>cache[x.address]).filter(p=>p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+  if(positions.length){const bounds=new google.maps.LatLngBounds();positions.forEach(p=>bounds.extend(p));map.fitBounds(bounds,35);if(positions.length===1)map.setZoom(14)}
+  else if(CITY_CENTERS[city]){const [lat,lng,z]=CITY_CENTERS[city];map.panTo({lat,lng});map.setZoom(Math.max(z,12))}
+ });
+}
 function showCities(){
  setDrawerLayout('normal');
   nav={level:'cities',city:null,district:null};drawerTitle.textContent='城市';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
@@ -433,7 +451,7 @@ function showDistricts(c){
   nav={level:'districts',city:c,district:null};drawerTitle.textContent=c;backBtn.style.visibility='visible';drawerBody.innerHTML='';
   const ds=[...new Set(stores.filter(s=>s.city===c&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
   if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#766e69;text-align:center">目前沒有 COMEBUY 門市</div>';return}
-  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>showStores(c,d)))})
+  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{nav={level:'stores',city:c,district:d};focusDistrictMap(c,d);showStores(c,d)}))})
 }
 function showStores(c,d){
   nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
