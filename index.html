@@ -300,7 +300,8 @@ citySelect.innerHTML='<option value="">全台城市</option>'+CITY_ORDER.map(c=>
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function storeGoogleMapsUrl(s){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.name+' '+s.address)}
-function popupHtml(s){return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+esc(s.name)+'</b><div style="margin-top:5px">'+esc(s.address)+'</div><div>區域：'+esc(s.districtName)+'</div><div>商圈：'+esc(s.district)+'</div><div>預估月租：'+esc(s.rent)+' 萬元</div>'+(s.basis?'<small>'+esc(s.basis)+'</small>':'')+'<div style="margin-top:12px"><a href="'+esc(storeGoogleMapsUrl(s))+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>'}
+function popupHtml(s){return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+esc(s.name)+'</b><div style="margin-top:5px">'+esc(s.address)+'</div><div>區域：'+esc(s.districtName)+'</div><div>商圈：'+esc(s.district)+'</div><div>預估月租：'+esc(s.rent)+' 萬元</div>'+(s.basis?'<small>'+esc(s.basis)+'</small>':'')+'<div style="margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px"><button type="button" class="store-popup-details" data-store-idx="'+esc(s.idx)+'" style="padding:10px 6px;background:#d71920;color:#fff;border:0;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer">查看詳情</button><a href="'+esc(storeGoogleMapsUrl(s))+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 6px;background:#fff;color:#d71920;border:1px solid #d71920;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">Google maps</a></div></div>'}
+
 function vacancyPopupHtml(v){
  const district=v.region?.district||((v.address||'').match(/([^縣市]{1,5}[區鄉鎮市])/)||[])[1]||'區域待確認';
  const region=esc(vacancyDistrict(v)||district);
@@ -328,7 +329,15 @@ function centerStorePopupInViewport(){
  }));
 }
 function openStorePopup(s,marker){
- google.maps.event.addListenerOnce(infoWindow,'domready',centerStorePopupInViewport);
+ google.maps.event.addListenerOnce(infoWindow,'domready',()=>{
+  centerStorePopupInViewport();
+  const button=document.querySelector('.store-popup-details');
+  if(button)button.onclick=()=>{
+   infoWindow.close();
+   drawer.classList.add('open');
+   showStore(s);
+  };
+ });
  infoWindow.setContent(popupHtml(s));
  infoWindow.open({map,anchor:marker});
 }
