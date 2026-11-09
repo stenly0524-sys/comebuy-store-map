@@ -890,7 +890,7 @@ function storeHoursNow(s){
  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(field('weekday'));
  const mins=Number(field('hour'))%24*60+Number(field('minute'));
  if(day<0)return null;
- const valid=t=>/^([01]\\d|2[0-3]):[0-5]\\d$/.test(t||'');
+ const valid=t=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t||'');
  const time=t=>Number(t.slice(0,2))*60+Number(t.slice(3,5));
  for(const offset of [0,-1]){
   const entry=schedule.days[(day+offset+7)%7];
@@ -914,6 +914,8 @@ function showStores(c,d){
   drawerBody.appendChild(row);update();
  });
 }
+// Refresh displayed labels as the clock changes, without making network requests.
+setInterval(()=>{if(nav?.level!=='stores'||!drawer.classList.contains('open'))return;const rows=drawerBody.querySelectorAll('.store-hours-row');const matching=stores.filter(s=>s.city===nav.city&&s.districtName===nav.district&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand));rows.forEach((row,i)=>{const state=row.querySelector('.store-hours-state'),store=matching[i];if(!state||!store)return;const v=storeHoursNow(store);state.textContent=storeHoursText(v);state.dataset.state=v===true?'open':v===false?'closed':'unknown'})},30000);
 function storeHoursEditor(s){
  const saved=storeWeeklyHours[storeHoursId(s)]?.days||[];
  const names=['週日','週一','週二','週三','週四','週五','週六'];
