@@ -461,7 +461,7 @@ async function showAdministrativeBoundary(city,district){
   const geo=await loadBoundary(level);
   if(request!==cityHighlightRequest)return;
   const matched=(geo.features||[]).filter(f=>boundaryMatch(f,city,district));
-  if(!matched.length){console.warn('行政界線找不到對應資料',city,district);return}
+  if(!matched.length){console.warn('行政界線找不到對應資料',city,district,geo.features?.[0]?.properties);return}
   const collection={type:'FeatureCollection',features:matched};
   // Only the active selection has a visible outline; never fill or animate.
   map.data.setStyle({strokeColor:'#d71920',strokeWeight:3,strokeOpacity:1,fillOpacity:0,clickable:false,zIndex:800});
@@ -473,11 +473,11 @@ async function showAdministrativeBoundary(city,district){
   if(!bounds.isEmpty()){
    if(district){
     // Keep the full district outline visible below the fixed mobile control panel.
-    const mapHeight=map.getDiv().clientHeight||window.innerHeight;
-    const topPanel=document.querySelector('.top-panel, .toolbar, .controls, #controls');
-    const panelBottom=topPanel?topPanel.getBoundingClientRect().bottom:0;
-    const mapTop=map.getDiv().getBoundingClientRect().top;
-    const topPadding=Math.max(36,Math.min(Math.round(mapHeight*0.38),Math.max(0,Math.round(panelBottom-mapTop))+24));
+    const mapRect=map.getDiv().getBoundingClientRect();
+    const control=document.querySelector('#openList')?.closest('.bottom-nav')?.parentElement;
+    const controlBottom=control?control.getBoundingClientRect().bottom:0;
+    // Fit the entire polygon in the visible map below the floating controls.
+    const topPadding=Math.min(mapRect.height*0.58,Math.max(48,controlBottom-mapRect.top+24));
     map.fitBounds(bounds,{top:topPadding,bottom:48,left:32,right:32});
    }else map.fitBounds(bounds,36);
   }
@@ -486,9 +486,26 @@ async function showAdministrativeBoundary(city,district){
 }
 function flashCityArea(city){showAdministrativeBoundary(city,null)}
 function focusDistrictMap(city,district){
- // The authoritative polygon bounds control both centering and zoom.
- // Do not let a later geocoder callback overwrite the polygon fit.
+ // Geocode immediately so district navigation always pans/zooms, even if
+ // the administrative GeoJSON has not loaded or its names fail to match.
  showAdministrativeBoundary(city,district);
+ if(!map||!geocoder)return;
+ const request=cityHighlightRequest;
+ geocoder.geocode({address:district+city+',台灣',componentRestrictions:{country:'TW'}},(results,status)=>{
+  if(request!==cityHighlightRequest||nav.city!==city||nav.district!==district)return;
+  // Exact polygon bounds take priority if they were successfully loaded.
+  if(cityHighlight?.length)return;
+  const result=status==='OK'&&results?.[0];
+  if(!result)return;
+  const geometry=result.geometry;
+  const viewport=geometry?.viewport||geometry?.bounds;
+  if(viewport){
+   const rect=map.getDiv().getBoundingClientRect();
+   const control=document.querySelector('#openList')?.closest('.bottom-nav')?.parentElement;
+   const top=Math.min(rect.height*0.58,Math.max(48,(control?.getBoundingClientRect().bottom||0)-rect.top+24));
+   map.fitBounds(viewport,{top,bottom:48,left:32,right:32});
+  }else if(geometry?.location){map.panTo(geometry.location);map.setZoom(14)}
+ });
 }
 function showCities(){
  setDrawerLayout('normal');
