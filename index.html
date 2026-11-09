@@ -177,21 +177,23 @@ html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
 #gpsLocate:disabled{opacity:.6}
 #gpsLocate[hidden]{display:none!important}
 body:has(#drawer.open) #gpsLocate,body:has(dialog[open]) #gpsLocate,body:has([role="dialog"]:not([hidden])) #gpsLocate{display:none!important}
-#routePreview{position:fixed;left:12px;right:12px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:65;background:#fff;border:1px solid #eee1db;border-radius:16px;padding:12px;box-shadow:0 8px 30px #0003}
-#routePreview[hidden]{display:none!important}
-#routePreview .route-actions{display:flex;gap:8px;margin-top:9px}
-#routePreview button{flex:1;border-radius:10px;padding:11px 8px;font-size:14px;font-weight:700;border:1px solid #d71920;background:#fff;color:#d71920}
-#routePreview button:last-child{background:#d71920;color:#fff}
-#routeModePanel{margin-top:10px;padding:10px;border:1px solid #eee1db;border-radius:12px}
-#routeModePanel[hidden]{display:none!important}
-#routeModePanel .route-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
-#routeModePanel button{padding:10px 4px;border:1px solid #d71920;border-radius:9px;background:#fff;color:#d71920;font-weight:700}
-#routeModePanel button:disabled{opacity:.55}
+#routeDialog{position:fixed;inset:0;z-index:2147483000;background:#0008;display:grid;place-items:center;padding:16px}
+#routeDialog[hidden]{display:none!important}
+#routeDialog .route-card{width:min(100%,420px);box-sizing:border-box;background:#fff;border-radius:18px;padding:18px;box-shadow:0 10px 35px #0003}
+#routeDialog .route-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;font-weight:900;font-size:19px}
+#routeDialog .route-close{width:34px;height:34px;border:0;border-radius:50%;background:#d71920;color:white;font-size:21px}
+#routeDialog .route-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#routeDialog .route-modes button{padding:12px 4px;border:1px solid #d71920;border-radius:10px;background:white;color:#d71920;font-weight:800}
+#routeDialog .route-modes button.selected{background:#d71920;color:#fff}
+#routeDialog .route-actions{display:flex;gap:8px;margin-top:16px}
+#routeDialog .route-actions button{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:900;border:1px solid #d71920;background:#fff;color:#d71920}
+#routeDialog .route-actions button:last-child{background:#d71920;color:#fff}
+#routeDialog .route-actions button:disabled{opacity:.45}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="routePreview" hidden><div id="routeSummary" aria-live="polite"></div><div class="route-actions"><button type="button" id="routeCancel">取消</button><button type="button" id="routeStart">開始導航</button></div></div>
+<div id="routeDialog" hidden role="dialog" aria-modal="true" aria-label="規劃路線"><div class="route-card"><div class="route-header"><span>規劃路線</span><button type="button" class="route-close" id="routeClose" aria-label="關閉">×</button></div><div id="routeDestination" style="font-size:13px;margin-bottom:12px"></div><div style="font-weight:800;margin-bottom:8px">選擇移動方式</div><div class="route-modes"><button type="button" data-route-mode="walk">步行</button><button type="button" data-route-mode="scooter">機車</button><button type="button" data-route-mode="drive">汽車</button><button type="button" data-route-mode="bus">公車</button><button type="button" data-route-mode="metro">捷運</button></div><div class="route-actions"><button type="button" id="routeCancel">取消</button><button type="button" id="routeStart" disabled>開始導航</button></div></div></div>
 <button id="gpsLocate" type="button" data-mode="off" title="開始 GPS 即時定位" aria-label="開始 GPS 即時定位">◎</button>
 <button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖">← 返回地圖</button>
 
@@ -789,91 +791,50 @@ function getStoreOpeningDate(s){return storeOpeningDates[storeOpeningId(s)]||''}
 const OFFICIAL_OPENING_SOURCES=[["新莊中華","2026-08","https://www.comebuy2002.com.tw/news-detail/new-open-2026/"],["雙和圓通","2026-08","https://www.comebuy2002.com.tw/news-detail/new-open-2026/"],["中和安平","2026-04","https://www.comebuy2002.com.tw/news-detail/new-open-2026-04__1/"],["台中中工","2026-04","https://www.comebuy2002.com.tw/news-detail/new-open-2026-04__1/"],["中和自立","2025-12","https://www.comebuy2002.com.tw/news-detail/new-open-2025-12/"],["沙鹿靜宜","2025-11","https://www.comebuy2002.com.tw/news-detail/new-open-2025-11__1/"],["中央大學","2025-11","https://www.comebuy2002.com.tw/news-detail/new-open-2025-11__1/"],["台北古亭","2025-09","https://www.comebuy2002.com.tw/news-detail/new-open-2025-09__1/"]];
 function getOpeningEvidence(s){const name=(s.name||'').replace(/^COMEBUY(?: TEA)?\s*/,'').replace(/\s+/g,'');const found=OFFICIAL_OPENING_SOURCES.find(x=>x[0]===name);if(found)return {month:found[1],url:found[2],label:'官方公告開幕月份'};const local=getStoreOpeningDate(s);if(local)return {date:local,label:'本機先前建檔（未經官方驗證）'};return null}
 function openingEvidenceHtml(s){const e=getOpeningEvidence(s);if(!e)return '<div class="opening-evidence"><strong>開業日期：待查證</strong><small>尚未找到可核對的官方開幕資料</small></div>';return '<div class="opening-evidence"><strong>開業資訊：'+esc(e.month?e.month.replace('-','年')+'月':e.date)+'</strong><small>'+esc(e.label)+'</small>'+(e.url?'<a href="'+esc(e.url)+'" target="_blank" rel="noopener">查看官方公告</a>':'')+'</div>'}
-let routeRenderer=null,routeRequest=0,routeActive=null;
-const routePreview=document.getElementById('routePreview');
+let routeStore=null,routeMode=null,routeOrigin=null,routeToken=0;
+const routeDialog=document.getElementById('routeDialog');
 function clearRoutePreview(){
- ++routeRequest;
- if(routeRenderer)routeRenderer.setMap(null);
- routeRenderer=null;routeActive=null;routePreview.hidden=true;
+ ++routeToken;
+ routeStore=null;routeMode=null;routeOrigin=null;
+ routeDialog.hidden=true;
 }
 document.getElementById('routeCancel').onclick=clearRoutePreview;
-document.getElementById('routeStart').onclick=()=>{
- if(!routeActive)return;
- const {store,mode,origin}=routeActive;
- const modes={walk:'walking',scooter:'two-wheeler',drive:'driving',bus:'transit',metro:'transit'};
- const params=new URLSearchParams({api:'1',origin:origin.lat+','+origin.lng,destination:store.address,travelmode:modes[mode]});
- if(mode==='bus')params.set('transit_mode','bus');
- if(mode==='metro')params.set('transit_mode','subway');
- window.open('https://www.google.com/maps/dir/?'+params.toString(),'_blank','noopener');
-};
-function currentRouteOrigin(){
- return new Promise((resolve,reject)=>{
-  if(!navigator.geolocation){reject(new Error('此裝置不支援定位'));return}
-  navigator.geolocation.getCurrentPosition(p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),e=>reject(new Error(e.code===1?'請允許網站使用目前位置':'無法取得目前位置，請檢查 GPS 設定與訊號')),{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
- });
-}
+document.getElementById('routeClose').onclick=clearRoutePreview;
+routeDialog.addEventListener('click',e=>{if(e.target===routeDialog)clearRoutePreview()});
+routeDialog.querySelectorAll('[data-route-mode]').forEach(btn=>btn.onclick=()=>{
+ routeMode=btn.dataset.routeMode;
+ routeDialog.querySelectorAll('[data-route-mode]').forEach(b=>b.classList.toggle('selected',b===btn));
+ document.getElementById('routeStart').disabled=false;
+});
 function openRouteModePanel(store){
- const panel=document.getElementById('routeModePanel');
- panel.hidden=false;
- panel.innerHTML='<b>選擇移動方式</b><div class="route-modes">'+[['walk','步行'],['scooter','機車'],['drive','汽車'],['bus','公車'],['metro','捷運']].map(([id,label])=>'<button type="button" data-route-mode="'+id+'">'+label+'</button>').join('')+'</div><div id="routeModeStatus" style="font-size:12px;color:#766e69;margin-top:7px">將以目前 GPS 位置為起點。</div>';
- panel.querySelectorAll('[data-route-mode]').forEach(button=>button.onclick=()=>planStoreRoute(store,button.dataset.routeMode));
+ clearRoutePreview();
+ routeStore=store;
+ routeDialog.hidden=false;
+ document.getElementById('routeDestination').textContent='目的地：'+store.name+'｜'+store.address;
+ document.getElementById('routeStart').disabled=true;
+ routeDialog.querySelectorAll('[data-route-mode]').forEach(b=>b.classList.remove('selected'));
+ const token=routeToken;
+ if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{
+  if(token===routeToken)routeOrigin={lat:p.coords.latitude,lng:p.coords.longitude};
+ },()=>{},{enableHighAccuracy:true,timeout:10000,maximumAge:5000});
 }
-async function planStoreRoute(store,mode){
- const panel=document.getElementById('routeModePanel'),status=panel.querySelector('#routeModeStatus');
- const request=++routeRequest;
- panel.querySelectorAll('button').forEach(b=>b.disabled=true);
- status.textContent='正在取得目前位置並規劃路線…';
- let origin=null;
- try{
-  origin=await currentRouteOrigin();
-  if(request!==routeRequest)return;
-  // Google Maps JavaScript DirectionsService does not offer motorcycle routes.
-  // Show a clear handoff for this mode rather than presenting a driving route as motorcycle.
-  if(mode==='scooter'){
-   routeActive={store,mode,origin};
-   routePreview.hidden=false;
-   document.getElementById('routeSummary').textContent='機車｜Google Maps 將顯示支援的機車路線（依地區及裝置提供）';
-   drawer.classList.remove('open');
-   panel.querySelectorAll('button').forEach(b=>b.disabled=false);
-   return;
-  }
-  const travelMode=mode==='walk'?'WALKING':mode==='drive'?'DRIVING':'TRANSIT';
-  const options={origin,destination:store.address,travelMode:google.maps.TravelMode[travelMode]};
-  if(mode==='bus'||mode==='metro')options.transitOptions={modes:[mode==='bus'?google.maps.TransitMode.BUS:google.maps.TransitMode.SUBWAY]};
-  const service=new google.maps.DirectionsService();
-  const result=await service.route(options);
-  if(request!==routeRequest)return;
-  if(routeRenderer)routeRenderer.setMap(null);
-  routeRenderer=new google.maps.DirectionsRenderer({map,preserveViewport:false,suppressMarkers:false,polylineOptions:{strokeColor:'#d71920',strokeWeight:5}});
-  routeRenderer.setDirections(result);
-  const leg=result.routes?.[0]?.legs?.[0];
-  const label={walk:'步行',drive:'汽車',bus:'公車',metro:'捷運'}[mode];
-  document.getElementById('routeSummary').textContent=label+'｜'+(leg?.distance?.text||'距離未提供')+'・'+(leg?.duration?.text||'時間未提供')+'（路線依 Google Maps 提供）';
-  routeActive={store,mode,origin};
-  routePreview.hidden=false;
-  drawer.classList.remove('open');
- }catch(e){
-  if(request!==routeRequest)return;
-  const denied=String(e?.message||e?.status||e).includes('REQUEST_DENIED');
-  if(typeof origin!=='undefined'&&origin&&denied){
-   // Keep the navigation handoff available when the embedded Directions service is disabled.
-   routeActive={store,mode,origin};
-   routePreview.hidden=false;
-   document.getElementById('routeSummary').textContent='目前無法在地圖內顯示路線（Google 路線服務權限未開啟）。可點「開始導航」交由 Google Maps 規劃。';
-   drawer.classList.remove('open');
-  }else{
-   status.textContent=denied?'路線服務未授權，請確認 Google Cloud 的 Directions API、金鑰限制與計費設定。':'無法規劃路線：'+(e?.message||e?.status||'此交通方式可能沒有可用路線');
-  }
- }finally{
-  if(request===routeRequest)panel.querySelectorAll('button').forEach(b=>b.disabled=false);
- }
-}
+document.getElementById('routeStart').onclick=()=>{
+ if(!routeStore||!routeMode)return;
+ const modes={walk:'walking',scooter:'two-wheeler',drive:'driving',bus:'transit',metro:'transit'};
+ const params=new URLSearchParams({api:'1',destination:routeStore.address,travelmode:modes[routeMode]});
+ if(routeOrigin)params.set('origin',routeOrigin.lat+','+routeOrigin.lng);
+ if(routeMode==='bus')params.set('transit_mode','bus');
+ if(routeMode==='metro')params.set('transit_mode','subway');
+ const url='https://www.google.com/maps/dir/?'+params.toString();
+ clearRoutePreview();
+ window.location.href=url;
+};
 function showStore(s){
  setDrawerLayout('normal');
  nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';
- drawerBody.innerHTML='<div class="storecard"><div class="storecard-top"><h2>'+esc(s.name)+'</h2><button type="button" id="editStore" class="store-edit-button">編輯</button></div><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+(s.basis?esc(s.basis):'')+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="'+esc(storeGoogleMapsUrl(s))+'">開啟Google maps</a></div><div class="actions"><button type="button" class="primary" id="planRoute">規劃路線</button></div><div id="routeModePanel" hidden></div></div>';
+ drawerBody.innerHTML='<div class="storecard"><div class="storecard-top"><h2>'+esc(s.name)+'</h2><button type="button" id="editStore" class="store-edit-button">編輯</button></div><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+(s.basis?esc(s.basis):'')+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="'+esc(storeGoogleMapsUrl(s))+'">開啟Google maps</a></div><div class="actions"><button type="button" class="primary" id="planRoute">規劃路線</button></div></div>';
  document.querySelector('#editStore').onclick=()=>editStore(s);
- document.querySelector('#planRoute').onclick=()=>{clearRoutePreview();openRouteModePanel(s)};
+ document.querySelector('#planRoute').onclick=()=>openRouteModePanel(s);
  document.querySelector('#locate').onclick=async()=>{
   if(!markers.has(s.idx))await geocodeOne(s);
   const m=markers.get(s.idx);if(m){map.panTo(m.getPosition());map.setZoom(17);openStorePopup(s,m);drawer.classList.remove('open')}
