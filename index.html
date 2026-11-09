@@ -476,14 +476,24 @@ async function showAdministrativeBoundary(city,district){
 }
 function flashCityArea(city){showAdministrativeBoundary(city,null)}
 function focusDistrictMap(city,district){
+ // Move immediately on district selection; do not wait for asynchronous GeoJSON loading.
+ if(map&&CITY_CENTERS[city]){
+  const [lat,lng]=CITY_CENTERS[city];
+  map.panTo({lat,lng});
+  map.setZoom(12);
+ }
  showAdministrativeBoundary(city,district);
  if(!map||!geocoder)return;
- // Keep map navigation usable even when the boundary file cannot load.
- geocoder.geocode({address:city+district,componentRestrictions:{country:'TW'}},(results,status)=>{
-  if(nav.city!==city||nav.district!==district||cityHighlight?.length)return;
+ const requestedCity=city,requestedDistrict=district;
+ geocoder.geocode({address:city+district+',台灣',componentRestrictions:{country:'TW'}},(results,status)=>{
+  if(nav.city!==requestedCity||nav.district!==requestedDistrict)return;
+  // The polygon loader may already have fit the exact administrative bounds.
+  if(cityHighlight?.length)return;
   const geometry=status==='OK'&&results?.[0]?.geometry;
-  if(geometry?.viewport)map.fitBounds(geometry.viewport,24);
-  else if(geometry?.location){map.panTo(geometry.location);map.setZoom(14)}
+  if(geometry?.viewport){
+   map.fitBounds(geometry.viewport,36);
+   google.maps.event.addListenerOnce(map,'idle',()=>{if(nav.city===requestedCity&&nav.district===requestedDistrict&&map.getZoom()>15)map.setZoom(15)});
+  }else if(geometry?.location){map.panTo(geometry.location);map.setZoom(14)}
  });
 }
 function showCities(){
