@@ -760,8 +760,8 @@ function showVacancies(){
   const v={...extra,id:String(Date.now())+'-'+Math.random().toString(36).slice(2,8),address,rent,status:'vacant',position:null,areaTypes:[...form.querySelectorAll('input[name="areaTypes"]:checked')].map(el=>el.value),areaManual:true};
   const ok=await geocodeVacancy(v);
   if(!ok){error.textContent='無法定位此地址，請輸入完整縣市、區域與門牌';btn.disabled=false;btn.textContent='＋ 新增空舖並定位';return}
-  vacancies.unshift(v);if(!saveVacancies()){btn.disabled=false;return}
-  refreshVacancyMarkers();vacancyPanelMode='list';showVacancies();
+  vacancies.unshift(v);if(!saveVacancies()){vacancies.shift();btn.disabled=false;return}
+  syncFranchiseVacancyLinks();refreshVacancyMarkers();vacancyPanelMode='list';showVacancies();
  };
  if(vacancyPanelMode==='add')drawerBody.appendChild(form);
  if(vacancyPanelMode!=='list'&&vacancyPanelMode!=='archive')return;
@@ -833,7 +833,7 @@ document.getElementById('openVacancies').onclick=showVacancies;
 
 const FRANCHISE_KEY='comebuy_franchise_leads_v1';
 let franchiseLeads=[];try{const raw=JSON.parse(localStorage.getItem(FRANCHISE_KEY)||'[]');if(Array.isArray(raw))franchiseLeads=raw}catch(e){}
-function saveFranchise(){try{localStorage.setItem(FRANCHISE_KEY,JSON.stringify(franchiseLeads));return true}catch(e){alert('儲存失敗，請檢查本機儲存空間');return false}}
+function saveFranchise(){try{localStorage.setItem(FRANCHISE_KEY,JSON.stringify(franchiseLeads));syncFranchiseVacancyLinks();return true}catch(e){alert('儲存失敗，請檢查本機儲存空間');return false}}
 const LEAD_DISTRICTS=Object.fromEntries(CITY_ORDER.map(c=>[c,[...new Set(stores.filter(s=>s.city===c).map(s=>s.districtName).filter(x=>x&&x!=='其他'))].sort((a,b)=>a.localeCompare(b,'zh-TW'))]));
 function leadCityOptions(selected=''){return '<option value="">請選擇城市</option>'+CITY_ORDER.map(c=>'<option value="'+esc(c)+'" '+(c===selected?'selected':'')+'>'+esc(c)+'</option>').join('')}
 function leadDistrictOptions(city,selected=''){return '<option value="">請選擇區域</option>'+(LEAD_DISTRICTS[city]||[]).map(d=>'<option value="'+esc(d)+'" '+(d===selected?'selected':'')+'>'+esc(d)+'</option>').join('')}
@@ -885,17 +885,54 @@ async function askFranchiseTraining(v){
 }
 function leadStageLabel(v){return v.stage==='已簽約'&&v.depositReceived?'已簽約（已收訂金）':v.stage}
 
+function normalizedStoreAddress(value){return String(value||'').normalize('NFKC').replace(/臺/g,'台').replace(/[\\s　,，、。．.\-－]/g,'').trim()}
+function leadAddressCandidates(lead){return String(lead.storeAddress||'').split('；').map(x=>x.trim()).filter(Boolean)}
+function matchVacancyByAddress(address){const key=normalizedStoreAddress(address);if(!key)return null;const found=vacancies.filter(v=>normalizedStoreAddress(v.address)===key);return found.length===1?found[0]:null}
+function syncFranchiseVacancyLinks(){
+ let changed=false;
+ for(const v of vacancies){
+  const matches=franchiseLeads.filter(lead=>leadAddressCandidates(lead).some(address=>normalizedStoreAddress(address)===normalizedStoreAddress(v.address)));
+  if(matches.length===1){
+   const lead=matches[0];
+   if(!v.franchiseLeadId||String(v.franchiseLeadId)===String(v.autoMatchedLeadId||'')){
+    if(String(v.franchiseLeadId||'')!==String(lead.id)||String(v.autoMatchedLeadId||'')!==String(lead.id)){v.franchiseLeadId=lead.id;v.autoMatchedLeadId=lead.id;changed=true}
+   }
+  }else if(v.autoMatchedLeadId&&String(v.franchiseLeadId||'')===String(v.autoMatchedLeadId)){
+   v.franchiseLeadId='';delete v.autoMatchedLeadId;changed=true;
+  }
+ }
+ if(changed){saveVacancies();refreshVacancyMarkers()}
+ return changed;
+}
+function openFranchiseAddressVacancyAdd(lead,address){
+ infoWindow.close();
+ vacancyPanelMode='add';showVacancies();
+ const form=drawerBody.querySelector('.vacancy-form');
+ if(!form)return;
+ const city=form.querySelector('#vacancyCity'),district=form.querySelector('#vacancyDistrict');
+ if(lead.city&&[...city.options].some(o=>o.value===lead.city)){
+  city.value=lead.city;city.dispatchEvent(new Event('change'));
+  if(lead.district&&[...district.options].some(o=>o.value===lead.district))district.value=lead.district;
+ }
+ form.querySelector('#vacancyAddress').value=address;
+ form.querySelector('#vacancyAddress').focus();
+}
 async function locateFranchiseAddress(lead,address){
- const matched=vacancies.find(v=>String(v.franchiseLeadId||'')===String(lead.id)&&v.address===address);
+ const matched=matchVacancyByAddress(address);
  if(matched){await locateVacancy(matched);return}
  if(!window.google?.maps?.Geocoder||!map){alert('地圖尚未載入，請稍後再試');return}
  try{
-  const result=await new google.maps.Geocoder().geocode({address});
+  const result=await new google.maps.Geocoder().geocode({address,region:'TW',componentRestrictions:{country:'TW'}});
   const location=result.results?.[0]?.geometry?.location;
   if(!location){alert('找不到該地址，請確認地址內容');return}
   map.panTo(location);map.setZoom(17);drawer.classList.remove('open');
   infoWindow.close();infoWindow.setPosition(location);
-  infoWindow.setContent('<div style="min-width:200px"><b>加盟主展店地址</b><div style="margin-top:7px">'+esc(address)+'</div></div>');
+  infoWindow.setContent('<div style="min-width:220px"><b>加盟主展店地址</b><div style="margin-top:7px">'+esc(address)+'</div><button type="button" data-franchise-add-vacancy style="display:block;width:100%;margin-top:12px;padding:10px;background:#d71920;color:#fff;border:0;border-radius:9px;font-weight:700">增加至空舖</button></div>');
+  google.maps.event.addListenerOnce(infoWindow,'domready',()=>{
+   centerStorePopupInViewport();
+   const button=document.querySelector('.gm-style-iw [data-franchise-add-vacancy]');
+   if(button)button.onclick=()=>openFranchiseAddressVacancyAdd(lead,address);
+  });
   infoWindow.open({map});
  }catch(e){alert('地址定位失敗，請確認完整地址後重試')}
 }
