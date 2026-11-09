@@ -1583,26 +1583,28 @@ function showFranchise(section=activeFranchiseSection){
  activeFranchiseSection=section;
  syncFranchiseVacancyLinks();
  const manager=section==='owners';
+ const isSigned=v=>['已簽約','受訓中'].includes(v.stage);
  setDrawerLayout('compact');
- nav={level:'franchise',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent=manager?'加盟主管理':'加盟案件';backBtn.style.visibility='visible';drawerBody.innerHTML='';
+ nav={level:'franchise',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent=manager?'加盟開發':'加盟案件';backBtn.style.visibility='visible';drawerBody.innerHTML='';
  const tabs=document.createElement('div');tabs.className='vacancy-tabs';
- tabs.innerHTML=manager?'<button type="button" data-mode="add">＋ 新增加盟主</button><button type="button" data-mode="existing">原加盟主 ('+franchiseLeads.filter(v=>v.franchiseType==='原加盟主').length+')</button>':'<button type="button" data-mode="add">＋ 新增案件</button><button type="button" data-mode="list">加盟案件 ('+franchiseLeads.filter(v=>(v.franchiseType||'新加盟主')!=='原加盟主').length+')</button>';
+ tabs.innerHTML=manager?'<button type="button" data-mode="add">＋ 新增開發</button><button type="button" data-mode="existing">未簽約加盟 ('+franchiseLeads.filter(v=>!isSigned(v)).length+')</button>':'<button type="button" data-mode="list">已簽約加盟 ('+franchiseLeads.filter(isSigned).length+')</button>';
  if(franchisePanelMode!=='add'&&franchisePanelMode!==(manager?'existing':'list'))franchisePanelMode=manager?'existing':'list';
+ if(!manager)franchisePanelMode='list';
  drawerBody.appendChild(tabs);
  tabs.querySelectorAll('button').forEach(btn=>{btn.classList.toggle('active',btn.dataset.mode===franchisePanelMode);btn.onclick=()=>{franchisePanelMode=btn.dataset.mode;franchiseEditId=null;franchiseStageFilter='';showFranchise(section)}});
 
  if(franchisePanelMode==='add'){
   const form=document.createElement('form');form.className='vacancy-form';
-  form.innerHTML='<input type="hidden" name="franchiseType" value="'+(manager?'原加盟主':'新加盟主')+'"><label>加盟主姓名<input name="name" maxlength="70" required placeholder="姓名"></label><label>聯絡電話<input name="phone" type="tel" maxlength="35" required placeholder="電話"></label><label>通訊軟體帳號<input name="messenger" maxlength="120" placeholder="LINE、WeChat、其他"></label><label>意向城市<select name="city" required>'+leadCityOptions()+'</select></label><label>意向區域<select name="district" required disabled><option value="">請先選擇城市</option></select></label><label>洽談進度<select name="stage">'+LEAD_STAGES.map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>備註<textarea name="note" rows="2" maxlength="500" placeholder="洽談紀錄"></textarea></label><button type="submit">＋ 新增加盟主</button><div class="vacancy-note">加盟主個資僅存於本機瀏覽器，請勿在共用裝置建檔。</div>';
+  form.innerHTML='<input type="hidden" name="franchiseType" value="新加盟主"><label>加盟主姓名<input name="name" maxlength="70" required placeholder="姓名"></label><label>聯絡電話<input name="phone" type="tel" maxlength="35" required placeholder="電話"></label><label>通訊軟體帳號<input name="messenger" maxlength="120" placeholder="LINE、WeChat、其他"></label><label>意向城市<select name="city" required>'+leadCityOptions()+'</select></label><label>意向區域<select name="district" required disabled><option value="">請先選擇城市</option></select></label><label>洽談進度<select name="stage">'+LEAD_STAGES.map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>備註<textarea name="note" rows="2" maxlength="500" placeholder="洽談紀錄"></textarea></label><button type="submit">＋ 新增加盟主</button><div class="vacancy-note">加盟主個資僅存於本機瀏覽器，請勿在共用裝置建檔。</div>';
   const typeEl=form.querySelector('[name="franchiseType"]'),stageEl=form.querySelector('[name="stage"]');stageEl.innerHTML=franchiseStageOptions(typeEl.value,'').map(x=>'<option>'+esc(x)+'</option>').join('');
   const c=form.querySelector('[name="city"]'),d=form.querySelector('[name="district"]');c.onchange=()=>setLeadDistrictSelector(c,d);
-  form.onsubmit=async e=>{e.preventDefault();const fd=new FormData(form);const lead={franchiseType:String(fd.get('franchiseType')||'新加盟主'),id:Date.now()+'-'+Math.random().toString(36).slice(2),name:String(fd.get('name')||'').trim(),phone:String(fd.get('phone')||'').trim(),messenger:String(fd.get('messenger')||'').trim(),city:String(fd.get('city')||''),district:String(fd.get('district')||''),stage:String(fd.get('stage')||'新名單'),note:String(fd.get('note')||'').trim(),storeAddress:''};lead.region=lead.city+lead.district;if(!lead.name||!lead.phone||!lead.city||!lead.district)return;if(lead.stage==='已簽約'&&!await askFranchiseDeposit(lead))return;if(lead.stage==='受訓中'&&!await askFranchiseTraining(lead))return;franchiseLeads.unshift(lead);if(saveFranchise()){franchisePanelMode=lead.franchiseType==='原加盟主'?'existing':'list';showFranchise(section)}else franchiseLeads.shift()};
+  form.onsubmit=async e=>{e.preventDefault();const fd=new FormData(form);const lead={franchiseType:String(fd.get('franchiseType')||'新加盟主'),id:Date.now()+'-'+Math.random().toString(36).slice(2),name:String(fd.get('name')||'').trim(),phone:String(fd.get('phone')||'').trim(),messenger:String(fd.get('messenger')||'').trim(),city:String(fd.get('city')||''),district:String(fd.get('district')||''),stage:String(fd.get('stage')||'新名單'),note:String(fd.get('note')||'').trim(),storeAddress:''};lead.region=lead.city+lead.district;if(!lead.name||!lead.phone||!lead.city||!lead.district)return;if(lead.stage==='已簽約'&&!await askFranchiseDeposit(lead))return;if(lead.stage==='受訓中'&&!await askFranchiseTraining(lead))return;franchiseLeads.unshift(lead);if(saveFranchise()){franchisePanelMode='existing';showFranchise(section)}else franchiseLeads.shift()};
   drawerBody.appendChild(form);return
  }
  if(franchisePanelMode!=='list'&&franchisePanelMode!=='existing')return;
- const filter=document.createElement('div');filter.className='lead-filter';filter.innerHTML='<label>篩選加盟主狀態<select><option value="">全部狀態</option>'+franchiseStageOptions(franchisePanelMode==='existing'?'原加盟主':'新加盟主',franchiseStageFilter).map(x=>'<option value="'+esc(x)+'" '+(franchiseStageFilter===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>';drawerBody.appendChild(filter);
+ const filter=document.createElement('div');filter.className='lead-filter';filter.innerHTML='<label>篩選加盟主狀態<select><option value="">全部狀態</option>'+LEAD_STAGES.filter(x=>manager?!isSigned({stage:x}):isSigned({stage:x})).map(x=>'<option value="'+esc(x)+'" '+(franchiseStageFilter===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>';drawerBody.appendChild(filter);
  filter.querySelector('select').onchange=e=>{franchiseStageFilter=e.target.value;showFranchise(section)};
- const rows=franchiseLeads.filter(v=>(franchisePanelMode==='existing'?v.franchiseType==='原加盟主':(v.franchiseType||'新加盟主')==='新加盟主')&&(!franchiseStageFilter||v.stage===franchiseStageFilter));
+ const rows=franchiseLeads.filter(v=>(manager?!isSigned(v):isSigned(v))&&(!franchiseStageFilter||v.stage===franchiseStageFilter));
  if(!rows.length){const empty=document.createElement('p');empty.className='vacancy-note';empty.textContent='目前沒有符合條件的加盟主資料';drawerBody.appendChild(empty)}
  rows.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';item.classList.toggle('lead-unpaid-card',((v.stage==='已簽約'&&!v.depositReceived)||(v.stage==='受訓中'&&v.trainingPending)));
@@ -1757,7 +1759,7 @@ function addVacancyDocActions(){
 function showCaseManagement(){
  setDrawerLayout('dashboard');nav={level:'cases',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='案件管理';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const choices=document.createElement('div');choices.className='case-management-choices';
- choices.innerHTML='<button type="button" id="caseListEntry">加盟案件 <span>›</span></button><button type="button" id="ownerListEntry">加盟主管理 <span>›</span></button>';
+ choices.innerHTML='<button type="button" id="caseListEntry">加盟案件 <span>›</span></button><button type="button" id="ownerListEntry">加盟開發 <span>›</span></button>';
  drawerBody.appendChild(choices);
  choices.querySelector('#caseListEntry').onclick=()=>{franchisePanelMode='list';franchiseStageFilter='';showFranchise('cases')};
  choices.querySelector('#ownerListEntry').onclick=()=>{franchisePanelMode='existing';franchiseStageFilter='';showFranchise('owners')};
