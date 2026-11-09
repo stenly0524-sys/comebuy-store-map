@@ -261,9 +261,11 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .drawer:has(.lead-summary-row) .lead-detail-line>button,
 .drawer:has(.lead-summary-row) .lead-detail-line>span:last-child{min-width:0;text-align:left;line-height:20px!important}
 @media(max-width:370px){.drawer:has(.lead-summary-row) .lead-summary-row{grid-template-columns:24% 35% minmax(0,1fr)!important}.drawer:has(.lead-summary-row) .lead-summary-phone{font-size:10px!important}}
-.case-management-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:2px 0 15px}
-.case-management-choices button{display:flex;justify-content:space-between;align-items:center;gap:4px;border:1px solid #e4d6d2;background:#fff;color:#a71920;border-radius:12px;padding:15px 10px;font-size:15px;font-weight:850}
-.case-management-choices button span{font-size:22px}
+.case-management-choices{display:flex;gap:9px;margin:10px 2px 14px}
+.case-management-choices button{flex:1;min-width:0;display:flex;justify-content:center;align-items:center;gap:5px;background:#fff;border:1px solid #ddd4ce;border-radius:12px;padding:12px 6px;font-size:14px;font-weight:850;color:#2f2926;white-space:nowrap}
+.case-management-choices button:active{background:#d71920;border-color:#d71920;color:#fff}
+.case-management-choices button span{font-size:17px;color:#9d948e}
+.case-management-choices button:active span{color:#fff}
 .store-hours-state{display:inline-block;margin-top:4px;font-size:12px;font-weight:750;color:#777}
 .store-hours-state[data-state="open"]{color:#16844b}
 .store-hours-state[data-state="closed"]{color:#c62828}
