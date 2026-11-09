@@ -286,6 +286,10 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .vacancy-tabs button{display:flex!important;align-items:center;justify-content:center;gap:5px!important;font-size:12px!important;font-weight:850!important;white-space:nowrap;padding:10px 3px!important;min-width:0!important}
 .vacancy-tabs button span{font-size:inherit!important;line-height:1.25}
 .vacancy-tabs .vacancy-tab-icon{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* Ensure 項目 and 設定 use COMEBUY red on active selection. */
+.top .card > .bottom-nav #openFranchise.active,.top .card > .bottom-nav #openDashboard.active{background-color:#d71920!important;border-color:#d71920!important;color:#fff!important}
+.top .card > .bottom-nav #openFranchise.active svg,.top .card > .bottom-nav #openDashboard.active svg{color:#fff!important;stroke:currentColor!important}
 </style>
 </head>
 <body>
@@ -1785,7 +1789,7 @@ function addVacancyDocActions(){
  drawerBody.append(upload,picker);
 }
 function showCaseManagement(){
- setDrawerLayout('dashboard');nav={level:'cases',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='項目';setGradientHeading('cases');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
+ setDrawerLayout('dashboard');nav={level:'cases',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='項目';requestAnimationFrame(syncActionButtons);setGradientHeading('cases');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const choices=document.createElement('div');choices.className='case-management-choices';
  choices.innerHTML='<button type="button" id="caseListEntry">加盟案件 <span>›</span></button><button type="button" id="ownerListEntry">加盟開發 <span>›</span></button>';
  drawerBody.appendChild(choices);
@@ -1796,7 +1800,7 @@ function showCaseManagement(){
  const h=document.createElement('h3');h.textContent='今日及逾期追蹤（'+due.length+'）';drawerBody.appendChild(h);due.sort((a,b)=>a.followUpDate.localeCompare(b.followUpDate)).forEach(v=>{const el=document.createElement('button');el.className='dashboard-follow';el.innerHTML='<strong>'+esc(v.address)+'</strong><span>'+esc(v.followUpDate)+'｜'+esc(vacancyStage(v))+'</span>';el.onclick=()=>{vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';showVacancies()};drawerBody.appendChild(el)})
 }
 function showSettings(){
- setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
+ setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';requestAnimationFrame(syncActionButtons);setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.style.marginBottom='9px';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出空舖與加盟主備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
 }
 document.getElementById('openDashboard').onclick=showSettings;
