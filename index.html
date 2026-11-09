@@ -267,6 +267,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .store-hours-state{display:inline-block;margin-top:4px;font-size:12px;font-weight:750;color:#777}
 .store-hours-state[data-state="open"]{color:#16844b}
 .store-hours-state[data-state="closed"]{color:#c62828}
+.store-hours-editor{border:1px solid #e5dedb;border-radius:10px;margin:10px 0;padding:10px;min-width:0}.store-hours-editor legend{font-weight:800}.store-hours-day{display:grid;grid-template-columns:38px minmax(0,1fr) minmax(0,1fr) 55px;gap:5px;align-items:center;margin:7px 0;font-size:12px}.store-hours-day input[type=time]{min-width:0;width:100%;box-sizing:border-box;padding:7px 2px}.store-hours-day label{display:flex;align-items:center;gap:2px;font-size:12px}
 </style>
 </head>
 <body>
@@ -875,43 +876,48 @@ function showDistricts(c){
   ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{nav={level:'stores',city:c,district:d};citySelect.value=c;updateDistrictOptions(c).then(()=>{if(citySelect.value===c)districtSelect.value=d});focusDistrictMap(c,d);showStores(c,d)}))})
 }
 // Google-listed hours are consulted only when opening a district list; unknown is never shown as closed.
-const storeHoursSession=new Map();
-let storeHoursService=null,storeHoursGeneration=0;
-function storeHoursText(value){return value===true?'營業中':value===false?'休息中':'營業狀態未知'}
-async function googleStoreHours(s){
- const key=storeOpeningId(s),cached=storeHoursSession.get(key);
- if(cached&&Date.now()-cached.time<5*60*1000)return cached.value;
- if(!google.maps.places?.PlacesService)throw Error('Places API 未啟用');
- if(!storeHoursService)storeHoursService=new google.maps.places.PlacesService(map);
- const find=await new Promise((resolve,reject)=>storeHoursService.findPlaceFromQuery({
-  query:s.name+' '+s.address,fields:['place_id','name','formatted_address']
- },(items,status)=>status==='OK'&&items?.length?resolve(items):reject(Error(status))));
- const candidate=find.find(p=>String(p.formatted_address||'').replace(/\s/g,'').includes(String(s.address||'').replace(/\s/g,'').slice(-7))); if(!candidate)throw Error('門市地址未能確認配對');
- const place=await new Promise((resolve,reject)=>storeHoursService.getDetails({
-  placeId:candidate.place_id,fields:['opening_hours','business_status','name','formatted_address']
- },(detail,status)=>status==='OK'&&detail?resolve(detail):reject(Error(status))));
- const value=place.business_status&&place.business_status!=='OPERATIONAL'?false:
-  typeof place.opening_hours?.isOpen==='function'?place.opening_hours.isOpen(new Date()):
-  typeof place.opening_hours?.open_now==='boolean'?place.opening_hours.open_now:null;
- storeHoursSession.set(key,{time:Date.now(),value});
- return value;
+// Self-owned weekly schedules only. No Google Places calls or permanent Google-data caching.
+const STORE_HOURS_KEY='comebuy_store_weekly_hours_v1';
+let storeWeeklyHours={};
+try{const x=JSON.parse(localStorage.getItem(STORE_HOURS_KEY)||'{}');if(x&&typeof x==='object'&&!Array.isArray(x))storeWeeklyHours=x}catch(e){}
+function storeHoursId(s){return [s.brand||'COMEBUY',s.name,s.address].join('|')}
+function storeHoursNow(s){
+ const schedule=storeWeeklyHours[storeHoursId(s)];
+ if(!schedule||!Array.isArray(schedule.days)||schedule.days.length!==7)return null;
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+ const field=t=>parts.find(p=>p.type===t)?.value;
+ const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(field('weekday'));
+ const mins=Number(field('hour'))%24*60+Number(field('minute'));
+ if(day<0)return null;
+ const valid=t=>/^([01]\\d|2[0-3]):[0-5]\\d$/.test(t||'');
+ const time=t=>Number(t.slice(0,2))*60+Number(t.slice(3,5));
+ for(const offset of [0,-1]){
+  const entry=schedule.days[(day+offset+7)%7];
+  if(!entry||entry.closed||!valid(entry.open)||!valid(entry.close))continue;
+  const start=time(entry.open)+offset*1440;
+  let end=time(entry.close)+offset*1440;
+  if(end<=start)end+=1440;
+  if(mins>=start&&mins<end)return true;
+ }
+ return false;
 }
+function storeHoursText(value){return value===true?'營業中':value===false?'休息中':'營業時間未建檔'}
 function showStores(c,d){
- const generation=++storeHoursGeneration;
  nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
- const matching=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand));
- matching.forEach(s=>{
+ stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).forEach(s=>{
   const row=menuRow(s.name,s.address,'',()=>showStore(s));
-  const state=document.createElement('span');state.className='store-hours-state';state.textContent='查詢中';
-  row.querySelector('.rowmain')?.appendChild(state);drawerBody.appendChild(row);
-  googleStoreHours(s).then(value=>{
-   if(generation!==storeHoursGeneration||!row.isConnected)return;
-   state.textContent=storeHoursText(value);state.dataset.state=value===true?'open':value===false?'closed':'unknown';
-  }).catch(()=>{
-   if(generation!==storeHoursGeneration||!row.isConnected)return;
-   state.textContent='營業狀態未知';state.dataset.state='unknown';
-  });
+  const state=document.createElement('span');state.className='store-hours-state';
+  const update=()=>{const v=storeHoursNow(s);state.textContent=storeHoursText(v);state.dataset.state=v===true?'open':v===false?'closed':'unknown'};
+  row.querySelector('.rowmain')?.appendChild(state);drawerBody.appendChild(row);update();
  });
+}
+function storeHoursEditor(s){
+ const saved=storeWeeklyHours[storeHoursId(s)]?.days||[];
+ const names=['週日','週一','週二','週三','週四','週五','週六'];
+ return '<fieldset class="store-hours-editor"><legend>每週營業時間（自行確認建檔）</legend><small>僅儲存自有資料，不會再次查詢 Google；特殊休假需手動更新。</small>'+names.map((name,i)=>{
+  const v=saved[i]||{closed:false,open:'10:00',close:'22:00'};
+  return '<div class="store-hours-day"><span>'+name+'</span><input type="time" name="hoursOpen'+i+'" value="'+esc(v.open||'10:00')+'"><input type="time" name="hoursClose'+i+'" value="'+esc(v.close||'22:00')+'"><label><input type="checkbox" name="hoursClosed'+i+'" '+(v.closed?'checked':'')+'>休息</label></div>'
+ }).join('')+'</fieldset>';
 }
 const STORE_OPENING_KEY='comebuy_store_opening_dates_v1';
 let storeOpeningDates={};try{const d=JSON.parse(localStorage.getItem(STORE_OPENING_KEY)||'{}');if(d&&typeof d==='object'&&!Array.isArray(d))storeOpeningDates=d}catch(e){}
@@ -971,15 +977,20 @@ function showStore(s){
 }
 function editStore(s){
  const card=drawerBody.querySelector('.storecard');if(!card)return;
- card.innerHTML='<div class="storecard-top"><h2>編輯分店資訊</h2></div><form id="storeEditForm" class="vacancy-form"><label>門市名稱<input name="name" required maxlength="100" value="'+esc(s.name)+'"></label><label>地址<input name="address" required maxlength="200" value="'+esc(s.address)+'"></label><label>商圈<input name="district" required maxlength="120" value="'+esc(s.district)+'"></label><label>預估月租（萬元）<input name="rent" required maxlength="50" value="'+esc(s.rent)+'"></label><label>備註<textarea name="basis" rows="3" maxlength="1500" placeholder="可留空">'+esc(s.basis||'')+'</textarea></label><div class="actions"><button type="submit" class="primary">儲存修改</button><button type="button" class="secondary" id="cancelStoreEdit">取消</button></div><small>修改僅儲存在本機瀏覽器，不會變更其他使用者的資料。</small></form>';
+ card.innerHTML='<div class="storecard-top"><h2>編輯分店資訊</h2></div><form id="storeEditForm" class="vacancy-form"><label>門市名稱<input name="name" required maxlength="100" value="'+esc(s.name)+'"></label><label>地址<input name="address" required maxlength="200" value="'+esc(s.address)+'"></label><label>商圈<input name="district" required maxlength="120" value="'+esc(s.district)+'"></label><label>預估月租（萬元）<input name="rent" required maxlength="50" value="'+esc(s.rent)+'"></label><label>備註<textarea name="basis" rows="3" maxlength="1500" placeholder="可留空">'+esc(s.basis||'')+'</textarea></label>'+storeHoursEditor(s)+'<div class="actions"><button type="submit" class="primary">儲存修改</button><button type="button" class="secondary" id="cancelStoreEdit">取消</button></div><small>修改僅儲存在本機瀏覽器，不會變更其他使用者的資料。</small></form>';
  card.querySelector('#cancelStoreEdit').onclick=()=>showStore(s);
  card.querySelector('#storeEditForm').onsubmit=async e=>{
   e.preventDefault();const d=new FormData(e.currentTarget),v={};
   for(const k of ['name','address','district','rent','basis'])v[k]=String(d.get(k)||'').trim();
   if(!v.name||!v.address||!v.district||!v.rent){alert('請填寫必填欄位');return}
   if(!saveStoreEdit(s,v))return;
+  const oldHoursId=storeHoursId(s);
+  const days=Array.from({length:7},(_,i)=>({open:String(d.get('hoursOpen'+i)||''),close:String(d.get('hoursClose'+i)||''),closed:d.has('hoursClosed'+i)}));
   const addressChanged=v.address!==s.address;
   Object.assign(s,v);s.city=normalizeCity(s);s.districtName=districtOf(s);
+  storeWeeklyHours[storeHoursId(s)]={days,updatedAt:new Date().toISOString(),source:'manual'};
+  if(oldHoursId!==storeHoursId(s))delete storeWeeklyHours[oldHoursId];
+  try{localStorage.setItem(STORE_HOURS_KEY,JSON.stringify(storeWeeklyHours))}catch(e){alert('營業時間儲存失敗，請檢查瀏覽器儲存空間')}
   if(addressChanged){const old=markers.get(s.idx);if(old){old.setMap(null);markers.delete(s.idx)}await geocodeOne(s);syncProtection()}
   if(infoWindow)infoWindow.close();showStore(s);
  }
@@ -1731,6 +1742,6 @@ syncActionButtons();
 
 showCities();
 </script>
-<script>window.gm_authFailure=function(){const s=document.getElementById('status');if(s)s.textContent='Google Maps 驗證失敗：請檢查 API Key／計費／網站限制';}</script><script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&libraries=places&language=zh-TW&region=TW"></script>
+<script>window.gm_authFailure=function(){const s=document.getElementById('status');if(s)s.textContent='Google Maps 驗證失敗：請檢查 API Key／計費／網站限制';}</script><script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&language=zh-TW&region=TW"></script>
 </body>
 </html>
