@@ -424,49 +424,72 @@ function menuRow(title,sub,count,onClick){
   b.innerHTML='<div class="rowmain"><div class="rowtitle">'+esc(title)+'</div><div class="rowsub">'+esc(sub||'')+'</div></div><div class="count">'+count+'</div><div class="chev">›</div>';
   b.onclick=onClick;return b
 }
-function focusDistrictMap(city,district){
- if(!map||!geocoder)return;
- const requestCity=city,requestDistrict=district;
- geocoder.geocode({address:city+district,componentRestrictions:{country:'TW'}},(results,status)=>{
-  if(nav.city!==requestCity||nav.district!==requestDistrict)return;
-  const result=status==='OK'&&results?.[0];
-  if(result){
-   const geometry=result.geometry;
-   const viewport=geometry.viewport||geometry.bounds;
-   if(viewport){map.fitBounds(viewport,24);google.maps.event.addListenerOnce(map,'idle',()=>{if(map.getZoom()>15)map.setZoom(15)})}
-   else{map.panTo(geometry.location);map.setZoom(14)}
-   return;
-  }
-  const positions=stores.filter(x=>x.city===city&&x.districtName===district).map(x=>cache[x.address]).filter(p=>p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng));
-  if(positions.length){const bounds=new google.maps.LatLngBounds();positions.forEach(p=>bounds.extend(p));map.fitBounds(bounds,35);if(positions.length===1)map.setZoom(14)}
-  else if(CITY_CENTERS[city]){const [lat,lng,z]=CITY_CENTERS[city];map.panTo({lat,lng});map.setZoom(Math.max(z,12))}
- });
-}
+// 2025 NLSC administrative boundary data, republished as WGS84 GeoJSON (2026 releases).
+const BOUNDARY_URLS={
+ city:'https://geo.maderaojen.me/datasets/tw-counties/releases/v1/2026-08-07.1/data.geojson',
+ district:'https://geo.maderaojen.me/datasets/tw-townships/releases/v1/2026-07-04.1/data.geojson'
+};
+const boundaryCache={};
 let cityHighlight=null,cityHighlightTimer=null,cityHighlightRequest=0;
 function clearCityHighlight(){
  cityHighlightRequest++;
  if(cityHighlightTimer){clearInterval(cityHighlightTimer);cityHighlightTimer=null}
- if(cityHighlight){cityHighlight.setMap(null);cityHighlight=null}
+ if(cityHighlight){cityHighlight.forEach(f=>map.data.remove(f));cityHighlight=null}
 }
-function flashCityArea(city){
+function boundaryName(s){return String(s||'').replace(/臺/g,'台').replace(/\\s/g,'')}
+async function loadBoundary(level){
+ if(!boundaryCache[level])boundaryCache[level]=fetch(BOUNDARY_URLS[level]).then(r=>{if(!r.ok)throw Error('boundary HTTP '+r.status);return r.json()}).catch(e=>{delete boundaryCache[level];throw e});
+ return boundaryCache[level];
+}
+function boundaryMatch(feature,city,district){
+ const p=feature.properties||{},entries=Object.entries(p).map(([k,v])=>[String(k).toLowerCase(),boundaryName(v)]);
+ const match=(keys,value)=>entries.some(([k,v])=>keys.some(key=>k.includes(key))&&v===boundaryName(value));
+ const cityKeys=['county','city','縣市','縣','市名'];
+ const townKeys=['town','district','鄉鎮','區名','鄉名'];
+ if(district)return match(cityKeys,city)&&match(townKeys,district);
+ return match(cityKeys,city)||entries.some(([k,v])=>['name','名稱'].some(key=>k.includes(key))&&v===boundaryName(city));
+}
+function focusBoundaryGeometry(geometry,bounds){
+ if(!geometry)return;
+ if(geometry.getType()==='Point'){bounds.extend(geometry.get());return}
+ if(typeof geometry.getArray==='function')geometry.getArray().forEach(g=>focusBoundaryGeometry(g,bounds));
+}
+async function showAdministrativeBoundary(city,district){
  clearCityHighlight();
- if(!map||!geocoder||!city)return;
- const request=cityHighlightRequest;
- geocoder.geocode({address:city+',台灣',componentRestrictions:{country:'TW'}},(results,status)=>{
-  if(request!==cityHighlightRequest||status!=='OK'||!results?.length)return;
-  const result=results.find(x=>x.types?.includes('administrative_area_level_1'))||results[0];
-  const bounds=result.geometry?.bounds||result.geometry?.viewport;
-  if(!bounds)return;
-  // Google Geocoder supplies a bounding rectangle, not an official administrative boundary.
-  cityHighlight=new google.maps.Rectangle({map,bounds,strokeColor:'#d71920',strokeOpacity:1,strokeWeight:3,fillColor:'#d71920',fillOpacity:0.13,clickable:false,zIndex:800});
+ if(!map||!city)return;
+ const request=cityHighlightRequest,level=district?'district':'city';
+ try{
+  const geo=await loadBoundary(level);
+  if(request!==cityHighlightRequest)return;
+  const matched=(geo.features||[]).filter(f=>boundaryMatch(f,city,district));
+  if(!matched.length){console.warn('行政界線找不到對應資料',city,district);return}
+  const collection={type:'FeatureCollection',features:matched};
+  const added=map.data.addGeoJson(collection);
+  if(request!==cityHighlightRequest){added.forEach(f=>map.data.remove(f));return}
+  cityHighlight=added;
+  const bounds=new google.maps.LatLngBounds();
+  added.forEach(f=>focusBoundaryGeometry(f.getGeometry(),bounds));
+  if(!bounds.isEmpty())map.fitBounds(bounds,36);
+  const paint=(bright)=>added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#d71920',strokeWeight:3,strokeOpacity:bright?1:0.55,fillColor:'#d71920',fillOpacity:bright?0.2:0.045,clickable:false,zIndex:800}));
+  paint(true);
   let ticks=0;
   cityHighlightTimer=setInterval(()=>{
-   if(!cityHighlight||request!==cityHighlightRequest){clearInterval(cityHighlightTimer);cityHighlightTimer=null;return}
-   const bright=ticks%2===0;
-   cityHighlight.setOptions({strokeOpacity:bright?0.95:0.35,fillOpacity:bright?0.17:0.035});
-   ticks++;
-   if(ticks>=8){clearInterval(cityHighlightTimer);cityHighlightTimer=null;cityHighlight.setOptions({strokeOpacity:0.85,fillOpacity:0.07})}
+   if(request!==cityHighlightRequest){clearInterval(cityHighlightTimer);cityHighlightTimer=null;return}
+   ticks++;paint(ticks%2===0);
+   if(ticks>=8){clearInterval(cityHighlightTimer);cityHighlightTimer=null;added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#d71920',strokeWeight:3,strokeOpacity:0.9,fillColor:'#d71920',fillOpacity:0.07,clickable:false,zIndex:800}))}
   },280);
+ }catch(e){console.warn('行政界線載入失敗',e)}
+}
+function flashCityArea(city){showAdministrativeBoundary(city,null)}
+function focusDistrictMap(city,district){
+ showAdministrativeBoundary(city,district);
+ if(!map||!geocoder)return;
+ // Keep map navigation usable even when the boundary file cannot load.
+ geocoder.geocode({address:city+district,componentRestrictions:{country:'TW'}},(results,status)=>{
+  if(nav.city!==city||nav.district!==district||cityHighlight?.length)return;
+  const geometry=status==='OK'&&results?.[0]?.geometry;
+  if(geometry?.viewport)map.fitBounds(geometry.viewport,24);
+  else if(geometry?.location){map.panTo(geometry.location);map.setZoom(14)}
  });
 }
 function showCities(){
@@ -478,7 +501,7 @@ function showDistricts(c){
   nav={level:'districts',city:c,district:null};drawerTitle.textContent=c;backBtn.style.visibility='visible';drawerBody.innerHTML='';
   const ds=[...new Set(stores.filter(s=>s.city===c&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
   if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#766e69;text-align:center">目前沒有 COMEBUY 門市</div>';return}
-  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{clearCityHighlight();nav={level:'stores',city:c,district:d};focusDistrictMap(c,d);showStores(c,d)}))})
+  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{nav={level:'stores',city:c,district:d};focusDistrictMap(c,d);showStores(c,d)}))})
 }
 function showStores(c,d){
   nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
