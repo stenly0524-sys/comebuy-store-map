@@ -472,7 +472,37 @@ districtSelect.onchange=()=>{
  else clearCityHighlight();
  refreshMarkers();
 };
-q.oninput=refreshMarkers;
+let searchFocusRequest=0;
+async function focusSearchResults(){
+ const request=++searchFocusRequest;
+ refreshMarkers();
+ const term=q.value.trim();
+ if(!term||!map)return;
+ const matches=visibleStores();
+ if(!matches.length)return;
+ // A unique store result is centered and zoomed in; multiple results fit together.
+ if(matches.length===1){
+  const store=matches[0];
+  if(!markers.has(store.idx)&&geocoder)await geocodeOne(store);
+  if(request!==searchFocusRequest||q.value.trim()!==term)return;
+  const marker=markers.get(store.idx);
+  const position=marker?.getPosition()||cache[store.address];
+  if(!position)return;
+  map.setZoom(17);
+  map.panTo(position);
+  return;
+ }
+ const bounds=new google.maps.LatLngBounds();
+ matches.forEach(store=>{
+  const position=markers.get(store.idx)?.getPosition()||cache[store.address];
+  if(position)bounds.extend(position);
+ });
+ if(request!==searchFocusRequest||bounds.isEmpty())return;
+ const rect=map.getDiv().getBoundingClientRect();
+ const top=document.querySelector('.top .card')?.getBoundingClientRect().bottom||rect.top;
+ map.fitBounds(bounds,{top:Math.min(rect.height*.5,Math.max(24,top-rect.top+16)),bottom:36,left:28,right:28});
+}
+q.oninput=focusSearchResults;
 
 const drawer=document.querySelector('#drawer'),drawerBody=document.querySelector('#drawerBody'),drawerTitle=document.querySelector('#drawerTitle'),backBtn=document.querySelector('#backBtn');
 function setDrawerLayout(mode){document.getElementById('vacancyMapToggles').hidden=true;drawer.classList.toggle('drawer-compact',mode==='compact');drawer.classList.toggle('drawer-protection',mode==='protection');drawer.classList.toggle('drawer-dashboard',mode==='dashboard');if(mode==='compact'||mode==='protection'||mode==='dashboard'){const bar=document.querySelector('.top .card')||document.querySelector('.bottom-nav');if(bar){const rect=bar.getBoundingClientRect();drawer.style.setProperty('--drawer-top',Math.max(8,Math.round(rect.bottom+16))+'px')}}}
