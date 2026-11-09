@@ -295,10 +295,10 @@ function vacancyPopupHtml(v){
  const area=esc(vacancyAreaNames(v).join('/')||'待調查');
  const rent=v.rent===undefined||v.rent===null||v.rent===''?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW');
  const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.address);
- return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+(v.status==='rented'?'已租店舖':'空舖')+'</b><div style="margin-top:5px">'+esc(v.address)+'</div><div>區域：'+region+'</div><div>商圈：'+area+'</div><div>預估月租：'+esc(rent)+'</div><div style="margin-top:12px"><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>';
+ return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+(v.status==='rented'?'已租店舖':'空舖')+'</b><div style="margin-top:5px">'+esc(v.address)+'</div><div>區域：'+region+'</div><div>商圈：'+area+'</div><div>預估月租：'+esc(rent)+'</div><div style="margin-top:12px;display:grid;gap:7px"><button type="button" data-vacancy-detail="'+esc(v.id)+'" style="display:block;width:100%;text-align:center;padding:10px 8px;background:#d71920;color:#fff;border:0;border-radius:9px;font-weight:700;font-size:13px">查看詳情</button><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">開啟Google ↗</a></div></div>';
 }
 function openVacancyPopup(v,marker){
- google.maps.event.addListenerOnce(infoWindow,'domready',centerStorePopupInViewport);
+ google.maps.event.addListenerOnce(infoWindow,'domready',()=>{centerStorePopupInViewport();const btn=document.querySelector('.gm-style-iw [data-vacancy-detail]');if(btn)btn.onclick=()=>openVacancyInList(v.id)});
  infoWindow.setContent(vacancyPopupHtml(v));
  infoWindow.open({map,anchor:marker});
 }
@@ -669,6 +669,15 @@ function vacancyPhotosModal(v){
  });
 }
 const vacancyModalStyle=document.createElement('style');vacancyModalStyle.textContent='.vacancy-modal-overlay{position:fixed;inset:0;background:#0009;z-index:100001;display:flex;align-items:center;justify-content:center;padding:15px}.vacancy-modal{width:min(96vw,520px);max-height:88dvh;display:flex;flex-direction:column;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px #0005}.vacancy-modal header{background:#c8202d;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between}.vacancy-modal-close{width:32px;height:32px;border:0;border-radius:50%;background:#fff;color:#c8202d;font-size:22px}.vacancy-modal-body{padding:15px;overflow:auto}.vacancy-modal-actions{margin-top:12px;display:flex;justify-content:flex-end}.vacancy-modal-actions button{background:#c8202d;color:#fff;border:0;border-radius:9px;padding:11px 16px;font-weight:800}.vacancy-photo-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.vacancy-photo-cell{position:relative}.vacancy-photo-cell img{width:100%;height:140px;object-fit:cover;border-radius:9px}.vacancy-photo-cell button{position:absolute;right:5px;top:5px;border:0;border-radius:6px;background:#fff;color:#c8202d;padding:5px 8px}';document.head.appendChild(vacancyModalStyle);
+let vacancyListFocusId=null;
+function openVacancyInList(id){
+ const target=vacancies.find(v=>String(v.id)===String(id)&&!v.archived);
+ if(!target)return;
+ vacancyListFocusId=target.id;vacancyPanelMode='list';
+ vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';
+ vacancyDetailOpenId=null;infoWindow.close();showVacancies();
+ requestAnimationFrame(()=>{const el=drawerBody.querySelector('[data-vacancy-record-id]');if(el)el.scrollIntoView({block:'start',behavior:'instant'})});
+}
 let vacancyDetailOpenId=null;
 function showVacancies(){
  setDrawerLayout('compact');
@@ -718,10 +727,11 @@ function showVacancies(){
  districtSelect.onchange=()=>{vacancyFilterDistrict=districtSelect.value;showVacancies()};
  const sf=document.createElement('div');sf.className='vacancy-stage-filter';sf.innerHTML='<label>開發進度篩選 <select><option value="">全部進度</option>'+DEVELOPMENT_STAGES.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></label>';drawerBody.appendChild(sf);sf.querySelector('select').value=vacancyFilterStage;sf.querySelector('select').onchange=e=>{vacancyFilterStage=e.target.value;showVacancies()};
  const filteredVacancies=visibleVacancies.filter(v=>(!vacancyFilterCity||v.region?.city===vacancyFilterCity)&&(!vacancyFilterDistrict||v.region?.district===vacancyFilterDistrict)&&(!vacancyFilterStage||(v.developmentStage||'待評估')===vacancyFilterStage));
+ if(vacancyListFocusId)filteredVacancies.sort((a,b)=>Number(String(b.id)===String(vacancyListFocusId))-Number(String(a.id)===String(vacancyListFocusId)));
  const resultCount=document.createElement('div');resultCount.className='vacancy-note';resultCount.textContent='符合區域：'+filteredVacancies.length+' 筆／總計 '+visibleVacancies.length+' 筆';drawerBody.appendChild(resultCount);
  if(!visibleVacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent=isArchive?'尚無封存店鋪。':'尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
  filteredVacancies.forEach(v=>{
-  const item=document.createElement('div');item.className='vacancy-item';
+  const item=document.createElement('div');item.className='vacancy-item';item.dataset.vacancyRecordId=String(v.id);
   const rented=v.status==='rented';
   const regionText=[v.region?.city,v.region?.district,v.region?.neighborhood].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
