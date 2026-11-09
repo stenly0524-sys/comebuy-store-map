@@ -289,8 +289,10 @@ function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function storeGoogleMapsUrl(s){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.name+' '+s.address)}
 function popupHtml(s){return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+esc(s.name)+'</b><div style="margin-top:5px">'+esc(s.address)+'</div><div>區域：'+esc(s.districtName)+'</div><div>商圈：'+esc(s.district)+'</div><div>預估月租：'+esc(s.rent)+' 萬元</div>'+(s.basis?'<small>'+esc(s.basis)+'</small>':'')+'<div style="margin-top:12px"><a href="'+esc(storeGoogleMapsUrl(s))+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>'}
 function vacancyPopupHtml(v){
- const region=esc(v.region?.district||'區域待定位');
- const area=esc(vacancyAreaNames(v).join('、')||'待調查');
+ const district=v.region?.district||((v.address||'').match(/([^縣市]{1,5}[區鄉鎮市])/)||[])[1]||'區域待確認';
+ const neighborhood=v.region?.neighborhood||'里別待確認';
+ const region=esc(district+' / '+neighborhood);
+ const area=esc(vacancyAreaNames(v).join('/')||'待調查');
  const rent=v.rent===undefined||v.rent===null||v.rent===''?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW');
  const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.address);
  return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+(v.status==='rented'?'已租店舖':'空舖')+'</b><div style="margin-top:5px">'+esc(v.address)+'</div><div>區域：'+region+'</div><div>商圈：'+area+'</div><div>預估月租：'+esc(rent)+'</div><div style="margin-top:12px"><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>';
@@ -527,7 +529,7 @@ function geocodeVacancy(v){
     v.position={lat:loc.lat(),lng:loc.lng()};
     const parts=results[0].address_components||[];
     const part=t=>parts.find(c=>c.types?.includes(t))?.long_name||'';
-    v.region={city:part('administrative_area_level_1')||part('administrative_area_level_2'),district:part('administrative_area_level_3')||part('sublocality_level_1')||part('sublocality'),neighborhood:part('neighborhood')};
+    v.region={city:part('administrative_area_level_1')||part('administrative_area_level_2'),district:part('administrative_area_level_3')||part('sublocality_level_1')||part('sublocality'),neighborhood:part('administrative_area_level_4')||part('sublocality_level_2')||part('neighborhood')};
     if(!v.areaManual)v.areaType=v.areaType||'待調查';
     saveVacancies();refreshVacancyMarkers();resolve(true);
    }else resolve(false);
