@@ -649,11 +649,10 @@ function vacancyModal(title,render){
 function vacancyEditToggle(body,form,renderView){
  const actions=document.createElement('div');actions.className='vacancy-modal-actions';
  const edit=document.createElement('button');edit.type='button';edit.textContent='編輯';
- const cancel=document.createElement('button');cancel.type='button';cancel.textContent='取消編輯';cancel.hidden=true;
  const view=document.createElement('div');view.className='vacancy-readonly-view';
- body.append(view,form,actions);actions.append(cancel,edit);
- function setEditing(on){view.hidden=on;form.hidden=!on;edit.hidden=on;cancel.hidden=!on;if(!on)renderView(view)}
- cancel.onclick=()=>setEditing(false);edit.onclick=()=>setEditing(true);
+ body.append(view,form,actions);actions.append(edit);
+ function setEditing(on){view.hidden=on;form.hidden=!on;edit.hidden=on;if(!on)renderView(view)}
+ edit.onclick=()=>setEditing(true);
  setEditing(false);return {setEditing,view};
 }
 function vacancyViewRow(label,value,phone){
@@ -687,8 +686,6 @@ function vacancyDevelopmentModal(v){
   };
   const ui=vacancyEditToggle(body,form,render);
   ui.setEditing(false);
-  const cancel=body.querySelector('.vacancy-modal-actions > button:nth-child(1)');
-  cancel.onclick=()=>{populate();ui.setEditing(false)};
   form.onsubmit=e=>{
    e.preventDefault();
    const previous={developmentStage:v.developmentStage,franchiseLeadId:v.franchiseLeadId,followUpDate:v.followUpDate,developmentNote:v.developmentNote};
@@ -708,8 +705,6 @@ function vacancyStoreModal(v){
   const actions=document.createElement('div');actions.className='vacancy-modal-actions';const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
   const render=view=>view.replaceChildren(...fields.map(([key,label])=>vacancyViewRow(label,key==='rent'&&v[key]!==''&&v[key]!=null?'NT$ '+Number(v[key]).toLocaleString('zh-TW'):v[key],key==='phone')));
   const ui=vacancyEditToggle(body,form,render);
-  const cancel=body.querySelector('.vacancy-modal-actions > button:nth-child(1)');
-  cancel.onclick=()=>{fields.forEach(([key])=>{form.elements.namedItem(key).value=v[key]??''});ui.setEditing(false)};
   form.onsubmit=e=>{e.preventDefault();const previous={};fields.forEach(([key])=>{previous[key]=v[key];v[key]=form.elements.namedItem(key).value.trim()});if(!v.address){alert('地址不可為空');Object.assign(v,previous);return}if(!saveVacancies()){Object.assign(v,previous);return}refreshVacancyMarkers();close();showVacancies()};
  });
 }
