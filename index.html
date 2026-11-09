@@ -646,28 +646,58 @@ function vacancyModal(title,render){
  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
  document.body.appendChild(overlay);render(overlay.querySelector('.vacancy-modal-body'),close);
 }
+function vacancyEditToggle(body,form,renderView){
+ const actions=document.createElement('div');actions.className='vacancy-modal-actions';
+ const edit=document.createElement('button');edit.type='button';edit.textContent='編輯';
+ const cancel=document.createElement('button');cancel.type='button';cancel.textContent='取消編輯';cancel.hidden=true;
+ const view=document.createElement('div');view.className='vacancy-readonly-view';
+ body.append(view,form,actions);actions.append(cancel,edit);
+ function setEditing(on){view.hidden=on;form.hidden=!on;edit.hidden=on;cancel.hidden=!on;if(!on)renderView(view)}
+ cancel.onclick=()=>setEditing(false);edit.onclick=()=>setEditing(true);
+ setEditing(false);return {setEditing,view};
+}
+function vacancyViewRow(label,value,phone){
+ const row=document.createElement('div');row.className='vacancy-readonly-row';
+ const key=document.createElement('strong');key.textContent=label;row.appendChild(key);
+ if(phone&&value){const tel=String(value).replace(/[^0-9+]/g,'');if(tel){const link=document.createElement('a');link.href='tel:'+tel;link.textContent=String(value);row.appendChild(link);return row}}
+ const span=document.createElement('span');span.textContent=String(value||'未填寫');row.appendChild(span);return row;
+}
 function vacancyDevelopmentModal(v){
  vacancyModal('開發記錄',(body,close)=>{
-  const panel=document.createElement('div');panel.className='vacancy-progress';
-  panel.innerHTML='<div class="vacancy-progress-grid"><label>開發進度<select data-field="stage">'+DEVELOPMENT_STAGES.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></label>'+
+  const form=document.createElement('form');form.className='vacancy-progress';
+  form.innerHTML='<div class="vacancy-progress-grid"><label>開發進度<select data-field="stage">'+DEVELOPMENT_STAGES.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></label>'+
    '<label>媒合加盟主<select data-field="lead"><option value="">尚未媒合</option>'+franchiseLeads.map(lead=>'<option value="'+esc(String(lead.id))+'">'+esc(lead.name)+'（'+esc(lead.phone)+'）</option>').join('')+'</select></label></div>'+
    '<label>下次追蹤日期<input type="date" data-field="date"></label>'+
    '<label>開發備註<textarea data-field="note" rows="3" maxlength="1500" placeholder="現場勘查、租金洽談、後續待辦事項"></textarea></label>'+
-   '<div class="vacancy-modal-actions"><button type="button" data-act="saveProgress">儲存開發紀錄</button></div><span class="vacancy-progress-feedback" role="status"></span>';
-  panel.querySelector('[data-field="stage"]').value=DEVELOPMENT_STAGES.includes(v.developmentStage)?v.developmentStage:'待評估';
-  panel.querySelector('[data-field="lead"]').value=franchiseLeads.some(lead=>String(lead.id)===String(v.franchiseLeadId||''))?String(v.franchiseLeadId):'';
-  panel.querySelector('[data-field="date"]').value=v.followUpDate||'';
-  panel.querySelector('[data-field="note"]').value=v.developmentNote||'';
-  panel.querySelector('[data-act="saveProgress"]').onclick=()=>{
-   const previous={developmentStage:v.developmentStage,franchiseLeadId:v.franchiseLeadId,followUpDate:v.followUpDate,developmentNote:v.developmentNote};
-   v.developmentStage=panel.querySelector('[data-field="stage"]').value;
-   v.franchiseLeadId=panel.querySelector('[data-field="lead"]').value;
-   v.followUpDate=panel.querySelector('[data-field="date"]').value;
-   v.developmentNote=panel.querySelector('[data-field="note"]').value.trim();
-   if(saveVacancies()){close();showVacancies()}
-   else{Object.assign(v,previous);panel.querySelector('.vacancy-progress-feedback').textContent='儲存失敗'}
+   '<div class="vacancy-modal-actions"><button type="submit">儲存開發紀錄</button></div>';
+  const populate=()=>{
+   form.querySelector('[data-field="stage"]').value=DEVELOPMENT_STAGES.includes(v.developmentStage)?v.developmentStage:'待評估';
+   form.querySelector('[data-field="lead"]').value=franchiseLeads.some(lead=>String(lead.id)===String(v.franchiseLeadId||''))?String(v.franchiseLeadId):'';
+   form.querySelector('[data-field="date"]').value=v.followUpDate||'';
+   form.querySelector('[data-field="note"]').value=v.developmentNote||'';
   };
-  body.appendChild(panel);
+  populate();
+  const render=view=>{
+   view.replaceChildren(
+    vacancyViewRow('開發進度',v.developmentStage||'待評估'),
+    vacancyViewRow('媒合加盟主',(franchiseLeads.find(lead=>String(lead.id)===String(v.franchiseLeadId))||{}).name||'尚未媒合'),
+    vacancyViewRow('下次追蹤日期',v.followUpDate),
+    vacancyViewRow('開發備註',v.developmentNote)
+   );
+  };
+  const ui=vacancyEditToggle(body,form,render);
+  ui.setEditing(false);
+  const cancel=body.querySelector('.vacancy-modal-actions > button:nth-child(1)');
+  cancel.onclick=()=>{populate();ui.setEditing(false)};
+  form.onsubmit=e=>{
+   e.preventDefault();
+   const previous={developmentStage:v.developmentStage,franchiseLeadId:v.franchiseLeadId,followUpDate:v.followUpDate,developmentNote:v.developmentNote};
+   v.developmentStage=form.querySelector('[data-field="stage"]').value;
+   v.franchiseLeadId=form.querySelector('[data-field="lead"]').value;
+   v.followUpDate=form.querySelector('[data-field="date"]').value;
+   v.developmentNote=form.querySelector('[data-field="note"]').value.trim();
+   if(saveVacancies()){close();showVacancies()}else{Object.assign(v,previous)}
+  };
  });
 }
 function vacancyStoreModal(v){
@@ -675,12 +705,15 @@ function vacancyStoreModal(v){
   const form=document.createElement('form');form.className='vacancy-form';
   const fields=[['address','地址','text'],['rent','租金','number'],['size','坪數','number'],['front','面寬','number'],['contact','聯絡人','text'],['phone','聯絡電話','tel']];
   fields.forEach(([key,label,type])=>{const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.name=key;input.type=type;input.value=v[key]??'';if(type==='number'){input.min='0';input.step='any'}wrap.appendChild(input);form.appendChild(wrap)});
-  const actions=document.createElement('div');actions.className='vacancy-modal-actions';
-  const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
+  const actions=document.createElement('div');actions.className='vacancy-modal-actions';const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
+  const render=view=>view.replaceChildren(...fields.map(([key,label])=>vacancyViewRow(label,key==='rent'&&v[key]!==''&&v[key]!=null?'NT$ '+Number(v[key]).toLocaleString('zh-TW'):v[key],key==='phone')));
+  const ui=vacancyEditToggle(body,form,render);
+  const cancel=body.querySelector('.vacancy-modal-actions > button:nth-child(1)');
+  cancel.onclick=()=>{fields.forEach(([key])=>{form.elements.namedItem(key).value=v[key]??''});ui.setEditing(false)};
   form.onsubmit=e=>{e.preventDefault();const previous={};fields.forEach(([key])=>{previous[key]=v[key];v[key]=form.elements.namedItem(key).value.trim()});if(!v.address){alert('地址不可為空');Object.assign(v,previous);return}if(!saveVacancies()){Object.assign(v,previous);return}refreshVacancyMarkers();close();showVacancies()};
-  body.appendChild(form);
  });
 }
+const vacancyReadonlyStyle=document.createElement('style');vacancyReadonlyStyle.textContent='.vacancy-readonly-view{display:grid;gap:0}.vacancy-readonly-row{display:grid;grid-template-columns:100px minmax(0,1fr);gap:10px;padding:11px 2px;border-bottom:1px solid #ececec;font-size:14px;overflow-wrap:anywhere}.vacancy-readonly-row strong{color:#666;font-weight:600}.vacancy-readonly-row a{color:#c8202d;text-decoration:underline;font-weight:700}.vacancy-modal [hidden]{display:none!important}';document.head.appendChild(vacancyReadonlyStyle);
 function vacancyPhotosModal(v){
  vacancyModal('查看圖片（最多4張）',(body,close)=>{
   const gallery=document.createElement('div');gallery.className='vacancy-photo-gallery';
