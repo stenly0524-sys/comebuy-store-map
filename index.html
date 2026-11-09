@@ -576,7 +576,7 @@ async function locateVacancy(v){
 let vacancyFilterCity='',vacancyFilterDistrict='',vacancyFilterStage='',vacancyRentMin='',vacancyRentMax='';
 const DEVELOPMENT_STAGES=['待評估','已勘查','已下定','已簽約','籌備中','已開幕','放棄開發'];
 const LEGACY_DEVELOPMENT_STAGES={'現場勘查':'已勘查','租金洽談':'已下定'};
-function vacancyStage(v){return LEGACY_DEVELOPMENT_STAGES[v.developmentStage]||vacancyStage(v)};
+function vacancyStage(v){return LEGACY_DEVELOPMENT_STAGES[v.developmentStage]||v.developmentStage||'待評估'};
 if(vacancies.some(v=>LEGACY_DEVELOPMENT_STAGES[v.developmentStage])){vacancies.forEach(v=>{if(LEGACY_DEVELOPMENT_STAGES[v.developmentStage])v.developmentStage=LEGACY_DEVELOPMENT_STAGES[v.developmentStage]});try{localStorage.setItem(VACANCY_KEY,JSON.stringify(vacancies))}catch(e){/* Retain migrated records in memory; preserve original stored data if saving fails. */}}
 function makeEditor(target,record,fields,save,refresh){
  const prior=target.querySelector('.inline-edit');if(prior){prior.remove();return}
