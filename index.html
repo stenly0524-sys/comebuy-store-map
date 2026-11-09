@@ -310,12 +310,30 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 @keyframes cb-ring-spin{to{transform:rotate(360deg)}}
 @keyframes cb-splash-in{from{opacity:0;transform:translateY(calc(-5vh + 10px))}to{opacity:1;transform:translateY(-5vh)}}
 @media(prefers-reduced-motion:reduce){.cb-splash-ring:before{animation:none}.cb-splash-center{animation:none}#cb-splash{transition:none}}
+
+/* Splash artwork matches the supplied white / location pin / map / wordmark reference. */
+#cb-splash{justify-content:center}
+#cb-splash .cb-splash-center{gap:4px;transform:translateY(-1vh);animation:cb-splash-art-in .5s ease both}
+#cb-splash .cb-splash-ring{width:260px;height:205px;display:flex;align-items:center;justify-content:center;flex-direction:column}
+#cb-splash .cb-splash-ring:before{inset:0 12px auto;width:226px;height:226px;box-sizing:border-box;border:7px solid #ffebed;border-bottom-color:transparent;border-left-color:#ffebed;border-radius:50%;animation:cb-ring-spin 3s linear infinite}
+#cb-splash .cb-splash-pin{position:relative;z-index:2;margin-top:8px;width:104px;height:125px;background:#d71920;clip-path:polygon(50% 100%,9% 56%,0 38%,4% 18%,18% 5%,36% 0,64% 0,82% 5%,96% 18%,100% 38%,91% 56%);display:flex;align-items:flex-start;justify-content:center;padding-top:18px}
+#cb-splash .cb-splash-cup{width:69px;height:87px;object-fit:contain;position:relative;z-index:2}
+#cb-splash .cb-splash-map{position:relative;z-index:1;width:165px;height:49px;margin-top:-11px}
+#cb-splash .cb-splash-brand{position:relative;z-index:2;font:900 clamp(28px,7.5vw,38px)/1.15 Arial,sans-serif;letter-spacing:-1.8px;color:#070707;white-space:nowrap}
+#cb-splash .cb-splash-brand em{font-style:normal;color:#c60012}
+#cb-splash .cb-splash-bottom{position:relative;bottom:auto;margin-top:15px;width:min(320px,80vw)}
+#cb-splash .cb-splash-track{height:21px;border:2px solid #999;background:#dedee0;border-radius:30px;overflow:hidden}
+#cb-splash #cb-splash-bar{background:#d71920;border-radius:30px}
+#cb-splash #cb-splash-pct{margin-top:5px;color:#000;font:700 29px/1.2 Arial,sans-serif}
+@keyframes cb-splash-art-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(-1vh)}}
+@media(max-height:500px){#cb-splash .cb-splash-ring{height:160px;transform:scale(.78)}#cb-splash .cb-splash-bottom{margin-top:0}}
+@media(prefers-reduced-motion:reduce){#cb-splash .cb-splash-ring:before{animation:none}#cb-splash .cb-splash-center{animation:none}}
 </style>
 </head>
 <body>
 
 <div id="cb-splash" role="status" aria-live="polite" aria-label="COMEBUY MAPS 載入中">
- <div class="cb-splash-center"><div class="cb-splash-ring"><img class="cb-splash-cup" src="/comebuy-cup-official.svg" alt="COMEBUY 官方飲料杯"></div><div class="cb-splash-brand">COMEBUY MAPS</div></div>
+ <div class="cb-splash-center"><div class="cb-splash-ring"><div class="cb-splash-pin"><img class="cb-splash-cup" src="/comebuy-cup-official.svg" alt="COMEBUY 飲料杯"></div><svg class="cb-splash-map" viewBox="0 0 160 48" aria-hidden="true"><path d="M8 30 40 7 78 21 116 7 151 30 115 41 77 31 40 42Z" fill="#c4c4c4"/><path d="M40 7 40 42M78 21 77 31M116 7 115 41M8 30 151 30" stroke="#fff" stroke-width="3" fill="none"/><path d="M8 30 40 42 77 31 115 41 151 30" stroke="#aaa" stroke-width="1.5" fill="none"/></svg></div><div class="cb-splash-brand"><span>COMEBUY</span> <em>MAPS</em></div></div>
  <div class="cb-splash-bottom"><div class="cb-splash-track"><div id="cb-splash-bar"></div></div><div id="cb-splash-pct">0%</div><div id="cb-splash-error" hidden></div><button id="cb-splash-retry" type="button" hidden>重新載入</button></div>
 </div>
 <script>
