@@ -646,6 +646,30 @@ function vacancyModal(title,render){
  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
  document.body.appendChild(overlay);render(overlay.querySelector('.vacancy-modal-body'),close);
 }
+function vacancyDevelopmentModal(v){
+ vacancyModal('開發記錄',(body,close)=>{
+  const panel=document.createElement('div');panel.className='vacancy-progress';
+  panel.innerHTML='<div class="vacancy-progress-grid"><label>開發進度<select data-field="stage">'+DEVELOPMENT_STAGES.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></label>'+
+   '<label>媒合加盟主<select data-field="lead"><option value="">尚未媒合</option>'+franchiseLeads.map(lead=>'<option value="'+esc(String(lead.id))+'">'+esc(lead.name)+'（'+esc(lead.phone)+'）</option>').join('')+'</select></label></div>'+
+   '<label>下次追蹤日期<input type="date" data-field="date"></label>'+
+   '<label>開發備註<textarea data-field="note" rows="3" maxlength="1500" placeholder="現場勘查、租金洽談、後續待辦事項"></textarea></label>'+
+   '<div class="vacancy-modal-actions"><button type="button" data-act="saveProgress">儲存開發紀錄</button></div><span class="vacancy-progress-feedback" role="status"></span>';
+  panel.querySelector('[data-field="stage"]').value=DEVELOPMENT_STAGES.includes(v.developmentStage)?v.developmentStage:'待評估';
+  panel.querySelector('[data-field="lead"]').value=franchiseLeads.some(lead=>String(lead.id)===String(v.franchiseLeadId||''))?String(v.franchiseLeadId):'';
+  panel.querySelector('[data-field="date"]').value=v.followUpDate||'';
+  panel.querySelector('[data-field="note"]').value=v.developmentNote||'';
+  panel.querySelector('[data-act="saveProgress"]').onclick=()=>{
+   const previous={developmentStage:v.developmentStage,franchiseLeadId:v.franchiseLeadId,followUpDate:v.followUpDate,developmentNote:v.developmentNote};
+   v.developmentStage=panel.querySelector('[data-field="stage"]').value;
+   v.franchiseLeadId=panel.querySelector('[data-field="lead"]').value;
+   v.followUpDate=panel.querySelector('[data-field="date"]').value;
+   v.developmentNote=panel.querySelector('[data-field="note"]').value.trim();
+   if(saveVacancies()){close();showVacancies()}
+   else{Object.assign(v,previous);panel.querySelector('.vacancy-progress-feedback').textContent='儲存失敗'}
+  };
+  body.appendChild(panel);
+ });
+}
 function vacancyStoreModal(v){
  vacancyModal('店鋪資料',(body,close)=>{
   const form=document.createElement('form');form.className='vacancy-form';
@@ -740,34 +764,13 @@ function showVacancies(){
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
   editor.innerHTML='<label>商圈屬性（可複選修改）</label><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" value="'+t+'" '+(vacancyAreaNames(v).includes(t)?'checked':'')+'><span>'+t+'</span></label>').join('')+'</div>';
   editor.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.onchange=()=>{v.areaTypes=[...editor.querySelectorAll('input:checked')].map(x=>x.value);v.areaManual=true;saveVacancies();showVacancies()});
-  const progress=document.createElement('div');progress.className='vacancy-progress';
-  const stages=DEVELOPMENT_STAGES;
-  progress.innerHTML='<div class="vacancy-progress-title">展店開發追蹤</div>'+
-   '<div class="vacancy-progress-grid"><label>開發進度<select data-field="stage">'+stages.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></label>'+
-   '<label>媒合加盟主<select data-field="lead"><option value="">尚未媒合</option>'+franchiseLeads.map(lead=>'<option value="'+esc(String(lead.id))+'">'+esc(lead.name)+'（'+esc(lead.phone)+'）</option>').join('')+'</select></label></div>'+
-   '<label>下次追蹤日期<input type="date" data-field="date"></label>'+
-   '<label>開發備註<textarea data-field="note" rows="2" maxlength="1500" placeholder="現場勘查、租金洽談、後續待辦事項"></textarea></label>'+
-   '<button type="button" data-act="saveProgress">儲存開發紀錄</button><span class="vacancy-progress-feedback" role="status"></span>';
   if(isArchive){
    const archiveInfo=document.createElement('div');archiveInfo.className='vacancy-archive-readonly';
    archiveInfo.innerHTML='<div><strong>商圈屬性：</strong>'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div><strong>開發進度：</strong>'+esc(v.developmentStage||'待評估')+'</div><div><strong>媒合加盟主：</strong>'+esc((franchiseLeads.find(x=>String(x.id)===String(v.franchiseLeadId))||{}).name||'尚未媒合')+'</div><div><strong>下次追蹤日期：</strong>'+esc(v.followUpDate||'未設定')+'</div><div><strong>開發備註：</strong>'+esc(v.developmentNote||'無')+'</div><div class="vacancy-note">封存資料僅供檢視，復原後可修改。</div>';
    detailPanel.appendChild(archiveInfo);
-  }else{detailPanel.appendChild(progress);}
-  progress.querySelector('[data-field="stage"]').value=stages.includes(v.developmentStage)?v.developmentStage:'待評估';
-  progress.querySelector('[data-field="lead"]').value=franchiseLeads.some(lead=>String(lead.id)===String(v.franchiseLeadId||''))?String(v.franchiseLeadId):'';
-  progress.querySelector('[data-field="date"]').value=v.followUpDate||'';
-  progress.querySelector('[data-field="note"]').value=v.developmentNote||'';
-  progress.querySelector('[data-act="saveProgress"]').onclick=()=>{
-   const previous={developmentStage:v.developmentStage,franchiseLeadId:v.franchiseLeadId,followUpDate:v.followUpDate,developmentNote:v.developmentNote};
-   v.developmentStage=progress.querySelector('[data-field="stage"]').value;
-   v.franchiseLeadId=progress.querySelector('[data-field="lead"]').value;
-   v.followUpDate=progress.querySelector('[data-field="date"]').value;
-   v.developmentNote=progress.querySelector('[data-field="note"]').value.trim();
-   if(saveVacancies())progress.querySelector('.vacancy-progress-feedback').textContent='已儲存';
-   else{Object.assign(v,previous);progress.querySelector('.vacancy-progress-feedback').textContent='儲存失敗'}
-  };
+  }
   if(isArchive){const restore=item.querySelector('[data-act="restore"]');restore.onclick=async()=>{if(!await confirmRestoreVacancy())return;const prevArchived=v.archived,prevAt=v.archivedAt;v.archived=false;delete v.archivedAt;if(!saveVacancies()){v.archived=prevArchived;v.archivedAt=prevAt;return}vacancyDetailOpenId=null;vacancyPanelMode='list';refreshVacancyMarkers();showVacancies()}};
-  const detailButton=item.querySelector('[data-act="detail"]');if(detailButton)detailButton.onclick=()=>{vacancyDetailOpenId=vacancyDetailOpenId===v.id?null:v.id;showVacancies()};
+  const detailButton=item.querySelector('[data-act="detail"]');if(detailButton)detailButton.onclick=()=>vacancyDevelopmentModal(v);
   item.querySelector('[data-act="locate"]').onclick=()=>locateVacancy(v);
   item.querySelector('[data-act="status"]').onclick=()=>{if(!isArchive)vacancyStoreModal(v)};
   item.querySelector('[data-act="photos"]')?.addEventListener('click',()=>vacancyPhotosModal(v));
