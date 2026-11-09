@@ -442,16 +442,43 @@ function focusDistrictMap(city,district){
   else if(CITY_CENTERS[city]){const [lat,lng,z]=CITY_CENTERS[city];map.panTo({lat,lng});map.setZoom(Math.max(z,12))}
  });
 }
+let cityHighlight=null,cityHighlightTimer=null,cityHighlightRequest=0;
+function clearCityHighlight(){
+ cityHighlightRequest++;
+ if(cityHighlightTimer){clearInterval(cityHighlightTimer);cityHighlightTimer=null}
+ if(cityHighlight){cityHighlight.setMap(null);cityHighlight=null}
+}
+function flashCityArea(city){
+ clearCityHighlight();
+ if(!map||!geocoder||!city)return;
+ const request=cityHighlightRequest;
+ geocoder.geocode({address:city+',台灣',componentRestrictions:{country:'TW'}},(results,status)=>{
+  if(request!==cityHighlightRequest||status!=='OK'||!results?.length)return;
+  const result=results.find(x=>x.types?.includes('administrative_area_level_1'))||results[0];
+  const bounds=result.geometry?.bounds||result.geometry?.viewport;
+  if(!bounds)return;
+  // Google Geocoder supplies a bounding rectangle, not an official administrative boundary.
+  cityHighlight=new google.maps.Rectangle({map,bounds,strokeColor:'#d71920',strokeOpacity:1,strokeWeight:3,fillColor:'#d71920',fillOpacity:0.13,clickable:false,zIndex:800});
+  let ticks=0;
+  cityHighlightTimer=setInterval(()=>{
+   if(!cityHighlight||request!==cityHighlightRequest){clearInterval(cityHighlightTimer);cityHighlightTimer=null;return}
+   const bright=ticks%2===0;
+   cityHighlight.setOptions({strokeOpacity:bright?0.95:0.35,fillOpacity:bright?0.17:0.035});
+   ticks++;
+   if(ticks>=8){clearInterval(cityHighlightTimer);cityHighlightTimer=null;cityHighlight.setOptions({strokeOpacity:0.85,fillOpacity:0.07})}
+  },280);
+ });
+}
 function showCities(){
  setDrawerLayout('normal');
   nav={level:'cities',city:null,district:null};drawerTitle.textContent='城市';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
-  CITY_ORDER.forEach(c=>drawerBody.appendChild(menuRow(c,counts[c]?'查看區域與門市':'目前 0 間門市',counts[c],()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));showDistricts(c)})))
+  CITY_ORDER.forEach(c=>drawerBody.appendChild(menuRow(c,counts[c]?'查看區域與門市':'目前 0 間門市',counts[c],()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));flashCityArea(c);showDistricts(c)})))
 }
 function showDistricts(c){
   nav={level:'districts',city:c,district:null};drawerTitle.textContent=c;backBtn.style.visibility='visible';drawerBody.innerHTML='';
   const ds=[...new Set(stores.filter(s=>s.city===c&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
   if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#766e69;text-align:center">目前沒有 COMEBUY 門市</div>';return}
-  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{nav={level:'stores',city:c,district:d};focusDistrictMap(c,d);showStores(c,d)}))})
+  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{clearCityHighlight();nav={level:'stores',city:c,district:d};focusDistrictMap(c,d);showStores(c,d)}))})
 }
 function showStores(c,d){
   nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
