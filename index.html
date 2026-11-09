@@ -464,13 +464,15 @@ async function showAdministrativeBoundary(city,district){
   const matched=(geo.features||[]).filter(f=>boundaryMatch(f,city,district));
   if(!matched.length){console.warn('行政界線找不到對應資料',city,district);return}
   const collection={type:'FeatureCollection',features:matched};
+  // Set transparent base BEFORE adding GeoJSON, avoiding Google's default dark fill flash.
+  map.data.setStyle({strokeColor:'#202020',strokeWeight:2.5,strokeOpacity:1,fillColor:'#ffe8a1',fillOpacity:0,clickable:false,zIndex:800});
   const added=map.data.addGeoJson(collection);
   if(request!==cityHighlightRequest){added.forEach(f=>map.data.remove(f));return}
   cityHighlight=added;
   const bounds=new google.maps.LatLngBounds();
   added.forEach(f=>focusBoundaryGeometry(f.getGeometry(),bounds));
   if(!bounds.isEmpty())map.fitBounds(bounds,36);
-  const paint=(bright)=>added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#e6bd49',strokeWeight:2.5,strokeOpacity:bright?1:0.35,fillColor:'#ffe8a1',fillOpacity:bright?0.3:0,clickable:false,zIndex:800}));
+  const paint=(bright)=>added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#202020',strokeWeight:2.5,strokeOpacity:1,fillColor:'#ffe8a1',fillOpacity:bright?0.36:0,clickable:false,zIndex:800}));
   const finish=()=>added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#202020',strokeWeight:2.5,strokeOpacity:1,fillColor:'#ffe8a1',fillOpacity:0,clickable:false,zIndex:800}));
   paint(true);
   let ticks=0;
