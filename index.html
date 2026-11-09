@@ -1810,7 +1810,7 @@ function showProtection(){
 document.getElementById('openProtection').onclick=showProtection;
 const actionButtons=[document.getElementById('openList'),document.getElementById('openVacancies'),document.getElementById('openProtection'),document.getElementById('openFranchise'),document.getElementById('openDashboard')];
 function syncActionButtons(){
- const active=drawer.classList.contains('open')?(nav.level==='vacancies'?'openVacancies':nav.level==='protection'?'openProtection':nav.level==='franchise'?'openFranchise':nav.level==='dashboard'?'openDashboard':'openList'):null;
+ const active=drawer.classList.contains('open')?(nav.level==='vacancies'?'openVacancies':nav.level==='protection'?'openProtection':['cases','franchise','leads','lead','case'].includes(nav.level)?'openFranchise':['settings','dashboard'].includes(nav.level)?'openDashboard':'openList'):null;
  actionButtons.forEach(btn=>{const on=btn.id===active;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on))});
 }
 const drawerStateObserver=new MutationObserver(syncActionButtons);
