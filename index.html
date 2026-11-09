@@ -169,10 +169,13 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .lead-unpaid-card>.lead-controls-with-deposit [data-act="training"]{position:absolute!important;top:0!important;right:0!important;width:115px!important;min-height:42px!important;margin:0!important;grid-column:auto!important;grid-row:auto!important;justify-self:stretch!important;align-self:stretch!important;color:var(--red)!important;background:#fff4f4!important;border:1px solid var(--red)!important;border-radius:9px!important}
 /* Prevent accidental double-tap page zoom on interactive controls. */
 html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
+#exitStreetView{position:fixed;right:14px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:110;background:#fff;color:#d71920;border:1px solid #e6deda;border-radius:999px;padding:11px 16px;font-size:14px;font-weight:700;box-shadow:0 4px 18px #0003;cursor:pointer}
+#exitStreetView[hidden]{display:none!important}
 </style>
 </head>
 <body>
 <div id="map"></div>
+<button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖">← 返回地圖</button>
 
 <div class="top">
   <div class="card">
@@ -362,6 +365,12 @@ window.initMap=function(){
   });
   map.setOptions({mapTypeControl:false});
   window.__comebuyMap=map;
+  const streetView=map.getStreetView();
+  const exitStreetView=document.getElementById('exitStreetView');
+  const syncStreetViewExit=()=>{exitStreetView.hidden=!streetView.getVisible()};
+  streetView.addListener('visible_changed',syncStreetViewExit);
+  exitStreetView.addEventListener('click',()=>streetView.setVisible(false));
+  syncStreetViewExit();
   geocoder=new google.maps.Geocoder();
   installVacancyLongPress();
   infoWindow=new google.maps.InfoWindow();
