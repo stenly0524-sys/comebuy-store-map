@@ -408,13 +408,14 @@ async function geocodeAll(){
 
 let districtSelectRequest=0;
 function districtNamesForCity(city,geo){
- const names=new Set(stores.filter(x=>x.city===city).map(x=>x.districtName).filter(Boolean));
+ const isDistrictName=v=>typeof v==='string'&&/^[\u4e00-\u9fff]{1,8}(區|鄉|鎮|市)$/.test(v.trim());
+ const names=new Set(stores.filter(x=>x.city===city).map(x=>x.districtName).filter(isDistrictName));
  for(const f of geo?.features||[]){
   const entries=Object.entries(f.properties||{});
   const cityOK=entries.some(([k,v])=>/county|city|縣市|縣名|市名/i.test(k)&&boundaryName(v)===boundaryName(city));
   if(!cityOK)continue;
-  const district=entries.find(([k,v])=>/town|district|鄉鎮|區名|鄉名/i.test(k)&&typeof v==='string')?.[1];
-  if(district)names.add(district);
+  const district=entries.find(([k,v])=>/townname|town_name|districtname|district_name|鄉鎮市區|鄉鎮|區名|鄉名|name/i.test(k)&&isDistrictName(v))?.[1];
+  if(district)names.add(district.trim());
  }
  return [...names].sort((x,y)=>x.localeCompare(y,'zh-Hant'));
 }
