@@ -321,10 +321,10 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 <script>
 (function(){
  const splash=document.getElementById('cb-splash'),bar=document.getElementById('cb-splash-bar'),pct=document.getElementById('cb-splash-pct'),error=document.getElementById('cb-splash-error'),retry=document.getElementById('cb-splash-retry');
- let finished=false,failed=false,progress=0;
+ let finished=false,failed=false,progress=0;const splashStarted=performance.now();
  const set=n=>{if(finished||failed)return;progress=Math.max(progress,Math.min(99,Math.round(n)));bar.style.width=progress+'%';pct.textContent=progress+'%'};
  const fail=msg=>{if(finished||failed)return;failed=true;error.hidden=false;error.textContent=msg||'系統載入失敗，請確認網路後重試。';retry.hidden=false;pct.textContent='載入失敗'};
- const finish=()=>{if(finished||failed)return;finished=true;bar.style.width='100%';pct.textContent='100% ✓';requestAnimationFrame(()=>{splash.classList.add('cb-splash-hide');setTimeout(()=>splash.remove(),450)})};
+ const finish=()=>{if(finished||failed)return;finished=true;bar.style.width='100%';pct.textContent='100% ✓';const wait=Math.max(0,3000-(performance.now()-splashStarted));setTimeout(()=>requestAnimationFrame(()=>{splash.classList.add('cb-splash-hide');setTimeout(()=>splash.remove(),450)}),wait)};
  retry.onclick=()=>location.reload();
  window.__cbSplash={set,finish,fail};
  set(8);
