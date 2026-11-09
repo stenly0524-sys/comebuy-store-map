@@ -430,10 +430,9 @@ const BOUNDARY_URLS={
  district:'https://geo.maderaojen.me/datasets/tw-townships/releases/v1/2026-07-04.1/data.geojson'
 };
 const boundaryCache={};
-let cityHighlight=null,cityHighlightTimer=null,cityHighlightRequest=0;
+let cityHighlight=null,cityHighlightRequest=0;
 function clearCityHighlight(){
  cityHighlightRequest++;
- if(cityHighlightTimer){clearInterval(cityHighlightTimer);cityHighlightTimer=null}
  if(cityHighlight){cityHighlight.forEach(f=>map.data.remove(f));cityHighlight=null}
 }
 function boundaryName(s){return String(s||'').replace(/臺/g,'台').replace(/\\s/g,'')}
@@ -464,24 +463,15 @@ async function showAdministrativeBoundary(city,district){
   const matched=(geo.features||[]).filter(f=>boundaryMatch(f,city,district));
   if(!matched.length){console.warn('行政界線找不到對應資料',city,district);return}
   const collection={type:'FeatureCollection',features:matched};
-  // Set transparent base BEFORE adding GeoJSON, avoiding Google's default dark fill flash.
-  map.data.setStyle({strokeColor:'#202020',strokeWeight:2.5,strokeOpacity:1,fillColor:'#ffe8a1',fillOpacity:0,clickable:false,zIndex:800});
+  // Only the active selection has a visible outline; never fill or animate.
+  map.data.setStyle({strokeColor:'#d71920',strokeWeight:3,strokeOpacity:1,fillOpacity:0,clickable:false,zIndex:800});
   const added=map.data.addGeoJson(collection);
   if(request!==cityHighlightRequest){added.forEach(f=>map.data.remove(f));return}
   cityHighlight=added;
   const bounds=new google.maps.LatLngBounds();
   added.forEach(f=>focusBoundaryGeometry(f.getGeometry(),bounds));
   if(!bounds.isEmpty())map.fitBounds(bounds,36);
-  const paint=(bright)=>added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#202020',strokeWeight:2.5,strokeOpacity:1,fillColor:'#ffe8a1',fillOpacity:bright?0.36:0,clickable:false,zIndex:800}));
-  const finish=()=>added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#202020',strokeWeight:2.5,strokeOpacity:1,fillColor:'#ffe8a1',fillOpacity:0,clickable:false,zIndex:800}));
-  paint(true);
-  let ticks=0;
-  cityHighlightTimer=setInterval(()=>{
-   if(request!==cityHighlightRequest){clearInterval(cityHighlightTimer);cityHighlightTimer=null;return}
-   ticks++;
-   if(ticks>=6){clearInterval(cityHighlightTimer);cityHighlightTimer=null;finish();return}
-   paint(ticks%2===0);
-  },320);
+  added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#d71920',strokeWeight:3,strokeOpacity:1,fillOpacity:0,clickable:false,zIndex:800}));
  }catch(e){console.warn('行政界線載入失敗',e)}
 }
 function flashCityArea(city){showAdministrativeBoundary(city,null)}
