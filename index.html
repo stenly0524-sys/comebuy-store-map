@@ -470,30 +470,32 @@ async function showAdministrativeBoundary(city,district){
   cityHighlight=added;
   const bounds=new google.maps.LatLngBounds();
   added.forEach(f=>focusBoundaryGeometry(f.getGeometry(),bounds));
-  if(!bounds.isEmpty())map.fitBounds(bounds,36);
+  if(!bounds.isEmpty()){
+   if(district){
+    const center=bounds.getCenter();
+    map.fitBounds(bounds,0);
+    google.maps.event.addListenerOnce(map,'idle',()=>{
+     if(request!==cityHighlightRequest)return;
+     map.setCenter(center);
+     map.setZoom(Math.min(16,Math.max(14,map.getZoom()+1)));
+    });
+   }else map.fitBounds(bounds,36);
+  }
   added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#d71920',strokeWeight:3,strokeOpacity:1,fillOpacity:0,clickable:false,zIndex:800}));
  }catch(e){console.warn('行政界線載入失敗',e)}
 }
 function flashCityArea(city){showAdministrativeBoundary(city,null)}
 function focusDistrictMap(city,district){
- // Move immediately on district selection; do not wait for asynchronous GeoJSON loading.
- if(map&&CITY_CENTERS[city]){
-  const [lat,lng]=CITY_CENTERS[city];
-  map.panTo({lat,lng});
-  map.setZoom(12);
- }
+ // Geocode the selected district immediately, then refine to its official polygon center.
  showAdministrativeBoundary(city,district);
  if(!map||!geocoder)return;
- const requestedCity=city,requestedDistrict=district;
+ const request=cityHighlightRequest;
  geocoder.geocode({address:city+district+',台灣',componentRestrictions:{country:'TW'}},(results,status)=>{
-  if(nav.city!==requestedCity||nav.district!==requestedDistrict)return;
-  // The polygon loader may already have fit the exact administrative bounds.
-  if(cityHighlight?.length)return;
+  if(request!==cityHighlightRequest||nav.city!==city||nav.district!==district||cityHighlight?.length)return;
   const geometry=status==='OK'&&results?.[0]?.geometry;
-  if(geometry?.viewport){
-   map.fitBounds(geometry.viewport,36);
-   google.maps.event.addListenerOnce(map,'idle',()=>{if(nav.city===requestedCity&&nav.district===requestedDistrict&&map.getZoom()>15)map.setZoom(15)});
-  }else if(geometry?.location){map.panTo(geometry.location);map.setZoom(14)}
+  if(!geometry)return;
+  const center=geometry.location||geometry.viewport?.getCenter();
+  if(center){map.panTo(center);map.setZoom(15)}
  });
 }
 function showCities(){
