@@ -886,7 +886,7 @@ async function googleStoreHours(s){
  const find=await new Promise((resolve,reject)=>storeHoursService.findPlaceFromQuery({
   query:s.name+' '+s.address,fields:['place_id','name','formatted_address']
  },(items,status)=>status==='OK'&&items?.length?resolve(items):reject(Error(status))));
- const candidate=find.find(p=>String(p.formatted_address||'').replace(/\\s/g,'').includes(String(s.address||'').replace(/\\s/g,'').slice(-7)))||find[0];
+ const candidate=find.find(p=>String(p.formatted_address||'').replace(/\s/g,'').includes(String(s.address||'').replace(/\s/g,'').slice(-7))); if(!candidate)throw Error('門市地址未能確認配對');
  const place=await new Promise((resolve,reject)=>storeHoursService.getDetails({
   placeId:candidate.place_id,fields:['opening_hours','business_status','name','formatted_address']
  },(detail,status)=>status==='OK'&&detail?resolve(detail):reject(Error(status))));
