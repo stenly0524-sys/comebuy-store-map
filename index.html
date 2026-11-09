@@ -682,9 +682,9 @@ function setDrawerLayout(mode){drawer.classList.remove('drawer-city-heading','dr
 
 // Keep compact/dashboard panels aligned below the shortened top bar.
 function syncCompactMapHeader(){
- const compact=drawer.classList.contains('open')&&!drawer.classList.contains('drawer-protection');
+ const compact=drawer.classList.contains('open');
  document.body.classList.toggle('map-panel-compact',compact);
- if(compact&&(drawer.classList.contains('drawer-compact')||drawer.classList.contains('drawer-dashboard'))){
+ if(compact&&(drawer.classList.contains('drawer-compact')||drawer.classList.contains('drawer-dashboard')||drawer.classList.contains('drawer-protection'))){
   requestAnimationFrame(()=>{
    if(!drawer.classList.contains('open'))return;
    const bar=document.querySelector('.top .card');
