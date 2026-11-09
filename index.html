@@ -288,6 +288,18 @@ citySelect.innerHTML='<option value="">全台城市</option>'+CITY_ORDER.map(c=>
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function storeGoogleMapsUrl(s){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.name+' '+s.address)}
 function popupHtml(s){return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+esc(s.name)+'</b><div style="margin-top:5px">'+esc(s.address)+'</div><div>區域：'+esc(s.districtName)+'</div><div>商圈：'+esc(s.district)+'</div><div>預估月租：'+esc(s.rent)+' 萬元</div>'+(s.basis?'<small>'+esc(s.basis)+'</small>':'')+'<div style="margin-top:12px"><a href="'+esc(storeGoogleMapsUrl(s))+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>'}
+function vacancyPopupHtml(v){
+ const region=esc(v.region?.district||'區域待定位');
+ const area=esc(vacancyAreaNames(v).join('、')||'待調查');
+ const rent=v.rent===undefined||v.rent===null||v.rent===''?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW');
+ const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.address);
+ return '<div style="min-width:220px;max-width:280px"><b style="font-size:16px">'+(v.status==='rented'?'已租店舖':'空舖')+'</b><div style="margin-top:5px">'+esc(v.address)+'</div><div>區域：'+region+'</div><div>商圈：'+area+'</div><div>預估月租：'+esc(rent)+'</div><div style="margin-top:12px"><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>';
+}
+function openVacancyPopup(v,marker){
+ google.maps.event.addListenerOnce(infoWindow,'domready',centerStorePopupInViewport);
+ infoWindow.setContent(vacancyPopupHtml(v));
+ infoWindow.open({map,anchor:marker});
+}
 function centerStorePopupInViewport(){
  // Wait for Google Maps to finish placing its InfoWindow, then pan the map
  // so the actual popup (not the marker) sits in the middle of the screen.
@@ -484,7 +496,7 @@ function refreshVacancyMarkers(){
   let m=vacancyMarkers.get(v.id);
   if(!m){
    m=new google.maps.Marker({position:v.position,map:vacancyVisible?map:null,title:v.address,icon:vacancyIcon(v.status),zIndex:200});
-   m.addListener('click',()=>{const item=vacancies.find(x=>x.id===v.id);if(!item)return;infoWindow.setContent('<div style="min-width:170px"><b>🏠 '+(item.status==='rented'?'已租':'空舖')+'</b><p>'+esc(item.address)+'</p><p>商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</p></div>');infoWindow.open({map,anchor:m})});
+   m.addListener('click',()=>{const item=vacancies.find(x=>x.id===v.id);if(!item)return;openVacancyPopup(item,m)});
    vacancyMarkers.set(v.id,m);
   }
   m.setIcon(vacancyIcon(v.status));m.setMap(vacancyVisible?map:null);
@@ -540,7 +552,7 @@ async function locateVacancy(v){
   return;
  }
  if(!vacancyVisible){vacancyVisible=true;refreshVacancyMarkers()}
- const m=vacancyMarkers.get(v.id);if(m){infoWindow.setContent('<div><b>🏠 '+(v.status==='rented'?'已租':'空舖')+'</b><p>'+esc(v.address)+'</p><p>月租：'+(v.rent===undefined?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW'))+'</p><p>'+esc([v.region?.city,v.region?.district].filter(Boolean).join(' · ')||'區域待定位')+'</p></div>');infoWindow.open({map,anchor:m})}
+ const m=vacancyMarkers.get(v.id);if(m)openVacancyPopup(v,m);
 }
 let vacancyFilterCity='',vacancyFilterDistrict='',vacancyFilterStage='';
 const DEVELOPMENT_STAGES=['待評估','現場勘查','租金洽談','已簽約','籌備中','已開幕','放棄開發'];
