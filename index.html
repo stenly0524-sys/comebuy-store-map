@@ -1473,10 +1473,12 @@ function leadEditorForm(v){
  form.innerHTML='<label>加盟主狀況<select name="franchiseType"><option value="新加盟主" '+((v.franchiseType||'新加盟主')==='新加盟主'?'selected':'')+'>新加盟主</option><option value="原加盟主" '+(v.franchiseType==='原加盟主'?'selected':'')+'>原加盟主</option></select></label><label>加盟主姓名<input name="name" maxlength="70" required value="'+esc(v.name||'')+'"></label><label>聯絡電話<input name="phone" type="tel" maxlength="35" required value="'+esc(v.phone||'')+'"></label><label>通訊軟體帳號<input name="messenger" maxlength="120" placeholder="LINE、WeChat、其他" value="'+esc(v.messenger||'')+'"></label><label>意向城市<select name="city" required>'+leadCityOptions(v.city||'')+'</select></label><label>意向區域<select name="district" required></select></label><label>展店地址<input name="storeAddress" maxlength="250" placeholder="尚未選定展店地址" value="'+esc(linkedVacancyAddress(v)||v.storeAddress||'')+'"></label><label>備註<textarea name="note" rows="3" maxlength="500" placeholder="洽談紀錄">'+esc(v.note||'')+'</textarea></label><button type="submit">儲存修改</button>';
  const c=form.querySelector('[name="city"]'),d=form.querySelector('[name="district"]');setLeadDistrictSelector(c,d,v.district||'');c.onchange=()=>setLeadDistrictSelector(c,d);
  const matched=linkedVacancyAddress(v);if(matched){const input=form.querySelector('[name="storeAddress"]');input.value=matched;input.readOnly=true;input.title='此地址由空舖媒合自動帶入，請在空舖管理修改媒合'}
- form.onsubmit=e=>{e.preventDefault();const fd=new FormData(form),previous={...v};for(const key of ['franchiseType','name','phone','messenger','city','district','storeAddress','note'])v[key]=String(fd.get(key)||'').trim();v.region=v.city+v.district;if(!v.name||!v.phone||!v.city||!v.district){Object.assign(v,previous);return}if(saveFranchise()){franchiseEditId=null;showFranchise()}else Object.assign(v,previous)};
+ form.onsubmit=e=>{e.preventDefault();const fd=new FormData(form),previous={...v};for(const key of ['franchiseType','name','phone','messenger','city','district','storeAddress','note'])v[key]=String(fd.get(key)||'').trim();v.region=v.city+v.district;if(!v.name||!v.phone||!v.city||!v.district){Object.assign(v,previous);return}if(saveFranchise()){franchiseEditId=null;showFranchise(activeFranchiseSection)}else Object.assign(v,previous)};
  return form
 }
-function showFranchise(section='cases'){
+let activeFranchiseSection='cases';
+function showFranchise(section=activeFranchiseSection){
+ activeFranchiseSection=section;
  syncFranchiseVacancyLinks();
  const manager=section==='owners';
  setDrawerLayout('compact');
@@ -1637,7 +1639,7 @@ async function importVacancyXlsx(file){
  refreshVacancyMarkers();
  let located=0;
  for(const v of accepted){if(await geocodeVacancy(v))located++}
- showDashboard();
+ showCaseManagement();
  const result=document.createElement('div');result.innerHTML='<p class="vacancy-import-summary">已成功建檔 '+accepted.length+' 筆</p><p>依城市、區域歸類完成。地圖定位成功 '+located+' 筆，待定位 '+(accepted.length-located)+' 筆；跳過重複 '+duplicateCount+' 筆。</p>';await vacancyImportDialog('空舖資料建檔完成',result,'完成',false);
 }
 function addVacancyDocActions(){
