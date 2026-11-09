@@ -472,13 +472,13 @@ async function showAdministrativeBoundary(city,district){
   added.forEach(f=>focusBoundaryGeometry(f.getGeometry(),bounds));
   if(!bounds.isEmpty()){
    if(district){
-    const center=bounds.getCenter();
-    map.fitBounds(bounds,0);
-    google.maps.event.addListenerOnce(map,'idle',()=>{
-     if(request!==cityHighlightRequest)return;
-     map.setCenter(center);
-     map.setZoom(Math.min(16,Math.max(14,map.getZoom()+1)));
-    });
+    // Keep the full district outline visible below the fixed mobile control panel.
+    const mapHeight=map.getDiv().clientHeight||window.innerHeight;
+    const topPanel=document.querySelector('.top-panel, .toolbar, .controls, #controls');
+    const panelBottom=topPanel?topPanel.getBoundingClientRect().bottom:0;
+    const mapTop=map.getDiv().getBoundingClientRect().top;
+    const topPadding=Math.max(36,Math.min(Math.round(mapHeight*0.38),Math.max(0,Math.round(panelBottom-mapTop))+24));
+    map.fitBounds(bounds,{top:topPadding,bottom:48,left:32,right:32});
    }else map.fitBounds(bounds,36);
   }
   added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#d71920',strokeWeight:3,strokeOpacity:1,fillOpacity:0,clickable:false,zIndex:800}));
@@ -486,17 +486,9 @@ async function showAdministrativeBoundary(city,district){
 }
 function flashCityArea(city){showAdministrativeBoundary(city,null)}
 function focusDistrictMap(city,district){
- // Geocode the selected district immediately, then refine to its official polygon center.
+ // The authoritative polygon bounds control both centering and zoom.
+ // Do not let a later geocoder callback overwrite the polygon fit.
  showAdministrativeBoundary(city,district);
- if(!map||!geocoder)return;
- const request=cityHighlightRequest;
- geocoder.geocode({address:city+district+',台灣',componentRestrictions:{country:'TW'}},(results,status)=>{
-  if(request!==cityHighlightRequest||nav.city!==city||nav.district!==district||cityHighlight?.length)return;
-  const geometry=status==='OK'&&results?.[0]?.geometry;
-  if(!geometry)return;
-  const center=geometry.location||geometry.viewport?.getCenter();
-  if(center){map.panTo(center);map.setZoom(15)}
- });
 }
 function showCities(){
  setDrawerLayout('normal');
