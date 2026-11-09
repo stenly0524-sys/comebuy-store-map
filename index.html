@@ -639,6 +639,36 @@ async function fillVacancyMapAddress(point){
  }catch(e){address.placeholder='無法自動取得地址，請手動輸入';const msg=document.querySelector('.vacancy-form .vacancy-error');if(msg)msg.textContent='無法判定完整地址，請手動選擇城市、區域及地址'}
 }
 
+function vacancyModal(title,render){
+ const overlay=document.createElement('div');overlay.className='vacancy-modal-overlay';
+ overlay.innerHTML='<section class="vacancy-modal" role="dialog" aria-modal="true"><header><strong>'+esc(title)+'</strong><button type="button" aria-label="關閉" class="vacancy-modal-close">×</button></header><div class="vacancy-modal-body"></div></section>';
+ const close=()=>overlay.remove();overlay.querySelector('.vacancy-modal-close').onclick=close;
+ overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+ document.body.appendChild(overlay);render(overlay.querySelector('.vacancy-modal-body'),close);
+}
+function vacancyStoreModal(v){
+ vacancyModal('店鋪資料',(body,close)=>{
+  const form=document.createElement('form');form.className='vacancy-form';
+  const fields=[['address','地址','text'],['rent','租金','number'],['size','坪數','number'],['front','面寬','number'],['contact','聯絡人','text'],['phone','聯絡電話','tel']];
+  fields.forEach(([key,label,type])=>{const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.name=key;input.type=type;input.value=v[key]??'';if(type==='number'){input.min='0';input.step='any'}wrap.appendChild(input);form.appendChild(wrap)});
+  const actions=document.createElement('div');actions.className='vacancy-modal-actions';
+  const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
+  form.onsubmit=e=>{e.preventDefault();const previous={};fields.forEach(([key])=>{previous[key]=v[key];v[key]=form.elements.namedItem(key).value.trim()});if(!v.address){alert('地址不可為空');Object.assign(v,previous);return}if(!saveVacancies()){Object.assign(v,previous);return}refreshVacancyMarkers();close();showVacancies()};
+  body.appendChild(form);
+ });
+}
+function vacancyPhotosModal(v){
+ vacancyModal('查看圖片（最多4張）',(body,close)=>{
+  const gallery=document.createElement('div');gallery.className='vacancy-photo-gallery';
+  const photos=Array.isArray(v.photos)?[...v.photos.slice(0,4)]:(v.photo?[v.photo]:[]);
+  const render=()=>{gallery.innerHTML='';photos.forEach((src,i)=>{const cell=document.createElement('div');cell.className='vacancy-photo-cell';const img=document.createElement('img');img.src=src;img.alt='空舖照片 '+(i+1);const del=document.createElement('button');del.type='button';del.textContent='刪除';del.onclick=()=>{photos.splice(i,1);render()};cell.append(img,del);gallery.appendChild(cell)})};
+  render();body.appendChild(gallery);
+  const input=document.createElement('input');input.type='file';input.accept='image/*';input.multiple=true;input.style.width='100%';
+  input.onchange=async()=>{const files=[...input.files];if(files.length+photos.length>4){alert('最多可儲存4張照片');input.value='';return}for(const file of files){if(file.size>2*1024*1024){alert('每張原始照片不可超過2MB');continue}try{const src=await new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const scale=Math.min(1,1200/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);resolve(canvas.toDataURL('image/jpeg',.72))};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('無法讀取圖片'))};img.src=url});photos.push(src)}catch(e){alert(e.message)}}render();input.value=''};
+  body.appendChild(input);const actions=document.createElement('div');actions.className='vacancy-modal-actions';const save=document.createElement('button');save.type='button';save.textContent='儲存圖片';save.onclick=()=>{const oldPhotos=v.photos,oldPhoto=v.photo;v.photos=[...photos];v.photo=photos[0]||'';if(saveVacancies()){close();showVacancies()}else{v.photos=oldPhotos;v.photo=oldPhoto}};actions.appendChild(save);body.appendChild(actions);
+ });
+}
+const vacancyModalStyle=document.createElement('style');vacancyModalStyle.textContent='.vacancy-modal-overlay{position:fixed;inset:0;background:#0009;z-index:100001;display:flex;align-items:center;justify-content:center;padding:15px}.vacancy-modal{width:min(96vw,520px);max-height:88dvh;display:flex;flex-direction:column;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px #0005}.vacancy-modal header{background:#c8202d;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between}.vacancy-modal-close{width:32px;height:32px;border:0;border-radius:50%;background:#fff;color:#c8202d;font-size:22px}.vacancy-modal-body{padding:15px;overflow:auto}.vacancy-modal-actions{margin-top:12px;display:flex;justify-content:flex-end}.vacancy-modal-actions button{background:#c8202d;color:#fff;border:0;border-radius:9px;padding:11px 16px;font-weight:800}.vacancy-photo-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.vacancy-photo-cell{position:relative}.vacancy-photo-cell img{width:100%;height:140px;object-fit:cover;border-radius:9px}.vacancy-photo-cell button{position:absolute;right:5px;top:5px;border:0;border-radius:6px;background:#fff;color:#c8202d;padding:5px 8px}';document.head.appendChild(vacancyModalStyle);
 let vacancyDetailOpenId=null;
 function showVacancies(){
  setDrawerLayout('compact');
@@ -695,14 +725,8 @@ function showVacancies(){
   const rented=v.status==='rented';
   const regionText=[v.region?.city,v.region?.district,v.region?.neighborhood].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
-  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status" '+(isArchive?'disabled aria-disabled="true"':'')+'>'+(isArchive?'未拿下':rented?'改為空舖':'設為已租')+'</button>'+(isArchive?'':'<button type="button" data-act="detail">詳情</button>')+(isArchive?'<button type="button" data-act="restore">復原</button>':'')+'<button type="button" data-act="delete" class="danger">'+(isArchive?'完全刪除':'刪除')+'</button></div>';
-  const detail=document.createElement('div');detail.className='vacancy-extra-summary';
-  detail.innerHTML='<div>'+esc([v.size&&'坪數 '+v.size+' 坪',v.front&&'面寬 '+v.front+' m'].filter(Boolean).join('｜'))+'</div><div>'+esc([v.contact&&'聯絡人 '+v.contact,v.phone&&'電話 '+v.phone].filter(Boolean).join('｜'))+'</div>'+(v.photo?'<img alt="空舖現場照片" src="'+esc(v.photo)+'">':'');
-  const detailPanel=document.createElement('div');detailPanel.className='vacancy-detail-panel';detailPanel.hidden=vacancyDetailOpenId!==v.id;item.appendChild(detailPanel);detailPanel.appendChild(detail);
-  if(!isArchive){
-  const photoEdit=document.createElement('label');photoEdit.className='small-edit-btn';photoEdit.textContent='更換照片 ';const photoInput=document.createElement('input');photoInput.type='file';photoInput.accept='image/*';photoInput.style.maxWidth='100%';photoEdit.appendChild(photoInput);detailPanel.appendChild(photoEdit);photoInput.onchange=()=>{const file=photoInput.files[0];if(!file)return;if(file.size>2*1024*1024){alert('照片不得超過 2MB');return}const reader=new FileReader();reader.onload=()=>{const old=v.photo;v.photo=reader.result;if(saveVacancies())showVacancies();else v.photo=old};reader.readAsDataURL(file)};
-
- }
+  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status" '+(isArchive?'disabled aria-disabled="true"':'')+'>'+(isArchive?'封存':'店鋪資料')+'</button>'+(isArchive?'':'<button type="button" data-act="detail">開發記錄</button><button type="button" data-act="photos">查看圖片</button>')+(isArchive?'<button type="button" data-act="restore">復原</button>':'')+'<button type="button" data-act="delete" class="danger">'+(isArchive?'完全刪除':'刪除')+'</button></div>';
+  const detailPanel=document.createElement('div');detailPanel.className='vacancy-detail-panel';detailPanel.hidden=vacancyDetailOpenId!==v.id;item.appendChild(detailPanel);
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
   editor.innerHTML='<label>商圈屬性（可複選修改）</label><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" value="'+t+'" '+(vacancyAreaNames(v).includes(t)?'checked':'')+'><span>'+t+'</span></label>').join('')+'</div>';
   editor.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.onchange=()=>{v.areaTypes=[...editor.querySelectorAll('input:checked')].map(x=>x.value);v.areaManual=true;saveVacancies();showVacancies()});
@@ -718,8 +742,7 @@ function showVacancies(){
    const archiveInfo=document.createElement('div');archiveInfo.className='vacancy-archive-readonly';
    archiveInfo.innerHTML='<div><strong>商圈屬性：</strong>'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div><strong>開發進度：</strong>'+esc(v.developmentStage||'待評估')+'</div><div><strong>媒合加盟主：</strong>'+esc((franchiseLeads.find(x=>String(x.id)===String(v.franchiseLeadId))||{}).name||'尚未媒合')+'</div><div><strong>下次追蹤日期：</strong>'+esc(v.followUpDate||'未設定')+'</div><div><strong>開發備註：</strong>'+esc(v.developmentNote||'無')+'</div><div class="vacancy-note">封存資料僅供檢視，復原後可修改。</div>';
    detailPanel.appendChild(archiveInfo);
-  }else{detailPanel.appendChild(editor);detailPanel.appendChild(progress);}
-  if(!isArchive&&vacancyDetailOpenId===v.id)makeEditor(detailPanel,v,[['address','地址'],['rent','月租金','number'],['size','坪數','number'],['front','面寬（公尺）','number'],['contact','聯絡人'],['phone','聯絡電話']],saveVacancies,()=>{refreshVacancyMarkers();showVacancies()});
+  }else{detailPanel.appendChild(progress);}
   progress.querySelector('[data-field="stage"]').value=stages.includes(v.developmentStage)?v.developmentStage:'待評估';
   progress.querySelector('[data-field="lead"]').value=franchiseLeads.some(lead=>String(lead.id)===String(v.franchiseLeadId||''))?String(v.franchiseLeadId):'';
   progress.querySelector('[data-field="date"]').value=v.followUpDate||'';
@@ -736,7 +759,8 @@ function showVacancies(){
   if(isArchive){const restore=item.querySelector('[data-act="restore"]');restore.onclick=async()=>{if(!await confirmRestoreVacancy())return;const prevArchived=v.archived,prevAt=v.archivedAt;v.archived=false;delete v.archivedAt;if(!saveVacancies()){v.archived=prevArchived;v.archivedAt=prevAt;return}vacancyDetailOpenId=null;vacancyPanelMode='list';refreshVacancyMarkers();showVacancies()}};
   const detailButton=item.querySelector('[data-act="detail"]');if(detailButton)detailButton.onclick=()=>{vacancyDetailOpenId=vacancyDetailOpenId===v.id?null:v.id;showVacancies()};
   item.querySelector('[data-act="locate"]').onclick=()=>locateVacancy(v);
-  item.querySelector('[data-act="status"]').onclick=()=>{if(isArchive)return;v.status=rented?'vacant':'rented';saveVacancies();refreshVacancyMarkers();showVacancies()};
+  item.querySelector('[data-act="status"]').onclick=()=>{if(!isArchive)vacancyStoreModal(v)};
+  item.querySelector('[data-act="photos"]')?.addEventListener('click',()=>vacancyPhotosModal(v));
   item.querySelector('[data-act="delete"]').onclick=async()=>{
    if(isArchive){
     if(!confirm('確定完全刪除這筆封存店鋪？刪除後無法復原。\\n'+v.address))return;
