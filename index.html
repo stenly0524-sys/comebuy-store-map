@@ -281,6 +281,11 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .drawer .vacancy-region-filter .vacancy-region-selects select,.drawer .vacancy-region-filter .vacancy-stage-filter select,.drawer .vacancy-region-filter input[data-rent]{background:#fff!important;border:1px solid #111!important;color:#111!important}
 .drawer .vacancy-region-filter label,.drawer .vacancy-region-filter span,.drawer .vacancy-region-filter div{color:#111!important}
 .drawer .vacancy-region-filter input[data-rent]::placeholder{color:#555!important;opacity:1}
+
+/* Unified vacancy tabs: equal typography and consistent outline icons */
+.vacancy-tabs button{display:flex!important;align-items:center;justify-content:center;gap:5px!important;font-size:12px!important;font-weight:850!important;white-space:nowrap;padding:10px 3px!important;min-width:0!important}
+.vacancy-tabs button span{font-size:inherit!important;line-height:1.25}
+.vacancy-tabs .vacancy-tab-icon{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
@@ -1381,7 +1386,7 @@ function showVacancies(){
  nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.filter(v=>!v.archived).length+')';setGradientHeading('vacancies');document.getElementById('vacancyMapToggles').hidden=false;backBtn.style.visibility='hidden';drawerBody.innerHTML='';
 
  const navTabs=document.createElement('div');navTabs.className='vacancy-tabs';
- navTabs.innerHTML='<button type="button" data-mode="add">＋ 新增</button><button type="button" data-mode="list">☷ 清單 ('+vacancies.filter(v=>!v.archived).length+')</button><button type="button" data-mode="archive">封存店鋪 ('+vacancies.filter(v=>v.archived).length+')</button>';
+ navTabs.innerHTML='<button type="button" data-mode="add"><svg class="vacancy-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7v10M7 12h10"/></svg><span>新增</span></button><button type="button" data-mode="list"><svg class="vacancy-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="3" stroke-linecap="round"/></svg><span>清單 ('+vacancies.filter(v=>!v.archived).length+')</span></button><button type="button" data-mode="archive"><svg class="vacancy-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v11h14V9M10 14h4"/></svg><span>封存店鋪 ('+vacancies.filter(v=>v.archived).length+')</span></button>';
  drawerBody.appendChild(navTabs);
  navTabs.querySelectorAll('button').forEach(btn=>{btn.classList.toggle('active',btn.dataset.mode===vacancyPanelMode);btn.onclick=()=>{if(btn.dataset.mode==='add'){vacancyPanelMode='add';showVacancies();return}vacancyPanelMode=btn.dataset.mode;vacancyDetailOpenId=null;showVacancies()}});
 
