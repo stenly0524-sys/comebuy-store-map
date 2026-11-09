@@ -428,7 +428,7 @@ async function updateDistrictOptions(city){
  try{geo=await loadBoundary('district')}catch(e){console.warn('區域選單圖資讀取失敗',e)}
  if(token!==districtSelectRequest||citySelect.value!==city)return;
  const names=districtNamesForCity(city,geo);
- districtSelect.innerHTML='<option value="">全部區域</option>'+names.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+ districtSelect.innerHTML='<option value="">全部區域</option>'+names.map(d=>{const count=stores.filter(x=>x.city===city&&boundaryName(x.districtName)===boundaryName(d)).length;return '<option value="'+esc(d)+'">'+esc(d)+' ('+count+')</option>'}).join('');
  districtSelect.disabled=false;
 }
 citySelect.onchange=()=>{
