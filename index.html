@@ -180,7 +180,7 @@ html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
       <select id="citySelect"></select>
     </div>
     <div class="brand-filter" aria-label="品牌篩選"><button type="button" data-brand="all">All</button><button type="button" data-brand="COMEBUY">COMEBUY</button><button type="button" data-brand="COMEBUY TEA">COMEBUY TEA</button></div>
-    <nav class="bottom-nav" aria-label="地圖功能列"><button id="openList" type="button">☷ 清單</button><button id="openVacancies" type="button">⌂ 空舖</button><button id="openProtection" type="button">◉ 保障範圍</button><button id="openFranchise" type="button">♧ 加盟主</button><button id="openDashboard" type="button">▦ 概況</button></nav>
+    <nav class="bottom-nav" aria-label="地圖功能列"><button id="openList" type="button">☷ 門店</button><button id="openVacancies" type="button">⌂ 空舖</button><button id="openProtection" type="button">◉ 保障範圍</button><button id="openFranchise" type="button">♧ 加盟主</button><button id="openDashboard" type="button">▦ 概況</button></nav>
   </div>
 </div>
 
@@ -605,9 +605,13 @@ let archivedLocateMarker=null;
 function archivedVacancyIcon(){const svg='<svg xmlns="http://www.w3.org/2000/svg" width="46" height="52" viewBox="0 0 46 52"><path d="M23 1 44 17v24a4 4 0 0 1-4 4H6a4 4 0 0 1-4 4V17Z" fill="#1e1e1e" stroke="#fff" stroke-width="3"/><path d="M15 45V29h16v16M10 22l13-11 13 11" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M23 51 18 44h10Z" fill="#1e1e1e"/></svg>';return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(38,43),anchor:new google.maps.Point(19,43)}}
 async function locateVacancy(v){
  if(!v.position){const ok=await geocodeVacancy(v);if(!ok){alert('地址定位失敗，請確認完整地址後再試');return}}
- map.panTo(v.position);map.setZoom(17);
  drawer.classList.remove('open');
- google.maps.event.addListenerOnce(infoWindow,'domready',centerStorePopupInViewport);
+ map.setZoom(17);
+ map.panTo(v.position);
+ // Keep the vacancy marker at the exact center, not the popup window.
+ google.maps.event.addListenerOnce(infoWindow,'domready',()=>{
+  requestAnimationFrame(()=>requestAnimationFrame(()=>map.panTo(v.position)));
+ });
  if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}
  if(v.archived){
   const googleMapsUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.address);
@@ -616,6 +620,7 @@ async function locateVacancy(v){
   infoWindow.setContent(content);
   if(existingArchivedMarker){infoWindow.open({map,anchor:existingArchivedMarker})}
   else{infoWindow.setPosition(v.position);infoWindow.open({map})}
+  map.panTo(v.position);
   return;
  }
  if(!vacancyVisible){vacancyVisible=true;refreshVacancyMarkers()}
