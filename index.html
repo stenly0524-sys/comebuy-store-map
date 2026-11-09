@@ -171,10 +171,16 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
 #exitStreetView{position:fixed;right:14px;bottom:calc(110px + env(safe-area-inset-bottom,0px));z-index:2147483647;background:#fff;color:#d71920;border:1px solid #e6deda;border-radius:999px;padding:11px 16px;font-size:14px;font-weight:700;box-shadow:0 4px 18px #0003;cursor:pointer}
 #exitStreetView[hidden]{display:none!important}
+#gpsLocate{position:fixed;right:14px;bottom:calc(170px + env(safe-area-inset-bottom,0px));z-index:45;width:49px;height:49px;border:1px solid #e4ded9;border-radius:50%;background:#fff;color:#d71920;box-shadow:0 4px 18px #0003;font-size:24px;display:grid;place-items:center;cursor:pointer}
+#gpsLocate[data-mode="following"]{background:#d71920;color:#fff}
+#gpsLocate[data-mode="paused"]{background:#fff;color:#2563eb}
+#gpsLocate:disabled{opacity:.6}
+#gpsLocate[hidden]{display:none!important}
 </style>
 </head>
 <body>
 <div id="map"></div>
+<button id="gpsLocate" type="button" data-mode="off" title="開始 GPS 即時定位" aria-label="開始 GPS 即時定位">◎</button>
 <button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖">← 返回地圖</button>
 
 <div class="top">
@@ -351,6 +357,57 @@ function refreshMarkers(){
 function updateStatus(){statusEl.textContent='已定位 '+markers.size+' / '+stores.length+' 間門市';}
 function saveCache(){try{localStorage.setItem('comebuy_google_geocodes_v1',JSON.stringify(cache))}catch(e){}}
 
+// GPS is opt-in and remains local to this browser session.
+let gpsWatchId=null,gpsFollow=false,gpsPosition=null,gpsMarker=null,gpsAccuracyCircle=null;
+const gpsButton=document.getElementById('gpsLocate');
+function gpsUi(mode,message){
+ gpsButton.dataset.mode=mode;
+ gpsButton.title=message;
+ gpsButton.setAttribute('aria-label',message);
+ gpsButton.textContent=mode==='following'?'◉':'◎';
+}
+function gpsCenter(position,firstFix=false){
+ if(!map)return;
+ if(firstFix||map.getZoom()<16)map.setZoom(17);
+ map.panTo(position);
+}
+function gpsUpdate(position){
+ if(!map)return;
+ const point={lat:position.coords.latitude,lng:position.coords.longitude};
+ const accuracy=Math.max(0,Number(position.coords.accuracy)||0);
+ if(!Number.isFinite(point.lat)||!Number.isFinite(point.lng))return;
+ const firstFix=!gpsPosition;
+ gpsPosition=point;
+ if(!gpsMarker){
+  gpsMarker=new google.maps.Marker({map,position:point,title:'我的即時位置',
+   icon:{path:google.maps.SymbolPath.CIRCLE,scale:9,fillColor:'#2563eb',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:3},zIndex:9999});
+  gpsAccuracyCircle=new google.maps.Circle({map,center:point,radius:accuracy,strokeColor:'#2563eb',strokeOpacity:.35,strokeWeight:1,fillColor:'#2563eb',fillOpacity:.12,clickable:false});
+ }else{
+  gpsMarker.setPosition(point);
+  gpsAccuracyCircle.setCenter(point);
+  gpsAccuracyCircle.setRadius(accuracy);
+ }
+ if(gpsFollow)gpsCenter(point,firstFix);
+}
+function gpsError(error){
+ const reason=error?.code===1?'定位權限遭拒絕，請在 iPhone 設定允許此網站使用位置。':error?.code===2?'目前無法取得 GPS 位置，請確認定位服務與訊號。':'GPS 定位逾時，請再試一次。';
+ if(error?.code===1){if(gpsWatchId!==null)navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;gpsFollow=false;gpsUi('off','開始 GPS 即時定位')}
+ else if(gpsWatchId!==null)gpsUi(gpsFollow?'following':'paused','GPS 定位中，點擊恢復跟隨');
+ alert(reason);
+}
+gpsButton.addEventListener('click',()=>{
+ if(!map)return;
+ if(!navigator.geolocation){alert('此瀏覽器不支援 GPS 定位。');return}
+ if(gpsWatchId===null){
+  gpsFollow=true;
+  gpsUi('following','正在取得位置，點擊後可恢復跟隨');
+  gpsWatchId=navigator.geolocation.watchPosition(gpsUpdate,gpsError,{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
+ }else{
+  gpsFollow=true;
+  gpsUi('following','GPS 即時跟隨中');
+  if(gpsPosition)gpsCenter(gpsPosition);
+ }
+});
 window.initMap=function(){
   map=new google.maps.Map(document.getElementById('map'),{
     center:{lat:23.72,lng:120.96},
@@ -365,6 +422,10 @@ window.initMap=function(){
   });
   map.setOptions({mapTypeControl:false});
   window.__comebuyMap=map;
+  // Only deliberate map dragging pauses camera following; the blue dot continues updating.
+  map.addListener('dragstart',()=>{
+    if(gpsWatchId!==null&&gpsFollow){gpsFollow=false;gpsUi('paused','GPS 持續更新中，點擊恢復跟隨')}
+  });
   const streetView=map.getStreetView();
   const exitStreetView=document.getElementById('exitStreetView');
   const syncStreetViewExit=()=>{
