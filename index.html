@@ -435,7 +435,9 @@ citySelect.onchange=()=>{
  const c=citySelect.value;
  updateDistrictOptions(c);
  if(c&&CITY_CENTERS[c]){
-  const [lat,lng,z]=CITY_CENTERS[c];map.panTo({lat,lng});map.setZoom(z);
+  const [lat,lng,z]=CITY_CENTERS[c];
+  map.setZoom(z);
+  map.panTo({lat,lng});
   showAdministrativeBoundary(c,null);
  }else{
   clearCityHighlight();map.panTo({lat:23.72,lng:120.96});map.setZoom(7);
@@ -478,7 +480,7 @@ function clearCityHighlight(){
  cityHighlightRequest++;
  if(cityHighlight){cityHighlight.forEach(f=>map.data.remove(f));cityHighlight=null}
 }
-function boundaryName(s){return String(s||'').replace(/臺/g,'台').replace(/\\s/g,'')}
+function boundaryName(s){return String(s||'').replace(/臺/g,'台').replace(/\s/g,'')}
 async function loadBoundary(level){
  if(!boundaryCache[level])boundaryCache[level]=fetch(BOUNDARY_URLS[level]).then(r=>{if(!r.ok)throw Error('boundary HTTP '+r.status);return r.json()}).catch(e=>{delete boundaryCache[level];throw e});
  return boundaryCache[level];
@@ -523,7 +525,13 @@ async function showAdministrativeBoundary(city,district){
     // Fit the entire polygon in the visible map below the floating controls.
     const topPadding=Math.min(mapRect.height*0.58,Math.max(48,controlBottom-mapRect.top+24));
     map.fitBounds(bounds,{top:topPadding,bottom:48,left:32,right:32});
-   }else map.fitBounds(bounds,36);
+   }else{
+    const mapRect=map.getDiv().getBoundingClientRect();
+    const controls=document.querySelector('.top .card');
+    const covered=Math.max(0,(controls?.getBoundingClientRect().bottom||mapRect.top)-mapRect.top);
+    const topPadding=Math.min(mapRect.height*0.52,covered+20);
+    map.fitBounds(bounds,{top:topPadding,bottom:40,left:28,right:28});
+  }
   }
   added.forEach(f=>map.data.overrideStyle(f,{strokeColor:'#d71920',strokeWeight:3,strokeOpacity:1,fillOpacity:0,clickable:false,zIndex:800}));
  }catch(e){console.warn('行政界線載入失敗',e)}
