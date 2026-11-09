@@ -268,6 +268,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .store-hours-state[data-state="open"]{color:#16844b}
 .store-hours-state[data-state="closed"]{color:#c62828}
 .store-hours-editor{border:1px solid #e5dedb;border-radius:10px;margin:10px 0;padding:10px;min-width:0}.store-hours-editor legend{font-weight:800}.store-hours-day{display:grid;grid-template-columns:38px minmax(0,1fr) minmax(0,1fr) 55px;gap:5px;align-items:center;margin:7px 0;font-size:12px}.store-hours-day input[type=time]{min-width:0;width:100%;box-sizing:border-box;padding:7px 2px}.store-hours-day label{display:flex;align-items:center;gap:2px;font-size:12px}
+.store-hours-row{gap:8px!important}.store-hours-row .rowmain{flex:1;min-width:0}.store-hours-row .store-hours-state{flex:none;min-width:70px;margin:0!important;padding:5px 8px;border-radius:999px;text-align:center;font-size:12px;font-weight:850;white-space:nowrap;background:#777;color:white}.store-hours-row .store-hours-state[data-state="open"]{background:#079348;color:white}.store-hours-row .store-hours-state[data-state="closed"]{background:#666;color:white}.store-hours-row .store-hours-state[data-state="unknown"]{background:#ece9e7;color:#777;font-size:10px;min-width:70px}.store-hours-row .chev{flex:none;color:#111;font-size:22px}
 </style>
 </head>
 <body>
@@ -908,7 +909,9 @@ function showStores(c,d){
   const row=menuRow(s.name,s.address,'',()=>showStore(s));
   const state=document.createElement('span');state.className='store-hours-state';
   const update=()=>{const v=storeHoursNow(s);state.textContent=storeHoursText(v);state.dataset.state=v===true?'open':v===false?'closed':'unknown'};
-  row.querySelector('.rowmain')?.appendChild(state);drawerBody.appendChild(row);update();
+  row.classList.add('store-hours-row');
+  row.querySelector('.chev')?.before(state);
+  drawerBody.appendChild(row);update();
  });
 }
 function storeHoursEditor(s){
