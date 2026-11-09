@@ -1307,11 +1307,12 @@ function vacancyDevelopmentModal(v){
  });
 }
 function vacancyDistrictFromAddress(address){const m=String(address||'').match(/(?:台灣)?(?:台|臺)?[^\\d\\s]{1,5}[縣市]([^\\d\\s]{1,7}(?:區|鄉|鎮|市))/);return m?m[1]:''}
+function vacancyCity(v){const city=String(v?.region?.city||'').trim();return city==='臺北市'?'台北市':city}
 function vacancyDistrict(v){const fromAddress=vacancyDistrictFromAddress(v.address);const current=v.region?.district||'';return fromAddress||(/[區鄉鎮市]$/.test(current)?current:'')}
 function vacancyStoreModal(v){
  vacancyModal('店鋪資料',(body,close)=>{
   const form=document.createElement('form');form.className='vacancy-form';
-  const currentCity=v.region?.city||CITY_ORDER.find(c=>String(v.address||'').startsWith(c))||'';
+  const currentCity=vacancyCity(v)||CITY_ORDER.find(c=>String(v.address||'').startsWith(c))||'';
   const currentDistrict=vacancyDistrict(v);
   const cityWrap=document.createElement('label');cityWrap.textContent='城市';
   const city=document.createElement('select');city.name='city';city.required=true;city.innerHTML=leadCityOptions(currentCity);city.value=currentCity;cityWrap.appendChild(city);form.appendChild(cityWrap);
@@ -1422,9 +1423,9 @@ function showVacancies(){
  if(vacancyPanelMode!=='list'&&vacancyPanelMode!=='archive')return;
  const isArchive=vacancyPanelMode==='archive';
  const visibleVacancies=vacancies.filter(v=>Boolean(v.archived)===isArchive);
- const cities=[...new Set(visibleVacancies.map(v=>v.region?.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ const cities=[...new Set(visibleVacancies.map(v=>vacancyCity(v)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
  if(vacancyFilterCity&&!cities.includes(vacancyFilterCity)){vacancyFilterCity='';vacancyFilterDistrict=''}
- const districts=[...new Set(visibleVacancies.filter(v=>!vacancyFilterCity||v.region?.city===vacancyFilterCity).map(v=>vacancyDistrict(v)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ const districts=[...new Set(visibleVacancies.filter(v=>!vacancyFilterCity||vacancyCity(v)===vacancyFilterCity).map(v=>vacancyDistrict(v)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
  if(vacancyFilterDistrict&&!districts.includes(vacancyFilterDistrict))vacancyFilterDistrict='';
  const filter=document.createElement('div');filter.className='vacancy-region-filter';
  filter.innerHTML='<div class="vacancy-region-selects"><select aria-label="縣市篩選"><option value="">全部縣市</option>'+cities.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select><select aria-label="行政區篩選"><option value="">全部行政區</option>'+districts.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
@@ -1445,7 +1446,7 @@ function showVacancies(){
   vacancyRentMin=min;vacancyRentMax=max;showVacancies();
  };
  rentMinInput.onchange=applyRentFilter;rentMaxInput.onchange=applyRentFilter;
- const filteredVacancies=visibleVacancies.filter(v=>(!vacancyFilterCity||v.region?.city===vacancyFilterCity)&&(!vacancyFilterDistrict||vacancyDistrict(v)===vacancyFilterDistrict)&&(!vacancyFilterStage||(vacancyStage(v))===vacancyFilterStage)&&(vacancyRentMin===''||v.rent!==''&&v.rent!=null&&Number(v.rent)>=Number(vacancyRentMin))&&(vacancyRentMax===''||v.rent!==''&&v.rent!=null&&Number(v.rent)<=Number(vacancyRentMax)));
+ const filteredVacancies=visibleVacancies.filter(v=>(!vacancyFilterCity||vacancyCity(v)===vacancyFilterCity)&&(!vacancyFilterDistrict||vacancyDistrict(v)===vacancyFilterDistrict)&&(!vacancyFilterStage||(vacancyStage(v))===vacancyFilterStage)&&(vacancyRentMin===''||v.rent!==''&&v.rent!=null&&Number(v.rent)>=Number(vacancyRentMin))&&(vacancyRentMax===''||v.rent!==''&&v.rent!=null&&Number(v.rent)<=Number(vacancyRentMax)));
  if(vacancyListFocusId)filteredVacancies.sort((a,b)=>Number(String(b.id)===String(vacancyListFocusId))-Number(String(a.id)===String(vacancyListFocusId)));
  const resultCount=document.createElement('div');resultCount.className='vacancy-note';resultCount.textContent='符合篩選：'+filteredVacancies.length+' 筆／總計 '+visibleVacancies.length+' 筆';drawerBody.appendChild(resultCount);
  if(!visibleVacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent=isArchive?'尚無封存店鋪。':'尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
