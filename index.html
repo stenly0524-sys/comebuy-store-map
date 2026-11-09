@@ -176,6 +176,7 @@ html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
 #gpsLocate[data-mode="paused"]{background:#fff;color:#2563eb}
 #gpsLocate:disabled{opacity:.6}
 #gpsLocate[hidden]{display:none!important}
+body:has(#drawer.open) #gpsLocate,body:has(dialog[open]) #gpsLocate,body:has([role="dialog"]:not([hidden])) #gpsLocate{display:none!important}
 </style>
 </head>
 <body>
@@ -387,7 +388,7 @@ function gpsUpdate(position){
   gpsAccuracyCircle.setCenter(point);
   gpsAccuracyCircle.setRadius(accuracy);
  }
- if(gpsFollow)gpsCenter(point,firstFix);
+ if(firstFix&&gpsFollow){gpsCenter(point,true);gpsFollow=false;gpsUi('paused','點擊定位至目前位置');}
 }
 function gpsError(error){
  const reason=error?.code===1?'定位權限遭拒絕，請在 iPhone 設定允許此網站使用位置。':error?.code===2?'目前無法取得 GPS 位置，請確認定位服務與訊號。':'GPS 定位逾時，請再試一次。';
@@ -400,11 +401,11 @@ gpsButton.addEventListener('click',()=>{
  if(!navigator.geolocation){alert('此瀏覽器不支援 GPS 定位。');return}
  if(gpsWatchId===null){
   gpsFollow=true;
-  gpsUi('following','正在取得位置，點擊後可恢復跟隨');
+  gpsUi('following','正在取得 GPS 位置');
   gpsWatchId=navigator.geolocation.watchPosition(gpsUpdate,gpsError,{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
  }else{
-  gpsFollow=true;
-  gpsUi('following','GPS 即時跟隨中');
+  gpsFollow=false;
+  gpsUi('paused','點擊定位至目前位置');
   if(gpsPosition)gpsCenter(gpsPosition);
  }
 });
@@ -422,10 +423,7 @@ window.initMap=function(){
   });
   map.setOptions({mapTypeControl:false});
   window.__comebuyMap=map;
-  // Only deliberate map dragging pauses camera following; the blue dot continues updating.
-  map.addListener('dragstart',()=>{
-    if(gpsWatchId!==null&&gpsFollow){gpsFollow=false;gpsUi('paused','GPS 持續更新中，點擊恢復跟隨')}
-  });
+  // GPS updates the blue marker only; the camera moves solely on explicit location-button taps.
   const streetView=map.getStreetView();
   const exitStreetView=document.getElementById('exitStreetView');
   const syncStreetViewExit=()=>{
