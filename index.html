@@ -195,6 +195,9 @@ body:has(#drawer.open) #gpsLocate,body:has(dialog[open]) #gpsLocate,body:has([ro
 #routeDialog .route-footer{background:#f2f6fa}
 #routeDialog .route-section-title{font-weight:800;margin-bottom:9px}
 #routeDialog .route-actions{margin-top:0}
+/* Compact the top controls while a non-protection management panel is open. */
+body:has(#drawer.open:not(.drawer-protection)) .top .tools,
+body:has(#drawer.open:not(.drawer-protection)) .top .brand-filter{display:none!important}
 </style>
 </head>
 <body>
@@ -594,6 +597,17 @@ q.oninput=focusSearchResults;
 const drawer=document.querySelector('#drawer'),drawerBody=document.querySelector('#drawerBody'),drawerTitle=document.querySelector('#drawerTitle'),backBtn=document.querySelector('#backBtn');
 function setDrawerLayout(mode){document.getElementById('vacancyMapToggles').hidden=true;drawer.classList.toggle('drawer-compact',mode==='compact');drawer.classList.toggle('drawer-protection',mode==='protection');drawer.classList.toggle('drawer-dashboard',mode==='dashboard');if(mode==='compact'||mode==='protection'||mode==='dashboard'){const bar=document.querySelector('.top .card')||document.querySelector('.bottom-nav');if(bar){const rect=bar.getBoundingClientRect();drawer.style.setProperty('--drawer-top',Math.max(8,Math.round(rect.bottom+16))+'px')}}}
 
+// Keep compact/dashboard panels aligned below the shortened top bar.
+const drawerTopObserver=new MutationObserver(()=>{
+ if(!drawer.classList.contains('open')||drawer.classList.contains('drawer-protection'))return;
+ if(!drawer.classList.contains('drawer-compact')&&!drawer.classList.contains('drawer-dashboard'))return;
+ requestAnimationFrame(()=>{
+  if(!drawer.classList.contains('open'))return;
+  const bar=document.querySelector('.top .card');
+  if(bar)drawer.style.setProperty('--drawer-top',Math.max(8,Math.round(bar.getBoundingClientRect().bottom+16))+'px');
+ });
+});
+drawerTopObserver.observe(drawer,{attributes:true,attributeFilter:['class']});
 document.querySelector('#openList').onclick=()=>{drawer.classList.add('open');showCities()};
 document.querySelector('#closeBtn').onclick=()=>drawer.classList.remove('open');
 backBtn.onclick=()=>{if(nav.level==='vacancies'){showVacancies();return}if(nav.level==='store')showStores(nav.city,nav.district);else if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
