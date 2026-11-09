@@ -200,6 +200,17 @@ body.map-panel-compact .top .tools,
 body.map-panel-compact .top .brand-filter{display:none!important}
 body.map-panel-compact .top .card{padding-bottom:10px}
 body.map-panel-compact .top .bottom-nav{margin-top:8px}
+/* Compact new/existing franchise rows while retaining readable tap targets. */
+.lead-summary-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr);gap:8px;align-items:center;font-size:12px;line-height:1.45}
+.lead-summary-name{font-weight:900;font-size:14px;min-width:0;overflow-wrap:anywhere}
+.lead-summary-region{color:#615b57;min-width:0;overflow-wrap:anywhere}
+.lead-summary-phone{min-width:0;text-align:right;overflow-wrap:anywhere}
+.lead-summary-phone a{white-space:normal}
+.drawer:has(.lead-summary-row) .vacancy-item{padding:9px 5px}
+.drawer:has(.lead-summary-row) .vacancy-note{margin-top:4px;line-height:1.45}
+.drawer:has(.lead-summary-row) .lead-controls{margin-top:7px}
+.drawer:has(.lead-summary-row) .lead-filter{margin:7px 2px 9px}
+@media(max-width:360px){.lead-summary-row{gap:5px;font-size:11px}.lead-summary-name{font-size:13px}}
 </style>
 </head>
 <body>
@@ -797,7 +808,7 @@ function focusDistrictMap(city,district){
  });
 }
 function showCities(){
- setDrawerLayout('normal');
+ setDrawerLayout('compact');
   nav={level:'cities',city:null,district:null};drawerTitle.textContent='城市';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
   CITY_ORDER.forEach(c=>drawerBody.appendChild(menuRow(c,counts[c]?'查看區域與門市':'目前 0 間門市',counts[c],()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));showDistricts(c)})))
 }
@@ -1434,7 +1445,7 @@ function showFranchise(){
  rows.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';item.classList.toggle('lead-unpaid-card',((v.stage==='已簽約'&&!v.depositReceived)||(v.stage==='受訓中'&&v.trainingPending)));
   const linked=linkedVacancyAddress(v);
-  item.innerHTML='<div class="lead-info"><div class="vacancy-item-head"><span class="vacancy-item-address">'+esc(v.name)+'</span></div><div class="vacancy-note">'+(String(v.phone||'').replace(/[^0-9+]/g,'')?'<a class="lead-phone-link" href="tel:'+esc(String(v.phone).replace(/[^0-9+]/g,''))+'">'+esc(v.phone)+'</a>':esc(v.phone||'未填電話'))+(v.messenger?'｜'+esc(v.messenger):'')+'｜'+esc(leadLocation(v))+'</div>'+(linked||v.storeAddress?'<div class="vacancy-note">展店地址：<button type="button" class="lead-address-link" data-act="locate-address">'+esc(linked||v.storeAddress)+'</button></div>':'')+(v.note?'<div class="vacancy-note">'+esc(v.note)+'</div>':'')+(v.stage==='受訓中'&&!v.trainingPending&&v.trainingStart&&v.trainingEnd?'<div class="vacancy-note">受訓：'+esc(v.trainingStart)+' ～ '+esc(v.trainingEnd)+'</div>':'')+'</div><div class="lead-controls lead-controls-three '+((v.stage==='已簽約'&&!v.depositReceived)||(v.stage==='受訓中'&&v.trainingPending)?'lead-controls-with-deposit':'')+'"><select aria-label="更新洽談進度">'+franchiseStageOptions(v.franchiseType||'新加盟主',v.stage).map(x=>'<option value="'+x+'" '+(v.stage===x?'selected':'')+'>'+(x==='已簽約'&&v.depositReceived?'已簽約（已收訂金）':x)+'</option>').join('')+'</select>'+(v.stage==='已簽約'&&!v.depositReceived?'<button type="button" data-act="deposit">未收訂金</button>':v.stage==='受訓中'&&v.trainingPending?'<button type="button" data-act="training">受訓待訂</button>':'')+'<button type="button" data-act="edit">編輯</button><button type="button" data-act="delete">刪除</button></div>'+(v.stage==='已簽約'&&v.depositReceived?'<div class="vacancy-note lead-deposit-received">已收訂金：NT$ '+Number(v.depositAmount||0).toLocaleString('zh-TW')+'</div>':'');
+  item.innerHTML='<div class="lead-info"><div class="lead-summary-row"><span class="lead-summary-name">'+esc(v.name)+'</span><span class="lead-summary-region">'+esc(leadLocation(v))+'</span><span class="lead-summary-phone">'+(String(v.phone||'').replace(/[^0-9+]/g,'')?'<a class="lead-phone-link" href="tel:'+esc(String(v.phone).replace(/[^0-9+]/g,''))+'">'+esc(v.phone)+'</a>':esc(v.phone||'未填電話'))+'</span></div>'+(v.messenger?'<div class="vacancy-note">通訊：'+esc(v.messenger)+'</div>':'')+(linked||v.storeAddress?'<div class="vacancy-note">展店地址：<button type="button" class="lead-address-link" data-act="locate-address">'+esc(linked||v.storeAddress)+'</button></div>':'')+(v.note?'<div class="vacancy-note">'+esc(v.note)+'</div>':'')+(v.stage==='受訓中'&&!v.trainingPending&&v.trainingStart&&v.trainingEnd?'<div class="vacancy-note">受訓：'+esc(v.trainingStart)+' ～ '+esc(v.trainingEnd)+'</div>':'')+'</div><div class="lead-controls lead-controls-three '+((v.stage==='已簽約'&&!v.depositReceived)||(v.stage==='受訓中'&&v.trainingPending)?'lead-controls-with-deposit':'')+'"><select aria-label="更新洽談進度">'+franchiseStageOptions(v.franchiseType||'新加盟主',v.stage).map(x=>'<option value="'+x+'" '+(v.stage===x?'selected':'')+'>'+(x==='已簽約'&&v.depositReceived?'已簽約（已收訂金）':x)+'</option>').join('')+'</select>'+(v.stage==='已簽約'&&!v.depositReceived?'<button type="button" data-act="deposit">未收訂金</button>':v.stage==='受訓中'&&v.trainingPending?'<button type="button" data-act="training">受訓待訂</button>':'')+'<button type="button" data-act="edit">編輯</button><button type="button" data-act="delete">刪除</button></div>'+(v.stage==='已簽約'&&v.depositReceived?'<div class="vacancy-note lead-deposit-received">已收訂金：NT$ '+Number(v.depositAmount||0).toLocaleString('zh-TW')+'</div>':'');
   item.querySelector('select').onchange=async e=>{const previous={stage:v.stage,depositReceived:v.depositReceived,depositAmount:v.depositAmount,trainingPending:v.trainingPending,trainingStart:v.trainingStart,trainingEnd:v.trainingEnd};const next=e.target.value;if(next==='已簽約'&&v.stage!=='已簽約'){const ok=await askFranchiseDeposit(v);if(!ok){e.target.value=v.stage;return}}if(next==='受訓中'&&v.stage!=='受訓中'){const ok=await askFranchiseTraining(v);if(!ok){Object.assign(v,previous);e.target.value=v.stage;return}}v.stage=next;if(!saveFranchise()){Object.assign(v,previous);e.target.value=v.stage;return}showFranchise()};
   const depositBtn=item.querySelector('[data-act="deposit"]');if(depositBtn)depositBtn.onclick=async()=>{const previous={depositReceived:v.depositReceived,depositAmount:v.depositAmount};const ok=await askFranchiseDeposit(v);if(!ok)return;if(!saveFranchise()){Object.assign(v,previous);return}showFranchise()};
   const trainingBtn=item.querySelector('[data-act="training"]');if(trainingBtn)trainingBtn.onclick=async()=>{const previous={trainingPending:v.trainingPending,trainingStart:v.trainingStart,trainingEnd:v.trainingEnd};if(!await askFranchiseTraining(v))return;if(!saveFranchise()){Object.assign(v,previous);return}showFranchise()};
