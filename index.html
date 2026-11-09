@@ -732,6 +732,7 @@ function openVacancyInList(id){
 }
 let vacancyDetailOpenId=null;
 function showVacancies(){
+ if(typeof franchiseLeads!=='undefined')syncFranchiseVacancyLinks();
  setDrawerLayout('compact');
  nav={level:'vacancies',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='空舖管理 ('+vacancies.filter(v=>!v.archived).length+')';document.getElementById('vacancyMapToggles').hidden=false;backBtn.style.visibility='hidden';drawerBody.innerHTML='';
 
@@ -946,6 +947,7 @@ function leadEditorForm(v){
  return form
 }
 function showFranchise(){
+ syncFranchiseVacancyLinks();
  setDrawerLayout('compact');
  nav={level:'franchise',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='加盟主名單 ('+franchiseLeads.length+')';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const tabs=document.createElement('div');tabs.className='vacancy-tabs';tabs.innerHTML='<button type="button" data-mode="add">＋ 新增</button><button type="button" data-mode="list">新加盟主 ('+franchiseLeads.filter(v=>(v.franchiseType||'新加盟主')==='新加盟主').length+')</button><button type="button" data-mode="existing">原加盟主 ('+franchiseLeads.filter(v=>v.franchiseType==='原加盟主').length+')</button>';drawerBody.appendChild(tabs);
