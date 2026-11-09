@@ -264,6 +264,9 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .case-management-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:2px 0 15px}
 .case-management-choices button{display:flex;justify-content:space-between;align-items:center;gap:4px;border:1px solid #e4d6d2;background:#fff;color:#a71920;border-radius:12px;padding:15px 10px;font-size:15px;font-weight:850}
 .case-management-choices button span{font-size:22px}
+.store-hours-state{display:inline-block;margin-top:4px;font-size:12px;font-weight:750;color:#777}
+.store-hours-state[data-state="open"]{color:#16844b}
+.store-hours-state[data-state="closed"]{color:#c62828}
 </style>
 </head>
 <body>
@@ -871,9 +874,44 @@ function showDistricts(c){
   if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#766e69;text-align:center">目前沒有 COMEBUY 門市</div>';return}
   ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{nav={level:'stores',city:c,district:d};citySelect.value=c;updateDistrictOptions(c).then(()=>{if(citySelect.value===c)districtSelect.value=d});focusDistrictMap(c,d);showStores(c,d)}))})
 }
+// Google-listed hours are consulted only when opening a district list; unknown is never shown as closed.
+const storeHoursSession=new Map();
+let storeHoursService=null,storeHoursGeneration=0;
+function storeHoursText(value){return value===true?'營業中':value===false?'休息中':'營業狀態未知'}
+async function googleStoreHours(s){
+ const key=storeOpeningId(s),cached=storeHoursSession.get(key);
+ if(cached&&Date.now()-cached.time<5*60*1000)return cached.value;
+ if(!google.maps.places?.PlacesService)throw Error('Places API 未啟用');
+ if(!storeHoursService)storeHoursService=new google.maps.places.PlacesService(map);
+ const find=await new Promise((resolve,reject)=>storeHoursService.findPlaceFromQuery({
+  query:s.name+' '+s.address,fields:['place_id','name','formatted_address']
+ },(items,status)=>status==='OK'&&items?.length?resolve(items):reject(Error(status))));
+ const candidate=find.find(p=>String(p.formatted_address||'').replace(/\\s/g,'').includes(String(s.address||'').replace(/\\s/g,'').slice(-7)))||find[0];
+ const place=await new Promise((resolve,reject)=>storeHoursService.getDetails({
+  placeId:candidate.place_id,fields:['opening_hours','business_status','name','formatted_address']
+ },(detail,status)=>status==='OK'&&detail?resolve(detail):reject(Error(status))));
+ const value=place.business_status&&place.business_status!=='OPERATIONAL'?false:
+  typeof place.opening_hours?.isOpen==='function'?place.opening_hours.isOpen(new Date()):
+  typeof place.opening_hours?.open_now==='boolean'?place.opening_hours.open_now:null;
+ storeHoursSession.set(key,{time:Date.now(),value});
+ return value;
+}
 function showStores(c,d){
-  nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
-  stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).forEach(s=>drawerBody.appendChild(menuRow(s.name,s.address,'',()=>showStore(s))))
+ const generation=++storeHoursGeneration;
+ nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
+ const matching=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand));
+ matching.forEach(s=>{
+  const row=menuRow(s.name,s.address,'',()=>showStore(s));
+  const state=document.createElement('span');state.className='store-hours-state';state.textContent='查詢中';
+  row.querySelector('.rowmain')?.appendChild(state);drawerBody.appendChild(row);
+  googleStoreHours(s).then(value=>{
+   if(generation!==storeHoursGeneration||!row.isConnected)return;
+   state.textContent=storeHoursText(value);state.dataset.state=value===true?'open':value===false?'closed':'unknown';
+  }).catch(()=>{
+   if(generation!==storeHoursGeneration||!row.isConnected)return;
+   state.textContent='營業狀態未知';state.dataset.state='unknown';
+  });
+ });
 }
 const STORE_OPENING_KEY='comebuy_store_opening_dates_v1';
 let storeOpeningDates={};try{const d=JSON.parse(localStorage.getItem(STORE_OPENING_KEY)||'{}');if(d&&typeof d==='object'&&!Array.isArray(d))storeOpeningDates=d}catch(e){}
@@ -1693,6 +1731,6 @@ syncActionButtons();
 
 showCities();
 </script>
-<script>window.gm_authFailure=function(){const s=document.getElementById('status');if(s)s.textContent='Google Maps 驗證失敗：請檢查 API Key／計費／網站限制';}</script><script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&language=zh-TW&region=TW"></script>
+<script>window.gm_authFailure=function(){const s=document.getElementById('status');if(s)s.textContent='Google Maps 驗證失敗：請檢查 API Key／計費／網站限制';}</script><script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&libraries=places&language=zh-TW&region=TW"></script>
 </body>
 </html>
