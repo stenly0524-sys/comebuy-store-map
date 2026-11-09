@@ -446,7 +446,7 @@ function boundaryMatch(feature,city,district){
  const match=(keys,value)=>entries.some(([k,v])=>keys.some(key=>k.includes(key))&&v===boundaryName(value));
  const cityKeys=['county','city','縣市','縣','市名'];
  const townKeys=['town','district','鄉鎮','區名','鄉名'];
- if(district)return match(cityKeys,city)&&match(townKeys,district);
+ if(district){const cityOK=match(cityKeys,city)||entries.some(([k,v])=>k.includes('countyname')&&v===boundaryName(city));const districtOK=match(townKeys,district)||entries.some(([k,v])=>['name','名稱'].some(key=>k.includes(key))&&v===boundaryName(district));return cityOK&&districtOK;}
  return match(cityKeys,city)||entries.some(([k,v])=>['name','名稱'].some(key=>k.includes(key))&&v===boundaryName(city));
 }
 function focusBoundaryGeometry(geometry,bounds){
