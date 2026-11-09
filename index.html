@@ -232,6 +232,12 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .drawer:has(.lead-summary-row) .vacancy-item>.lead-controls>[data-act="training"]{grid-column:2 / 4!important;grid-row:1!important;position:static!important;width:100%!important;min-width:0!important;min-height:40px!important;margin:0!important;align-self:start!important;padding:8px 2px!important}
 .drawer:has(.lead-summary-row) .vacancy-item>.lead-deposit-received{grid-column:1 / 4}
 @media(max-width:370px){.drawer:has(.lead-summary-row) .vacancy-item{grid-template-columns:minmax(0,1fr) 42px 42px;gap:4px}.drawer:has(.lead-summary-row) .lead-summary-row{gap:2px;font-size:10px}.drawer:has(.lead-summary-row) .lead-summary-name{font-size:12px}}
+/* Equal-width identity columns; tighter spacing to address/training details. */
+.drawer:has(.lead-summary-row) .lead-summary-row{grid-template-columns:repeat(3,minmax(0,1fr))!important;column-gap:6px!important;align-items:center}
+.drawer:has(.lead-summary-row) .lead-summary-phone{text-align:left!important}
+.drawer:has(.lead-summary-row) .lead-info>.vacancy-note{margin-top:2px!important;line-height:1.3!important}
+.drawer:has(.lead-summary-row) .lead-detail-line{gap:2px!important}
+@media(max-width:370px){.drawer:has(.lead-summary-row) .lead-summary-row{column-gap:4px!important}}
 </style>
 </head>
 <body>
