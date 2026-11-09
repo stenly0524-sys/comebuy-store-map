@@ -189,11 +189,17 @@ body:has(#drawer.open) #gpsLocate,body:has(dialog[open]) #gpsLocate,body:has([ro
 #routeDialog .route-actions button{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:900;border:1px solid #d71920;background:#fff;color:#d71920}
 #routeDialog .route-actions button:last-child{background:#d71920;color:#fff}
 #routeDialog .route-actions button:disabled{opacity:.45}
+#routeDialog .route-section{border-radius:13px;padding:13px;margin-top:9px}
+#routeDialog .route-destination{background:#f0f1f3;color:#292929;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+#routeDialog .route-transport{background:#fff4f1}
+#routeDialog .route-footer{background:#f2f6fa}
+#routeDialog .route-section-title{font-weight:800;margin-bottom:9px}
+#routeDialog .route-actions{margin-top:0}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="routeDialog" hidden role="dialog" aria-modal="true" aria-label="規劃路線"><div class="route-card"><div class="route-header"><span>規劃路線</span><button type="button" class="route-close" id="routeClose" aria-label="關閉">×</button></div><div id="routeDestination" style="font-size:13px;margin-bottom:12px"></div><div style="font-weight:800;margin-bottom:8px">選擇移動方式</div><div class="route-modes"><button type="button" data-route-mode="walk">步行</button><button type="button" data-route-mode="scooter">機車</button><button type="button" data-route-mode="drive">汽車</button><button type="button" data-route-mode="bus">公車</button><button type="button" data-route-mode="metro">捷運</button></div><div class="route-actions"><button type="button" id="routeCancel">取消</button><button type="button" id="routeStart" disabled>開始導航</button></div></div></div>
+<div id="routeDialog" hidden role="dialog" aria-modal="true" aria-label="規劃路線"><div class="route-card"><div class="route-header"><span>規劃路線</span><button type="button" class="route-close" id="routeClose" aria-label="關閉">×</button></div><div class="route-section route-destination"><div id="routeDestination"></div></div><div class="route-section route-transport"><div class="route-section-title">選擇移動方式</div><div class="route-modes"><button type="button" data-route-mode="walk">步行</button><button type="button" data-route-mode="scooter">機車</button><button type="button" data-route-mode="drive">汽車</button><button type="button" data-route-mode="bus">公車</button><button type="button" data-route-mode="metro">捷運</button></div></div><div class="route-section route-footer"><div class="route-actions"><button type="button" id="routeCancel">取消</button><button type="button" id="routeStart" disabled>開始導航</button></div></div></div></div>
 <button id="gpsLocate" type="button" data-mode="off" title="開始 GPS 即時定位" aria-label="開始 GPS 即時定位">◎</button>
 <button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖">← 返回地圖</button>
 
