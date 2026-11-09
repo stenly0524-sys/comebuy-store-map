@@ -1659,6 +1659,29 @@ const leadPhoneStyle=document.createElement('style');leadPhoneStyle.textContent=
 document.getElementById('openFranchise').onclick=showCaseManagement;
 function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
+async function importBackupJson(file){
+ if(!file)return;
+ try{
+  if(file.size>20*1024*1024)throw Error('備份檔超過 20 MB，請確認檔案內容');
+  const data=JSON.parse(await file.text());
+  if(!data||data.format!=='comebuy-map-backup'||data.version!==1||!Array.isArray(data.vacancies)||!Array.isArray(data.franchiseLeads)||!data.storeOpeningDates||typeof data.storeOpeningDates!=='object'||Array.isArray(data.storeOpeningDates)||!data.storeEdits||typeof data.storeEdits!=='object'||Array.isArray(data.storeEdits))throw Error('JSON 格式不符合 COMEBUY MAP 備份 V1');
+  if(data.vacancies.some(v=>!v||typeof v.id!=='string'||typeof v.address!=='string')||data.franchiseLeads.some(v=>!v||typeof v!=='object'||Array.isArray(v)))throw Error('備份內含不合法的空舖或加盟資料');
+  if(!confirm('確定匯入備份？\\n將以檔案內容取代目前裝置的空舖、加盟主、門市營業日期及門市編輯資料。\\n請先匯出目前備份，以免資料遺失。'))return;
+  const changes=[[VACANCY_KEY,data.vacancies],[FRANCHISE_KEY,data.franchiseLeads],[STORE_OPENING_KEY,data.storeOpeningDates],[STORE_EDITS_KEY,data.storeEdits]];
+  const old=changes.map(([key])=>[key,localStorage.getItem(key)]);
+  try{changes.forEach(([key,value])=>localStorage.setItem(key,JSON.stringify(value)))}catch(e){old.forEach(([key,value])=>{try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}catch(_) {}});throw Error('儲存空間不足或無法寫入，已嘗試還原原資料')}
+  alert('備份匯入成功，頁面即將重新載入。');
+  location.reload();
+ }catch(e){alert('匯入失敗：'+e.message)}
+}
+function addBackupImportAction(){
+ const input=document.createElement('input');input.type='file';input.accept='.json,application/json';input.hidden=true;
+ const button=document.createElement('button');button.type='button';button.className='dashboard-backup';button.textContent='匯入備份（JSON）';
+ button.onclick=()=>input.click();
+ input.onchange=async()=>{const file=input.files?.[0];if(!file)return;button.disabled=true;await importBackupJson(file);button.disabled=false;input.value=''};
+ drawerBody.append(button,input);
+}
+
 const VACANCY_DOC_HEADERS=['城市','區域','空舖地址','月租金','坪數','面寬(公尺)','聯絡人','聯絡電話'];
 
 let vacancyXlsxPromise=null;
@@ -1803,7 +1826,7 @@ function showCaseManagement(){
 }
 function showSettings(){
  setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';requestAnimationFrame(syncActionButtons);setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
- const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.style.marginBottom='9px';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出空舖與加盟主備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
+ const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.style.marginBottom='9px';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);addBackupImportAction();const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
 }
 document.getElementById('openDashboard').onclick=showSettings;
 function showProtection(){
