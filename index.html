@@ -853,7 +853,16 @@ async function planStoreRoute(store,mode){
   drawer.classList.remove('open');
  }catch(e){
   if(request!==routeRequest)return;
-  status.textContent='無法規劃路線：'+(e.message||e.status||'請確認此交通方式有可用路線');
+  const denied=String(e?.message||e?.status||e).includes('REQUEST_DENIED');
+  if(typeof origin!=='undefined'&&origin&&denied){
+   // Keep the navigation handoff available when the embedded Directions service is disabled.
+   routeActive={store,mode,origin};
+   routePreview.hidden=false;
+   document.getElementById('routeSummary').textContent='目前無法在地圖內顯示路線（Google 路線服務權限未開啟）。可點「開始導航」交由 Google Maps 規劃。';
+   drawer.classList.remove('open');
+  }else{
+   status.textContent=denied?'路線服務未授權，請確認 Google Cloud 的 Directions API、金鑰限制與計費設定。':'無法規劃路線：'+(e?.message||e?.status||'此交通方式可能沒有可用路線');
+  }
  }finally{
   if(request===routeRequest)panel.querySelectorAll('button').forEach(b=>b.disabled=false);
  }
