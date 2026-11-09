@@ -823,8 +823,9 @@ async function planStoreRoute(store,mode){
  const request=++routeRequest;
  panel.querySelectorAll('button').forEach(b=>b.disabled=true);
  status.textContent='正在取得目前位置並規劃路線…';
+ let origin=null;
  try{
-  const origin=await currentRouteOrigin();
+  origin=await currentRouteOrigin();
   if(request!==routeRequest)return;
   // Google Maps JavaScript DirectionsService does not offer motorcycle routes.
   // Show a clear handoff for this mode rather than presenting a driving route as motorcycle.
