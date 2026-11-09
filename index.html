@@ -272,6 +272,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .store-hours-editor{border:1px solid #e5dedb;border-radius:10px;margin:10px 0;padding:10px;min-width:0}.store-hours-editor legend{font-weight:800}.store-hours-day{display:grid;grid-template-columns:38px minmax(0,1fr) minmax(0,1fr) 55px;gap:5px;align-items:center;margin:7px 0;font-size:12px}.store-hours-day input[type=time]{min-width:0;width:100%;box-sizing:border-box;padding:7px 2px}.store-hours-day label{display:flex;align-items:center;gap:2px;font-size:12px}
 .store-hours-row{gap:8px!important}.store-hours-row .rowmain{flex:1;min-width:0}.store-hours-row .store-hours-state{flex:none;min-width:70px;margin:0!important;padding:5px 8px;border-radius:999px;text-align:center;font-size:12px;font-weight:850;white-space:nowrap;background:#777;color:white}.store-hours-row .store-hours-state[data-state="open"]{background:#079348;color:white}.store-hours-row .store-hours-state[data-state="closed"]{background:#666;color:white}.store-hours-row .store-hours-state[data-state="unknown"]{background:#ece9e7;color:#777;font-size:10px;min-width:70px}.store-hours-row .chev{flex:none;color:#111;font-size:22px}
 .store-hours-editor{padding:7px!important;margin:7px 0!important}.store-hours-editor small{font-size:10px;line-height:1.3;display:block;margin-bottom:5px}.store-hours-tools{display:flex;gap:5px;margin:5px 0}.store-hours-tools button{flex:1;border:1px solid #ded6d3;background:#fff;color:#aa1721;border-radius:7px;font-size:11px;font-weight:800;padding:5px 3px}.store-hours-tools button[data-hours-apply]{background:#b51b25;color:#fff;border-color:#b51b25}.store-hours-day{grid-template-columns:61px minmax(0,1fr) minmax(0,1fr) 45px!important;gap:3px!important;margin:3px 0!important;font-size:11px!important}.store-hours-day input[type=time]{padding:3px 1px!important;font-size:11px!important;min-height:29px!important}.store-hours-day .store-hours-weekday,.store-hours-day .store-hours-closed{display:flex;align-items:center;gap:2px;font-size:11px;white-space:nowrap}.store-hours-day input[type=checkbox]{width:14px;height:14px;margin:0;flex:none}
+.store-operating-filter{display:flex;align-items:center;gap:5px;margin:2px 0 8px;padding:3px 2px}.store-operating-filter span{font-size:11px;font-weight:750;color:#777;white-space:nowrap;margin-right:2px}.store-operating-filter button{border:1px solid #ddd4ce;border-radius:9px;background:#fff;color:#333;font-size:12px;font-weight:800;padding:7px 9px;white-space:nowrap;flex:1}.store-operating-filter button.active{background:#d71920;border-color:#d71920;color:#fff}.store-filter-empty{font-size:13px;color:#766e69;text-align:center;padding:20px 5px}
 </style>
 </head>
 <body>
@@ -868,16 +869,40 @@ function focusDistrictMap(city,district){
   }else if(geometry?.location){map.panTo(geometry.location);map.setZoom(14)}
  });
 }
+let storeOperatingFilter='all';
+function storeMatchesOperatingFilter(s){
+ const state=storeHoursNow(s);
+ return storeOperatingFilter==='all'||(storeOperatingFilter==='open'&&state===true)||(storeOperatingFilter==='closed'&&state===false);
+}
+function addStoreOperatingFilter(){
+ const bar=document.createElement('div');bar.className='store-operating-filter';
+ bar.innerHTML='<span>營業篩選</span><button type="button" data-hours-filter="all">全部</button><button type="button" data-hours-filter="open">營業中</button><button type="button" data-hours-filter="closed">休息中</button>';
+ bar.querySelectorAll('button').forEach(btn=>{
+  btn.classList.toggle('active',btn.dataset.hoursFilter===storeOperatingFilter);
+  btn.onclick=()=>{
+   storeOperatingFilter=btn.dataset.hoursFilter;
+   if(nav.level==='cities')showCities();
+   else if(nav.level==='districts')showDistricts(nav.city);
+   else if(nav.level==='stores')showStores(nav.city,nav.district);
+  };
+ });
+ drawerBody.appendChild(bar);
+}
+function storeListFiltered(city,district){
+ return stores.filter(s=>(!city||s.city===city)&&(!district||s.districtName===district)&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)&&storeMatchesOperatingFilter(s));
+}
 function showCities(){
  setDrawerLayout('compact');
   nav={level:'cities',city:null,district:null};drawerTitle.textContent='城市';backBtn.style.visibility='hidden';drawerBody.innerHTML='';
-  CITY_ORDER.forEach(c=>drawerBody.appendChild(menuRow(c,counts[c]?'查看區域與門市':'目前 0 間門市',counts[c],()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));showDistricts(c)})))
+  addStoreOperatingFilter();
+  CITY_ORDER.forEach(c=>{const n=storeListFiltered(c).length;drawerBody.appendChild(menuRow(c,n?'查看區域與門市':'目前 0 間門市',n,()=>{citySelect.value=c;citySelect.dispatchEvent(new Event('change'));showDistricts(c)}))})
 }
 function showDistricts(c){
   nav={level:'districts',city:c,district:null};drawerTitle.textContent=c;backBtn.style.visibility='visible';drawerBody.innerHTML='';
-  const ds=[...new Set(stores.filter(s=>s.city===c&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
-  if(!ds.length){drawerBody.innerHTML='<div style="padding:24px;color:#766e69;text-align:center">目前沒有 COMEBUY 門市</div>';return}
-  ds.forEach(d=>{const n=stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{nav={level:'stores',city:c,district:d};citySelect.value=c;updateDistrictOptions(c).then(()=>{if(citySelect.value===c)districtSelect.value=d});focusDistrictMap(c,d);showStores(c,d)}))})
+  addStoreOperatingFilter();
+  const ds=[...new Set(storeListFiltered(c).map(s=>s.districtName))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  if(!ds.length){const empty=document.createElement('p');empty.className='store-filter-empty';empty.textContent='目前沒有符合營業狀態的門市';drawerBody.appendChild(empty);return}
+  ds.forEach(d=>{const n=storeListFiltered(c,d).length;drawerBody.appendChild(menuRow(d,'查看分店',n,()=>{nav={level:'stores',city:c,district:d};citySelect.value=c;updateDistrictOptions(c).then(()=>{if(citySelect.value===c)districtSelect.value=d});focusDistrictMap(c,d);showStores(c,d)}))})
 }
 // Google-listed hours are consulted only when opening a district list; unknown is never shown as closed.
 // Self-owned weekly schedules only. No Google Places calls or permanent Google-data caching.
@@ -908,7 +933,10 @@ function storeHoursNow(s){
 function storeHoursText(value){return value===true?'營業中':value===false?'休息中':'營業時間未建檔'}
 function showStores(c,d){
  nav={level:'stores',city:c,district:d};drawerTitle.textContent=c+' · '+d;backBtn.style.visibility='visible';drawerBody.innerHTML='';
- stores.filter(s=>s.city===c&&s.districtName===d&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand)).forEach(s=>{
+ addStoreOperatingFilter();
+ const matching=storeListFiltered(c,d);
+ if(!matching.length){const empty=document.createElement('p');empty.className='store-filter-empty';empty.textContent='目前沒有符合營業狀態的門市';drawerBody.appendChild(empty)}
+ matching.forEach(s=>{
   const row=menuRow(s.name,s.address,'',()=>showStore(s));
   const state=document.createElement('span');state.className='store-hours-state';
   const update=()=>{const v=storeHoursNow(s);state.textContent=storeHoursText(v);state.dataset.state=v===true?'open':v===false?'closed':'unknown'};
@@ -918,7 +946,7 @@ function showStores(c,d){
  });
 }
 // Refresh displayed labels as the clock changes, without making network requests.
-setInterval(()=>{if(nav?.level!=='stores'||!drawer.classList.contains('open'))return;const rows=drawerBody.querySelectorAll('.store-hours-row');const matching=stores.filter(s=>s.city===nav.city&&s.districtName===nav.district&&(selectedBrand==='all'||(s.brand||'COMEBUY')===selectedBrand));rows.forEach((row,i)=>{const state=row.querySelector('.store-hours-state'),store=matching[i];if(!state||!store)return;const v=storeHoursNow(store);state.textContent=storeHoursText(v);state.dataset.state=v===true?'open':v===false?'closed':'unknown'})},30000);
+setInterval(()=>{if(nav?.level!=='stores'||!drawer.classList.contains('open'))return;const rows=drawerBody.querySelectorAll('.store-hours-row');const matching=storeListFiltered(nav.city,nav.district);if(storeOperatingFilter!=='all'){showStores(nav.city,nav.district);return}rows.forEach((row,i)=>{const state=row.querySelector('.store-hours-state'),store=matching[i];if(!state||!store)return;const v=storeHoursNow(store);state.textContent=storeHoursText(v);state.dataset.state=v===true?'open':v===false?'closed':'unknown'})},30000);
 function storeHoursEditor(s){
  const saved=storeWeeklyHours[storeHoursId(s)]?.days||[];
  const names=['週日','週一','週二','週三','週四','週五','週六'];
