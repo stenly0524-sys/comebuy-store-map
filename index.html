@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
 <link rel="apple-touch-icon" sizes="512x512" href="/apple-touch-icon.png?v=5">
@@ -50,7 +50,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 
 /* Phone portrait is the primary layout. Landscape and desktop keep their existing rules. */
 @media (orientation:portrait) and (max-width:759px){
- .top{top:calc(env(safe-area-inset-top,0px) + 22px);left:8px;right:8px}
+ .top{top:calc(env(safe-area-inset-top,0px) + 4px);left:8px;right:8px}
  .top .card{padding:10px 11px;border-radius:17px;box-shadow:0 5px 18px #0002}
  .map-brand{font-size:18px;line-height:1.2}
  .tools{margin-top:8px;gap:7px;min-width:0}
@@ -348,6 +348,11 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 /* Keep iOS translucent status-bar blur, but reserve a clean gap above the main control card. */
 @media (orientation:portrait) and (max-width:759px){
   .top{padding-top:0!important}
+}
+
+/* iOS: use solid status bar and keep the main control panel close to the top safe area. */
+@media (orientation:portrait) and (max-width:759px){
+  html,body{background:#8ad5e6}
 }
 </style>
 </head>
