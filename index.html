@@ -354,6 +354,35 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 @media (orientation:portrait) and (max-width:759px){
   html,body{background:#8ad5e6}
 }
+
+/* Settings action buttons: white/black by default, COMEBUY red on press, uniform spacing. */
+.drawer.drawer-city-heading #drawerBody .dashboard-backup{
+  background:#fff!important;
+  color:#111!important;
+  border:1px solid #ded7d2!important;
+  border-radius:10px!important;
+  margin:0 0 10px!important;
+  padding:13px 12px!important;
+  min-height:48px!important;
+  font-size:15px!important;
+  font-weight:900!important;
+  box-shadow:none!important;
+}
+.drawer.drawer-city-heading #drawerBody .dashboard-backup:active{
+  background:#d71920!important;
+  color:#fff!important;
+  border-color:#d71920!important;
+}
+.drawer.drawer-city-heading #drawerBody .dashboard-backup:focus-visible{
+  outline:2px solid #d71920!important;
+  outline-offset:2px!important;
+}
+.drawer.drawer-city-heading #drawerBody .dashboard-backup:disabled{
+  background:#f1f1f1!important;
+  color:#999!important;
+  border-color:#ddd!important;
+  opacity:1!important;
+}
 </style>
 </head>
 <body>
@@ -1890,10 +1919,10 @@ async function importVacancyXlsx(file){
  const result=document.createElement('div');result.innerHTML='<p class="vacancy-import-summary">已成功建檔 '+accepted.length+' 筆</p><p>依城市、區域歸類完成。地圖定位成功 '+located+' 筆，待定位 '+(accepted.length-located)+' 筆；跳過重複 '+duplicateCount+' 筆。</p>';await vacancyImportDialog('空舖資料建檔完成',result,'完成',false);
 }
 function addVacancyDocActions(){
- const generate=document.createElement('button');generate.className='dashboard-backup';generate.style.marginBottom='9px';generate.textContent='生成空舖資料表（XLSX）';
+ const generate=document.createElement('button');generate.className='dashboard-backup';generate.textContent='生成空舖資料表（XLSX）';
  generate.onclick=async()=>{generate.disabled=true;try{await generateVacancyXlsx()}catch(e){alert('產生 XLSX 失敗：'+e.message)}finally{generate.disabled=false}};
  drawerBody.appendChild(generate);
- const upload=document.createElement('button');upload.className='dashboard-backup';upload.style.marginBottom='9px';upload.textContent='上傳空舖資料';
+ const upload=document.createElement('button');upload.className='dashboard-backup';upload.textContent='上傳空舖資料';
  const picker=document.createElement('input');picker.type='file';picker.accept='.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';picker.hidden=true;
  upload.onclick=()=>picker.click();
  picker.onchange=async()=>{if(!picker.files?.[0])return;upload.disabled=true;upload.textContent='匯入處理中…';try{await importVacancyXlsx(picker.files[0])}catch(e){alert('匯入失敗：'+e.message)}finally{upload.disabled=false;upload.textContent='上傳空舖資料';picker.value=''}};
@@ -1912,7 +1941,7 @@ function showCaseManagement(){
 }
 function showSettings(){
  setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';requestAnimationFrame(syncActionButtons);setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
- const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.style.marginBottom='9px';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);addBackupImportAction();const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
+ const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);addBackupImportAction();const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
 }
 document.getElementById('openDashboard').onclick=showSettings;
 function showProtection(){
