@@ -342,8 +342,8 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 @media(max-height:500px){#cb-splash .cb-splash-art{width:210px}#cb-splash .cb-splash-bottom{margin-top:0!important}}
 
 /* Use the supplied reference artwork directly; no reconstructed SVG artwork. */
-#cb-splash .cb-splash-art-image{width:min(330px,84vw)!important;height:auto!important}
-#cb-splash .cb-splash-art-image img{display:block;width:100%;height:auto;object-fit:contain}
+#cb-splash .cb-splash-art-image{width:min(330px,84vw)!important;aspect-ratio:508/215!important;height:auto!important;overflow:hidden!important;display:block!important}
+#cb-splash .cb-splash-art-image img{display:block;width:100%;height:auto;object-fit:contain;object-position:top center}
 </style>
 </head>
 <body>
