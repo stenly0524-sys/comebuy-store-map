@@ -50,7 +50,7 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 
 /* Phone portrait is the primary layout. Landscape and desktop keep their existing rules. */
 @media (orientation:portrait) and (max-width:759px){
- .top{top:calc(env(safe-area-inset-top,0px) + 6px);left:8px;right:8px}
+ .top{top:calc(env(safe-area-inset-top,0px) + 22px);left:8px;right:8px}
  .top .card{padding:10px 11px;border-radius:17px;box-shadow:0 5px 18px #0002}
  .map-brand{font-size:18px;line-height:1.2}
  .tools{margin-top:8px;gap:7px;min-width:0}
@@ -344,6 +344,11 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 /* Use the supplied reference artwork directly; no reconstructed SVG artwork. */
 #cb-splash .cb-splash-art-image{width:min(330px,84vw)!important;aspect-ratio:508/215!important;height:auto!important;overflow:hidden!important;display:block!important}
 #cb-splash .cb-splash-art-image img{display:block;width:100%;height:auto;object-fit:contain;object-position:top center}
+
+/* Keep iOS translucent status-bar blur, but reserve a clean gap above the main control card. */
+@media (orientation:portrait) and (max-width:759px){
+  .top{padding-top:0!important}
+}
 </style>
 </head>
 <body>
