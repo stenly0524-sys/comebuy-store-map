@@ -328,12 +328,47 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 @keyframes cb-splash-art-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(-1vh)}}
 @media(max-height:500px){#cb-splash .cb-splash-ring{height:160px;transform:scale(.78)}#cb-splash .cb-splash-bottom{margin-top:0}}
 @media(prefers-reduced-motion:reduce){#cb-splash .cb-splash-ring:before{animation:none}#cb-splash .cb-splash-center{animation:none}}
+
+/* Splash central artwork v2: match the supplied 0% reference composition. */
+#cb-splash .cb-splash-center{gap:2px!important;transform:translateY(-1vh)!important}
+#cb-splash .cb-splash-art{width:min(300px,76vw);height:auto;display:flex;align-items:center;justify-content:center}
+#cb-splash .cb-splash-art svg{display:block;width:100%;height:auto;overflow:visible}
+#cb-splash .cb-splash-brand{margin-top:-2px!important;font:900 clamp(28px,7.5vw,38px)/1.1 Arial,sans-serif!important;letter-spacing:-1.8px!important;color:#050505!important;white-space:nowrap!important}
+#cb-splash .cb-splash-brand em{font-style:normal!important;color:#d71920!important}
+#cb-splash .cb-splash-bottom{margin-top:14px!important;width:min(320px,80vw)!important}
+#cb-splash .cb-splash-track{height:20px!important;border:2px solid #9d9d9d!important;background:#dedee0!important;border-radius:999px!important}
+#cb-splash #cb-splash-bar{background:#d71920!important;border-radius:999px!important}
+#cb-splash #cb-splash-pct{margin-top:6px!important;color:#000!important;font:700 29px/1.15 Arial,sans-serif!important}
+@media(max-height:500px){#cb-splash .cb-splash-art{width:210px}#cb-splash .cb-splash-bottom{margin-top:0!important}}
 </style>
 </head>
 <body>
 
 <div id="cb-splash" role="status" aria-live="polite" aria-label="COMEBUY MAPS 載入中">
- <div class="cb-splash-center"><div class="cb-splash-ring"><div class="cb-splash-pin"><img class="cb-splash-cup" src="/comebuy-cup-official.svg" alt="COMEBUY 飲料杯"></div><svg class="cb-splash-map" viewBox="0 0 160 48" aria-hidden="true"><path d="M8 30 40 7 78 21 116 7 151 30 115 41 77 31 40 42Z" fill="#c4c4c4"/><path d="M40 7 40 42M78 21 77 31M116 7 115 41M8 30 151 30" stroke="#fff" stroke-width="3" fill="none"/><path d="M8 30 40 42 77 31 115 41 151 30" stroke="#aaa" stroke-width="1.5" fill="none"/></svg></div><div class="cb-splash-brand"><span>COMEBUY</span> <em>MAPS</em></div></div>
+ <div class="cb-splash-center">
+  <div class="cb-splash-art" aria-hidden="true">
+    <svg viewBox="0 0 300 245" role="img">
+      <path d="M52 176 A103 103 0 1 1 247 153" fill="none" stroke="#fde5e8" stroke-width="8" stroke-linecap="round"/>
+      <path d="M150 28c-37 0-67 28-67 63 0 48 67 111 67 111s67-63 67-111c0-35-30-63-67-63Z" fill="#e3131b"/>
+      <g transform="translate(112 48)">
+        <path d="M18 22h42l-5 57c-1 9-8 15-16 15h0c-8 0-15-6-16-15Z" fill="#fff"/>
+        <path d="M13 18h52c3 0 5 2 5 5s-2 5-5 5H13c-3 0-5-2-5-5s2-5 5-5Z" fill="#fff"/>
+        <path d="M48 16 55-7" stroke="#e3131b" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="25" cy="44" r="7" fill="#ffd31c"/><circle cx="38" cy="39" r="6" fill="#54bd35"/>
+        <circle cx="50" cy="46" r="7" fill="#ef2d87"/><circle cx="29" cy="58" r="7" fill="#14a7df"/>
+        <circle cx="43" cy="56" r="8" fill="#f59e16"/><circle cx="54" cy="62" r="6" fill="#9b34a5"/>
+        <circle cx="24" cy="72" r="7" fill="#ef2d87"/><circle cx="37" cy="70" r="8" fill="#ffd31c"/>
+        <circle cx="50" cy="76" r="7" fill="#55bd35"/>
+      </g>
+      <g transform="translate(67 174)">
+        <path d="M0 31 44 5 87 22 128 5 166 31 123 43 85 33 42 44Z" fill="#cccfd2"/>
+        <path d="M44 5V44M87 22 85 33M128 5 123 43M0 31 166 31" stroke="#fff" stroke-width="4" fill="none"/>
+        <path d="M0 31 42 44 85 33 123 43 166 31" stroke="#aaaeb2" stroke-width="2" fill="none"/>
+      </g>
+    </svg>
+  </div>
+  <div class="cb-splash-brand"><span>COMEBUY</span> <em>MAPS</em></div>
+</div>
  <div class="cb-splash-bottom"><div class="cb-splash-track"><div id="cb-splash-bar"></div></div><div id="cb-splash-pct">0%</div><div id="cb-splash-error" hidden></div><button id="cb-splash-retry" type="button" hidden>重新載入</button></div>
 </div>
 <script>
