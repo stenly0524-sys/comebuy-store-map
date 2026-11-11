@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-poi-address-fallback-fix-v18">
+<meta name="comebuy-build" content="2026-11-11-store-detail-under-toolbar-v19">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -495,7 +495,16 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
   }
 }
 </style>
-<style id="cb-settings-button-row-style">.cb-settings-button-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;width:100%;margin:10px 0}.cb-settings-button-row>.dashboard-backup{width:100%;min-width:0;margin:0!important;min-height:54px;padding:10px 5px!important;font-size:clamp(12px,3.2vw,16px)!important;line-height:1.35;white-space:normal;text-align:center}</style></head>
+<style id="cb-settings-button-row-style">.cb-settings-button-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;width:100%;margin:10px 0}.cb-settings-button-row>.dashboard-backup{width:100%;min-width:0;margin:0!important;min-height:54px;padding:10px 5px!important;font-size:clamp(12px,3.2vw,16px)!important;line-height:1.35;white-space:normal;text-align:center}</style><style id="cb-store-detail-top-alignment">
+@media (max-width:759px){
+ .drawer.drawer-store-detail{
+  top:var(--store-detail-top,calc(env(safe-area-inset-top,0px) + 160px))!important;
+  bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;
+  height:auto!important;
+  max-height:none!important;
+ }
+}
+</style></head>
 <body>
 
 <div id="cb-splash" role="status" aria-live="polite" aria-label="COMEBUY MAPS 載入中">
@@ -1019,7 +1028,7 @@ async function focusSearchResults(){
 q.oninput=focusSearchResults;
 
 const drawer=document.querySelector('#drawer'),drawerBody=document.querySelector('#drawerBody'),drawerTitle=document.querySelector('#drawerTitle'),backBtn=document.querySelector('#backBtn');
-function setDrawerLayout(mode){drawer.classList.remove('drawer-city-heading','drawer-store-subpage');document.getElementById('vacancyMapToggles').hidden=true;drawer.classList.toggle('drawer-compact',mode==='compact');drawer.classList.toggle('drawer-protection',mode==='protection');drawer.classList.toggle('drawer-dashboard',mode==='dashboard');if(mode==='compact'||mode==='protection'||mode==='dashboard'){const bar=document.querySelector('.top .card')||document.querySelector('.bottom-nav');if(bar){const rect=bar.getBoundingClientRect();drawer.style.setProperty('--drawer-top',Math.max(8,Math.round(rect.bottom+16))+'px')}}}
+function setDrawerLayout(mode){drawer.classList.remove('drawer-city-heading','drawer-store-subpage','drawer-store-detail');document.getElementById('vacancyMapToggles').hidden=true;drawer.classList.toggle('drawer-compact',mode==='compact');drawer.classList.toggle('drawer-protection',mode==='protection');drawer.classList.toggle('drawer-dashboard',mode==='dashboard');if(mode==='compact'||mode==='protection'||mode==='dashboard'){const bar=document.querySelector('.top .card')||document.querySelector('.bottom-nav');if(bar){const rect=bar.getBoundingClientRect();drawer.style.setProperty('--drawer-top',Math.max(8,Math.round(rect.bottom+16))+'px')}}}
 
 // Keep compact/dashboard panels aligned below the shortened top bar.
 function syncCompactMapHeader(){
@@ -1381,6 +1390,9 @@ document.getElementById('routeStart').onclick=()=>{
 };
 function showStore(s){
  setDrawerLayout('normal');
+ drawer.classList.add('drawer-store-detail');
+ const alignStoreDetail=()=>{if(!drawer.classList.contains('drawer-store-detail'))return;const bar=document.querySelector('.top .card');if(bar)drawer.style.setProperty('--store-detail-top',Math.ceil(bar.getBoundingClientRect().bottom+12)+'px')};
+ alignStoreDetail();requestAnimationFrame(alignStoreDetail);
  nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';
  drawerBody.innerHTML='<div class="storecard"><div class="storecard-top"><h2>'+esc(s.name)+'</h2><button type="button" id="editStore" class="store-edit-button">編輯</button></div><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+(s.basis?esc(s.basis):'')+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="'+esc(storeGoogleMapsUrl(s))+'">開啟Google maps</a></div><div class="actions"><button type="button" class="primary" id="planRoute">規劃路線</button></div></div>';
  document.querySelector('#editStore').onclick=()=>editStore(s);
