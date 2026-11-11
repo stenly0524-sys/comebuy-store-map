@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-poi-fresh-location-v17">
+<meta name="comebuy-build" content="2026-11-11-poi-address-fallback-fix-v18">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -1600,19 +1600,19 @@ function installNativePoiVacancyAction(){
     district=(rest.match(/^(.{1,9}?(?:區|鄉|鎮|市))/)||[])[1]||'';
    }
    // Clear any prior POI: a new card must never inherit another location's city/district.
-   const existing=null;
+   const existing=window.__cbPendingGooglePoi?.placeId ? window.__cbPendingGooglePoi : null;
    window.__cbPendingGooglePoi=null;
    let point=null;
    // If Maps supplied the clicked place ID, fetch the exact place address first.
    // This avoids replacing the POI's house number with a nearby reverse-geocode result.
-   if(!hasExactStreet&&existing?.placeId){
+   if(!address&&existing?.placeId){
     try{
      const response=await geocoder.geocode({placeId:existing.placeId});
      const exact=response?.results?.[0];
      if(exact){
       const parsed=vacancyPrefillFromGeocodeResult(exact);
       city=city||parsed.city;district=district||parsed.district;
-      if(/(?:路|街|大道|巷|弄|段).{0,80}\d+(?:之\d+|-\d+)?號/.test(parsed.address))address=parsed.address;
+      if(parsed.address)address=parsed.address;
       const loc=exact.geometry?.location;
       if(loc)point={lat:loc.lat(),lng:loc.lng()};
      }
@@ -1632,7 +1632,7 @@ function installNativePoiVacancyAction(){
        const parsed=vacancyPrefillFromGeocodeResult(match);
        if(parsed.city&&parsed.district){
         city=parsed.city;district=parsed.district;
-        if(/(?:路|街|大道|巷|弄).{0,80}\d+(?:之\d+|-\d+)?號/.test(parsed.address))address=parsed.address;
+        if(parsed.address)address=parsed.address;
         const loc=match.geometry?.location;
         if(loc)point={lat:loc.lat(),lng:loc.lng()};
        }
@@ -1642,7 +1642,7 @@ function installNativePoiVacancyAction(){
    }
 
    try{
-    if(!hasExactStreet)throw Error('VISIBLE_ADDRESS_INCOMPLETE');
+    if(!address)throw Error('NO_ADDRESS');
     const response=await geocoder.geocode({address,region:'TW'});
     const result=response?.results?.[0];
     if(result){
@@ -1655,7 +1655,7 @@ function installNativePoiVacancyAction(){
    }catch(err){console.warn('地標地址定位失敗，保留原始門牌',err)}
    if(!point&&existing?.point&&(!address||existing?.prefill?.address===address))point=existing.point;
    if(!point&&map?.getCenter()){const loc=map.getCenter();point={lat:loc.lat(),lng:loc.lng()}}
-   if((!city||!district)&&point){try{const nearby=await reverseGeocodeVacancyPoint(point);city=city||nearby.city;district=district||nearby.district}catch(_){}}
+   if((!city||!district||!address)&&point){try{const nearby=await reverseGeocodeVacancyPoint(point);city=city||nearby.city;district=district||nearby.district;if(!address&&nearby.address)address=nearby.address}catch(_){}}
    if(!point)throw Error('POI_LOCATION_NOT_FOUND');
    window.__cbPendingGooglePoi={placeId:'',point,prefill:{city,district,address},name:lines[0]||'Google Maps 地標'};
    action.style.display='none';
