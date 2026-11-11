@@ -46,7 +46,7 @@ http.createServer(async(req,res)=>{
   responses.forEach((r,i)=>{
    const category=specs[i].category;
    if(r.status!=='fulfilled'){limitations.push({category,reason:'公開 RSS 來源無法存取或逾時'});return}
-   const blocks=r.value.match(/<item>[\\s\\S]*?<\\/item>/g)||[];
+   const blocks=r.value.match(new RegExp('<item>[\\s\\S]*?</item>','g'))||[];
    for(const item of blocks){
     const title=tag(item,'title'),url=tag(item,'link'),dateText=tag(item,'pubDate'),source=tag(item,'source'),description=tag(item,'description');
     const ts=Date.parse(dateText),combined=title+' '+description;
