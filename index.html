@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-1602-poi-safearea-v2">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="comebuy-build" content="2026-11-11-statusbar-solid-v1">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
 <link rel="apple-touch-icon" sizes="512x512" href="/apple-touch-icon.png?v=5">
@@ -460,21 +460,39 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
   }
 }
 
-/* 2026-11-11 iOS PWA: extend the real Google map canvas behind the status bar. */
-@supports (padding-top: env(safe-area-inset-top)){
- @media (orientation:portrait) and (max-width:759px){
-  html,body{padding:0!important;background:transparent!important}
-  #map{
-   position:fixed!important;
-   left:0!important;right:0!important;
-   top:calc(-1 * env(safe-area-inset-top,0px))!important;
-   bottom:0!important;
-   width:100vw!important;
-   height:calc(100dvh + env(safe-area-inset-top,0px))!important;
-   min-height:calc(100dvh + env(safe-area-inset-top,0px))!important;
-   background:#8ad5e6!important;
+
+/* iPhone Home Screen Web App: solid non-blurred status-bar backing. */
+@media (orientation:portrait) and (max-width:759px){
+  html,body{
+    background:#8ad5e6!important;
+    padding:0!important;
+    margin:0!important;
   }
- }
+  #map{
+    position:fixed!important;
+    inset:0!important;
+    top:0!important;
+    bottom:0!important;
+    width:100vw!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    background:#8ad5e6!important;
+  }
+  .top{
+    top:calc(env(safe-area-inset-top,0px) + 4px)!important;
+    background:transparent!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    filter:none!important;
+  }
+  html::before,html::after,body::before,body::after,.top::before,.top::after{
+    content:none!important;
+    display:none!important;
+    background:transparent!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    filter:none!important;
+  }
 }
 </style>
 </head>
