@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-native-poi-vacancy-button-v3">
+<meta name="comebuy-build" content="2026-11-11-controlled-poi-card-v4">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -802,48 +802,102 @@ window.initMap=function(){
    const placeId=e?.placeId||'';
    window.__cbGooglePoiOpen=Boolean(placeId);
    if(!placeId){window.__cbPendingGooglePoi=null;return}
-   // Keep Google's native POI card. Once its place data is ready,
-   // inject COMEBUY MAPS' "加入空舖" action directly into that native card.
-   const useResult=async(result,name='Google Maps 地標')=>{
+
+   // Prevent Google's native POI info card. COMEBUY MAPS shows a controlled card instead.
+   try{if(typeof e.stop==='function')e.stop()}catch(_){}
+
+   const showComebuyPoiCard=async(result,name='Google Maps 地標')=>{
     const loc=result?.geometry?.location||e?.latLng;
     if(!result||!loc)throw Error('POI_GEOCODE_EMPTY');
-    const point={lat:typeof loc.lat==='function'?loc.lat():loc.lat,lng:typeof loc.lng==='function'?loc.lng():loc.lng};
+    const point={
+      lat:typeof loc.lat==='function'?loc.lat():loc.lat,
+      lng:typeof loc.lng==='function'?loc.lng():loc.lng
+    };
+
     let prefill;
     try{
-     prefill=vacancyPrefillFromGeocodeResult(result);
-     if(!prefill.city||!prefill.district||!prefill.address){
-      const supplement=await reverseGeocodeVacancyPoint(point);
-      prefill={city:prefill.city||supplement.city,district:prefill.district||supplement.district,address:prefill.address||supplement.address};
-     }
+      prefill=vacancyPrefillFromGeocodeResult(result);
     }catch(_){
-     prefill=await reverseGeocodeVacancyPoint(point);
+      prefill={city:'',district:'',address:String(result.formatted_address||'').trim()};
     }
+
+    if(!prefill.city||!prefill.district||!prefill.address){
+      try{
+        const supplement=await reverseGeocodeVacancyPoint(point);
+        prefill={
+          city:prefill.city||supplement.city,
+          district:prefill.district||supplement.district,
+          address:prefill.address||supplement.address
+        };
+      }catch(_){}
+    }
+
     window.__cbPendingGooglePoi={placeId,point,prefill,name};
-    scheduleGooglePoiVacancyButton();
+
+    if(!infoWindow)infoWindow=new google.maps.InfoWindow();
+    const addressText=prefill.address||String(result.formatted_address||'').trim()||'地址待確認';
+    const content='<div style="min-width:240px;max-width:310px;padding:2px 2px 4px">'
+      +'<div style="font-size:16px;line-height:1.4;font-weight:900;color:#211d1d">'+esc(name||'Google Maps 地標')+'</div>'
+      +'<div style="font-size:13px;line-height:1.55;color:#5d5652;margin-top:5px">'+esc(addressText)+'</div>'
+      +'<button type="button" id="cbPoiAddVacancy" style="display:block;width:100%;min-height:44px;margin-top:11px;border:0;border-radius:10px;background:#d71920;color:#fff;font-size:14px;font-weight:900;padding:10px 14px">加入空舖</button>'
+      +'</div>';
+
+    infoWindow.close();
+    infoWindow.setContent(content);
+    infoWindow.setPosition(point);
+    infoWindow.open({map});
+
+    google.maps.event.addListenerOnce(infoWindow,'domready',()=>{
+      centerStorePopupInViewport();
+      const btn=document.getElementById('cbPoiAddVacancy');
+      if(btn)btn.onclick=evt=>{
+        evt.preventDefault();
+        evt.stopPropagation();
+        infoWindow.close();
+        openGooglePoiAsVacancy();
+      };
+    });
    };
+
    const fallback=async()=>{
     const response=await geocoder.geocode({placeId});
     const result=response?.results?.[0];
-    await useResult(result,'Google Maps 地標');
+    if(!result)throw Error('POI_GEOCODE_EMPTY');
+    await showComebuyPoiCard(result,'Google Maps 地標');
    };
+
    try{
     if(google.maps.places?.PlacesService){
-     const service=new google.maps.places.PlacesService(map);
-     service.getDetails({placeId,fields:['name','formatted_address','address_components','geometry']},async(place,status)=>{
-      try{
-       if(status===google.maps.places.PlacesServiceStatus.OK&&place){
-        await useResult(place,place.name||'Google Maps 地標');
-       }else await fallback();
-      }catch(err){window.__cbPendingGooglePoi=null;console.warn('Google POI 地址取得失敗',err)}
-     });
+      const service=new google.maps.places.PlacesService(map);
+      service.getDetails(
+        {placeId,fields:['name','formatted_address','address_components','geometry']},
+        async(place,status)=>{
+          try{
+            if(status===google.maps.places.PlacesServiceStatus.OK&&place){
+              await showComebuyPoiCard(place,place.name||'Google Maps 地標');
+            }else{
+              await fallback();
+            }
+          }catch(err){
+            window.__cbPendingGooglePoi=null;
+            console.warn('Google POI 地址取得失敗',err);
+          }
+        }
+      );
     }else{
-     fallback().catch(err=>{window.__cbPendingGooglePoi=null;console.warn('Google POI 地址取得失敗',err)});
+      fallback().catch(err=>{
+        window.__cbPendingGooglePoi=null;
+        console.warn('Google POI 地址取得失敗',err);
+      });
     }
    }catch(err){
-    fallback().catch(fallbackErr=>{window.__cbPendingGooglePoi=null;console.warn('Google POI 地址取得失敗',fallbackErr||err)});
+    fallback().catch(fallbackErr=>{
+      window.__cbPendingGooglePoi=null;
+      console.warn('Google POI 地址取得失敗',fallbackErr||err);
+    });
    }
   });
-  installVacancyLongPress();
+    installVacancyLongPress();
   infoWindow=new google.maps.InfoWindow();
   // Google Maps uses "close" for both the X button and programmatic dismissal.
   const clearArchivedLocateMarker=()=>{if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}};
