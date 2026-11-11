@@ -7,11 +7,13 @@ const categoryTerms=['活動 優惠 促銷','開幕 新店 門市 搬遷 歇業'
 const escapeXml=x=>x.replace(/&amp;/g,'&').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/<[^>]*>/g,'').trim();
 const tag=(s,k)=>escapeXml((s.match(new RegExp('<'+k+'(?:\\s[^>]*)?>([\\s\\S]*?)<\\/'+k+'>','i'))||[])[1]||'');
 const fetchWithTimeout=async(url)=>{for(let attempt=0;attempt<2;attempt++){const c=new AbortController();const t=setTimeout(()=>c.abort(),9000);try{const r=await fetch(url,{signal:c.signal,headers:{'User-Agent':'COMEBUY-MAPS-Intelligence/1.0'}});if(!r.ok)throw Error('HTTP '+r.status);return await r.text()}catch(e){if(attempt)throw e}finally{clearTimeout(t)}}};
+const recentRequests=new Map();
 const json=(res,status,obj)=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':ORIGIN,'vary':'Origin','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify(obj))};
 http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':ORIGIN,'access-control-allow-methods':'POST,GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
  if(req.url==='/health')return json(res,200,{ok:true,provider:'Google News public RSS',ai:false});
  if(req.url!=='/search'||req.method!=='POST')return json(res,404,{error:'not found'});
+ const client=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'unknown').split(',')[0];const nowMs=Date.now();const hits=(recentRequests.get(client)||[]).filter(t=>nowMs-t<60000);if(hits.length>=8)return json(res,429,{error:'搜尋過於頻繁，請稍後再試'});hits.push(nowMs);recentRequests.set(client,hits);if(recentRequests.size>500)recentRequests.clear();
  if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin not allowed'});
  let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>15000)return json(res,413,{error:'too large'})}
  try{
