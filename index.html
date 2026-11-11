@@ -1344,11 +1344,15 @@ async function fillVacancyMapAddress(point){
  try{
   const result=await new Promise((resolve,reject)=>geocoder.geocode({location:point,language:'zh-TW'},(items,status)=>status==='OK'&&items&&items.length?resolve(items):reject(Error(status))));
   if(pendingVacancyMapPoint!==point||!document.contains(address))return;
-  const best=result.find(x=>x.types.includes('street_address'))||result.find(x=>x.types.includes('premise'))||result[0];
+  const best=result.find(x=>x.types.includes('street_address'))||
+    result.find(x=>x.types.includes('premise')||x.types.includes('subpremise'))||
+    result.find(x=>x.types.includes('route'))||
+    result[0];
   const normalize=v=>String(v||'').replace(/台/g,'臺').replace(/\s/g,'').trim();
   const components=result.flatMap(x=>x.address_components||[]);
   const typed=(types)=>{for(const t of types){const c=components.find(x=>x.types.includes(t));if(c)return c.long_name}return ''};
-  const formatted=best.formatted_address||'';
+  const formatted=String(best.formatted_address||'').replace(/^台灣(?:省)?\s*/,'').replace(/^\d{3,5}\s*/,'').trim();
+  if(!formatted||/^-?\d+(?:\.\d+)?\s*[,，]\s*-?\d+(?:\.\d+)?$/.test(formatted))throw Error('NO_POSTAL_ADDRESS');
   const cityCandidates=[typed(['administrative_area_level_1']),typed(['locality']),...components.map(x=>x.long_name)];
   const cityOption=[...city.options].find(o=>o.value&&cityCandidates.some(v=>normalize(v)===normalize(o.value)))||
     [...city.options].find(o=>o.value&&normalize(formatted).includes(normalize(o.value)));
@@ -1366,12 +1370,12 @@ async function fillVacancyMapAddress(point){
    }
    if(districtOption){district.disabled=false;district.value=districtOption.value;district.dispatchEvent(new Event('change',{bubbles:true}))}
   }
-  address.value=formatted.replace(/^台灣(?:省)?\s*(?:\d{3,5}\s*)?/,'').trim();
+  address.value=formatted;
   const error=document.querySelector('.vacancy-form .vacancy-error');
   if(error)error.textContent=city.value&&district.value?'':'已填入地址，但無法完整判定城市或區域，請手動確認';
 
   address.placeholder='請核對地址與門牌';
- }catch(e){address.placeholder='無法自動取得地址，請手動輸入';const msg=document.querySelector('.vacancy-form .vacancy-error');if(msg)msg.textContent='無法判定完整地址，請手動選擇城市、區域及地址'}
+ }catch(e){address.value='';address.placeholder='無法自動取得正式地址';const msg=document.querySelector('.vacancy-form .vacancy-error');if(msg)msg.textContent='此位置無法辨識正式地址，請手動選擇城市、區域並輸入地址；系統不會以座標取代地址'}
 }
 
 function vacancyModal(title,render){
@@ -1509,7 +1513,7 @@ function showVacancies(){
  const navTabs=document.createElement('div');navTabs.className='vacancy-tabs';
  navTabs.innerHTML='<button type="button" data-mode="add"><svg class="vacancy-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7v10M7 12h10"/></svg><span>新增</span></button><button type="button" data-mode="list"><svg class="vacancy-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="3" stroke-linecap="round"/></svg><span>清單 ('+vacancies.filter(v=>!v.archived).length+')</span></button><button type="button" data-mode="archive"><svg class="vacancy-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v11h14V9M10 14h4"/></svg><span>封存店鋪 ('+vacancies.filter(v=>v.archived).length+')</span></button>';
  drawerBody.appendChild(navTabs);
- navTabs.querySelectorAll('button').forEach(btn=>{btn.classList.toggle('active',btn.dataset.mode===vacancyPanelMode);btn.onclick=()=>{if(btn.dataset.mode==='add'){vacancyPanelMode='add';showVacancies();return}vacancyPanelMode=btn.dataset.mode;vacancyDetailOpenId=null;showVacancies()}});
+ navTabs.querySelectorAll('button').forEach(btn=>{btn.classList.toggle('active',btn.dataset.mode===vacancyPanelMode);btn.onclick=()=>{if(btn.dataset.mode==='add'){pendingVacancyMapPoint=null;vacancyPanelMode='add';showVacancies();return}vacancyPanelMode=btn.dataset.mode;vacancyDetailOpenId=null;showVacancies()}});
 
  const form=document.createElement('form');form.className='vacancy-form';
  form.innerHTML='<div class="vacancy-location-row"><div class="vacancy-location-item"><label for="vacancyLocateNow">定位</label><button type="button" id="vacancyLocateNow" class="vacancy-locate-now">◎ 現在位置</button></div><label class="vacancy-location-item">城市<select id="vacancyCity" name="city" required>'+leadCityOptions()+'</select></label><label class="vacancy-location-item">區域<select id="vacancyDistrict" name="district" required disabled><option value="">請先選擇城市</option></select></label></div><label for="vacancyAddress">新增空舖地址</label><input id="vacancyAddress" name="address" autocomplete="street-address" placeholder="例如：台北市內湖區行善路62號" required maxlength="220"><div class="extra-fields"><label>坪數<input id="vacancySize" type="number" min="0" step="0.1" placeholder="例如 25"></label><label>面寬（公尺）<input id="vacancyFront" type="number" min="0" step="0.1" placeholder="例如 5"></label><label>聯絡人<input id="vacancyContact" type="text" maxlength="60" placeholder="房東或仲介"></label><label>聯絡電話<input id="vacancyPhone" type="tel" maxlength="35" placeholder="聯絡電話"></label></div><label>現場照片（選填）<input id="vacancyPhoto" type="file" accept="image/*"></label><label for="vacancyRent">每月租金（新台幣元）</label><input id="vacancyRent" type="number" inputmode="numeric" min="0" step="1" placeholder="例如：60000" required><fieldset class="vacancy-area-field"><legend>商圈屬性（可複選）</legend><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" name="areaTypes" value="'+t+'"><span>'+t+'</span></label>').join('')+'</div></fieldset><button type="submit">＋ 新增空舖並定位</button><div class="vacancy-note">紀錄僅儲存在本裝置瀏覽器，尚未雲端同步。</div><div class="vacancy-error" role="status"></div>';
@@ -1528,10 +1532,14 @@ function showVacancies(){
   let photo='';
   if(photoFile){if(photoFile.size>2*1024*1024){error.textContent='照片請小於 2MB（儲存在本機）';return}photo=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve('');reader.readAsDataURL(photoFile)});if(!photo){error.textContent='照片讀取失敗';return}}
   const extra={size:form.querySelector('#vacancySize').value,front:form.querySelector('#vacancyFront').value,contact:form.querySelector('#vacancyContact').value.trim(),phone:form.querySelector('#vacancyPhone').value.trim(),photo};
-  const v={...extra,id:String(Date.now())+'-'+Math.random().toString(36).slice(2,8),address,rent,status:'vacant',position:null,areaTypes:[...form.querySelectorAll('input[name="areaTypes"]:checked')].map(el=>el.value),areaManual:true};
-  const ok=await geocodeVacancy(v);
-  if(!ok){error.textContent='無法定位此地址，請輸入完整縣市、區域與門牌';btn.disabled=false;btn.textContent='＋ 新增空舖並定位';return}
+  const lockedMapPoint=pendingVacancyMapPoint&&Number.isFinite(+pendingVacancyMapPoint.lat)&&Number.isFinite(+pendingVacancyMapPoint.lng)?{lat:+pendingVacancyMapPoint.lat,lng:+pendingVacancyMapPoint.lng}:null;
+  const v={...extra,id:String(Date.now())+'-'+Math.random().toString(36).slice(2,8),address,rent,status:'vacant',position:lockedMapPoint,region:{city,district,neighborhood:''},areaTypes:[...form.querySelectorAll('input[name="areaTypes"]:checked')].map(el=>el.value),areaManual:true};
+  if(!lockedMapPoint){
+   const ok=await geocodeVacancy(v);
+   if(!ok){error.textContent='無法定位此地址，請輸入完整縣市、區域與門牌';btn.disabled=false;btn.textContent='＋ 新增空舖並定位';return}
+  }
   vacancies.unshift(v);if(!saveVacancies()){vacancies.shift();btn.disabled=false;return}
+  pendingVacancyMapPoint=null;
   syncFranchiseVacancyLinks();refreshVacancyMarkers();document.querySelector('.vacancy-add-overlay')?.remove();vacancyPanelMode='list';showVacancies();
  };
  if(vacancyPanelMode==='add'){
@@ -1540,7 +1548,7 @@ function showVacancies(){
   const dialog=document.createElement('section');dialog.className='vacancy-add-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','新增空舖');
   const header=document.createElement('div');header.className='vacancy-add-header';header.innerHTML='<strong>新增空舖</strong><button type="button" class="vacancy-add-close" aria-label="關閉新增空舖視窗">×</button>';
   dialog.appendChild(header);dialog.appendChild(form);overlay.appendChild(dialog);document.body.appendChild(overlay);
-  const close=()=>{overlay.remove();vacancyPanelMode='list';showVacancies()};
+  const close=()=>{pendingVacancyMapPoint=null;overlay.remove();vacancyPanelMode='list';showVacancies()};
   header.querySelector('button').onclick=close;
   overlay.onclick=e=>{if(e.target===overlay)close()};
   vacancyPanelMode='list';
