@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-store-detail-under-toolbar-v19">
+<meta name="comebuy-build" content="2026-11-11-store-contact-and-lead-layout-v20">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -504,6 +504,25 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
   max-height:none!important;
  }
 }
+</style><style id="cb-franchise-mobile-card-fix">
+.drawer:has(.lead-summary-row) .vacancy-item{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;min-width:0!important;width:100%!important;height:auto!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-info{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;flex:none!important;position:static!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls,
+.drawer:has(.lead-summary-row) .lead-unpaid-card>.lead-controls-with-deposit{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-rows:auto!important;align-items:center!important;gap:7px!important;width:100%!important;position:static!important;min-width:0!important;pointer-events:auto!important;margin:0!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls>select{grid-column:1!important;grid-row:auto!important;min-width:0!important;width:100%!important;height:42px!important;writing-mode:horizontal-tb!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls>[data-act="edit"],
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls>[data-act="delete"]{grid-column:auto!important;grid-row:auto!important;position:static!important;width:auto!important;min-width:52px!important;height:42px!important;writing-mode:horizontal-tb!important;white-space:nowrap!important;padding:8px!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls>[data-act="deposit"],
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls>[data-act="training"]{grid-column:1/-1!important;grid-row:1!important;position:static!important;width:100%!important;height:auto!important;min-height:40px!important;writing-mode:horizontal-tb!important;white-space:normal!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="deposit"]),
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="training"]){grid-template-rows:auto auto!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="deposit"])>select,
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="training"])>select,
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="deposit"])>[data-act="edit"],
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="training"])>[data-act="edit"],
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="deposit"])>[data-act="delete"],
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="training"])>[data-act="delete"]{grid-row:2!important}
+.drawer:has(.lead-summary-row) .vacancy-item>.lead-deposit-received{width:100%!important}
 </style></head>
 <body>
 
@@ -596,7 +615,7 @@ function districtOf(s){let a=(s.address||"").replace(normalizeCity(s),"");let m=
 const STORE_EDITS_KEY='comebuy_store_edits_v1';
 let storeEdits={};try{const d=JSON.parse(localStorage.getItem(STORE_EDITS_KEY)||'{}');if(d&&typeof d==='object'&&!Array.isArray(d))storeEdits=d}catch(e){}
 function storeEditKey(s){return (s.brand||'COMEBUY')+'|'+s.name+'|'+s.address}
-const stores=raw.map((s,i)=>{const editKey=storeEditKey(s),e=storeEdits[editKey]||{};const item={...s,basis:'',idx:i,editKey};for(const k of ['name','address','district','rent','basis'])if(typeof e[k]==='string')item[k]=e[k];item.city=normalizeCity(item);item.districtName=districtOf(item);return item});
+const stores=raw.map((s,i)=>{const editKey=storeEditKey(s),e=storeEdits[editKey]||{};const item={...s,basis:'',idx:i,editKey};for(const k of ['name','address','district','rent','basis','franchiseOwner','contactPhone','messenger'])if(typeof e[k]==='string')item[k]=e[k];item.city=normalizeCity(item);item.districtName=districtOf(item);return item});
 function saveStoreEdit(s,values){const next={...storeEdits,[s.editKey]:values};try{localStorage.setItem(STORE_EDITS_KEY,JSON.stringify(next));storeEdits=next;return true}catch(e){alert('本機儲存失敗，請檢查 Safari 儲存空間');return false}}
 
 const totalEl=document.getElementById('total');if(totalEl)totalEl.textContent=stores.length;
@@ -1394,7 +1413,7 @@ function showStore(s){
  const alignStoreDetail=()=>{if(!drawer.classList.contains('drawer-store-detail'))return;const bar=document.querySelector('.top .card');if(bar)drawer.style.setProperty('--store-detail-top',Math.ceil(bar.getBoundingClientRect().bottom+12)+'px')};
  alignStoreDetail();requestAnimationFrame(alignStoreDetail);
  nav={level:'store',city:s.city,district:s.districtName};drawerTitle.textContent='分店資訊';backBtn.style.visibility='visible';
- drawerBody.innerHTML='<div class="storecard"><div class="storecard-top"><h2>'+esc(s.name)+'</h2><button type="button" id="editStore" class="store-edit-button">編輯</button></div><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+(s.basis?esc(s.basis):'')+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="'+esc(storeGoogleMapsUrl(s))+'">開啟Google maps</a></div><div class="actions"><button type="button" class="primary" id="planRoute">規劃路線</button></div></div>';
+ drawerBody.innerHTML='<div class="storecard"><div class="storecard-top"><h2>'+esc(s.name)+'</h2><button type="button" id="editStore" class="store-edit-button">編輯</button></div><div class="kv"><b>地址</b><br>'+esc(s.address)+'<br><b>城市／區域</b><br>'+esc(s.city)+' · '+esc(s.districtName)+'<br><b>商圈</b><br>'+esc(s.district)+'<br><b>加盟主</b><br>'+esc(s.franchiseOwner||'未填')+'<br><b>聯絡電話</b><br>'+esc(s.contactPhone||'未填')+'<br><b>通訊軟體帳號</b><br>'+esc(s.messenger||'未填')+'<br><b>預估月租</b><br>'+esc(s.rent)+' 萬元<br><b>備註</b><br>'+(s.basis?esc(s.basis):'')+'</div><div class="actions"><button class="primary" id="locate">定位門市</button><a class="secondary" target="_blank" rel="noopener" href="'+esc(storeGoogleMapsUrl(s))+'">開啟Google maps</a></div><div class="actions"><button type="button" class="primary" id="planRoute">規劃路線</button></div></div>';
  document.querySelector('#editStore').onclick=()=>editStore(s);
  document.querySelector('#planRoute').onclick=()=>openRouteModePanel(s);
  document.querySelector('#locate').onclick=async()=>{
@@ -1404,12 +1423,12 @@ function showStore(s){
 }
 function editStore(s){
  const card=drawerBody.querySelector('.storecard');if(!card)return;
- card.innerHTML='<div class="storecard-top"><h2>編輯分店資訊</h2></div><form id="storeEditForm" class="vacancy-form"><label>門市名稱<input name="name" required maxlength="100" value="'+esc(s.name)+'"></label><label>地址<input name="address" required maxlength="200" value="'+esc(s.address)+'"></label><label>商圈<input name="district" required maxlength="120" value="'+esc(s.district)+'"></label><label>預估月租（萬元）<input name="rent" required maxlength="50" value="'+esc(s.rent)+'"></label><label>備註<textarea name="basis" rows="3" maxlength="1500" placeholder="可留空">'+esc(s.basis||'')+'</textarea></label>'+storeHoursEditor(s)+'<div class="actions"><button type="submit" class="primary">儲存修改</button><button type="button" class="secondary" id="cancelStoreEdit">取消</button></div><small>修改僅儲存在本機瀏覽器，不會變更其他使用者的資料。</small></form>';
+ card.innerHTML='<div class="storecard-top"><h2>編輯分店資訊</h2></div><form id="storeEditForm" class="vacancy-form"><label>門市名稱<input name="name" required maxlength="100" value="'+esc(s.name)+'"></label><label>地址<input name="address" required maxlength="200" value="'+esc(s.address)+'"></label><label>商圈<input name="district" required maxlength="120" value="'+esc(s.district)+'"></label><label>預估月租（萬元）<input name="rent" required maxlength="50" value="'+esc(s.rent)+'"></label><label>加盟主<input name="franchiseOwner" maxlength="80" placeholder="加盟主姓名" value="'+esc(s.franchiseOwner||'')+'"></label><label>聯絡電話<input name="contactPhone" type="tel" maxlength="35" value="'+esc(s.contactPhone||'')+'"></label><label>通訊軟體帳號<input name="messenger" maxlength="120" placeholder="LINE、WeChat、其他" value="'+esc(s.messenger||'')+'"></label><label>備註<textarea name="basis" rows="3" maxlength="1500" placeholder="可留空">'+esc(s.basis||'')+'</textarea></label>'+storeHoursEditor(s)+'<div class="actions"><button type="submit" class="primary">儲存修改</button><button type="button" class="secondary" id="cancelStoreEdit">取消</button></div><small>修改僅儲存在本機瀏覽器，不會變更其他使用者的資料。</small></form>';
  bindStoreHoursEditor(card.querySelector('#storeEditForm'));
  card.querySelector('#cancelStoreEdit').onclick=()=>showStore(s);
  card.querySelector('#storeEditForm').onsubmit=async e=>{
   e.preventDefault();const d=new FormData(e.currentTarget),v={};
-  for(const k of ['name','address','district','rent','basis'])v[k]=String(d.get(k)||'').trim();
+  for(const k of ['name','address','district','rent','basis','franchiseOwner','contactPhone','messenger'])v[k]=String(d.get(k)||'').trim();
   if(!v.name||!v.address||!v.district||!v.rent){alert('請填寫必填欄位');return}
   if(!saveStoreEdit(s,v))return;
   const oldHoursId=storeHoursId(s);
