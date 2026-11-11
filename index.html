@@ -897,7 +897,8 @@ window.initMap=function(){
     });
    }
   });
-    installNativePoiVacancyAction();\n  installVacancyLongPress();
+    installNativePoiVacancyAction();
+  installVacancyLongPress();
   infoWindow=new google.maps.InfoWindow();
   // Google Maps uses "close" for both the X button and programmatic dismissal.
   const clearArchivedLocateMarker=()=>{if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}};
