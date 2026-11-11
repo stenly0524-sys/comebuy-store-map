@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-google-poi-add-vacancy-v2">
+<meta name="comebuy-build" content="2026-11-11-native-poi-vacancy-button-v3">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -802,10 +802,10 @@ window.initMap=function(){
    const placeId=e?.placeId||'';
    window.__cbGooglePoiOpen=Boolean(placeId);
    if(!placeId){window.__cbPendingGooglePoi=null;return}
-   // Stop Google's native POI card; COMEBUY MAPS renders its own card with an "加入空舖" action.
-   try{e.stop?.()}catch(_){}
+   // Keep Google's native POI card. Once its place data is ready,
+   // inject COMEBUY MAPS' "加入空舖" action directly into that native card.
    const useResult=async(result,name='Google Maps 地標')=>{
-    const loc=result?.geometry?.location;
+    const loc=result?.geometry?.location||e?.latLng;
     if(!result||!loc)throw Error('POI_GEOCODE_EMPTY');
     const point={lat:typeof loc.lat==='function'?loc.lat():loc.lat,lng:typeof loc.lng==='function'?loc.lng():loc.lng};
     let prefill;
@@ -816,19 +816,10 @@ window.initMap=function(){
       prefill={city:prefill.city||supplement.city,district:prefill.district||supplement.district,address:prefill.address||supplement.address};
      }
     }catch(_){
-     const supplement=await reverseGeocodeVacancyPoint(point);
-     prefill=supplement;
+     prefill=await reverseGeocodeVacancyPoint(point);
     }
     window.__cbPendingGooglePoi={placeId,point,prefill,name};
-    const addressText=prefill.address||String(result.formatted_address||'').trim()||'地址待確認';
-    infoWindow.close();
-    infoWindow.setContent('<div style="min-width:238px;max-width:310px;padding:2px 2px 4px"><div style="font-size:16px;line-height:1.4;font-weight:900;color:#211d1d">'+esc(name||'Google Maps 地標')+'</div><div style="font-size:13px;line-height:1.55;color:#5d5652;margin-top:5px">'+esc(addressText)+'</div><button type="button" id="cbPoiAddVacancy" style="display:block;width:100%;min-height:43px;margin-top:11px;border:0;border-radius:10px;background:#d71920;color:#fff;font-size:14px;font-weight:900;padding:10px 14px">加入空舖</button></div>');
-    infoWindow.setPosition(point);
-    infoWindow.open({map});
-    google.maps.event.addListenerOnce(infoWindow,'domready',()=>{
-     const btn=document.getElementById('cbPoiAddVacancy');
-     if(btn)btn.onclick=evt=>{evt.preventDefault();evt.stopPropagation();openGooglePoiAsVacancy()};
-    });
+    scheduleGooglePoiVacancyButton();
    };
    const fallback=async()=>{
     const response=await geocoder.geocode({placeId});
