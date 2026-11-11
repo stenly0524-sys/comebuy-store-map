@@ -1655,7 +1655,7 @@ function installNativePoiVacancyAction(){
    }catch(err){console.warn('地標地址定位失敗，保留原始門牌',err)}
    if(!point&&existing?.point&&(!address||existing?.prefill?.address===address))point=existing.point;
    if(!point&&map?.getCenter()){const loc=map.getCenter();point={lat:loc.lat(),lng:loc.lng()}}
-   if((!city||!district||!address)&&point){try{const nearby=await reverseGeocodeVacancyPoint(point);city=city||nearby.city;district=district||nearby.district;if(!address&&nearby.address)address=nearby.address}catch(_){}}
+   if((!city||!district||!address)&&point){try{const nearby=await reverseGeocodeVacancyPoint(point);city=city||nearby.city;district=district||nearby.district;/* Do not substitute a nearby building's house number for this POI. */}catch(_){}}
    if(!point)throw Error('POI_LOCATION_NOT_FOUND');
    window.__cbPendingGooglePoi={placeId:'',point,prefill:{city,district,address},name:lines[0]||'Google Maps 地標'};
    action.style.display='none';
