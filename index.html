@@ -416,6 +416,10 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
     filter:none!important;
   }
 }
+
+.gm-style [data-google-poi-add-vacancy]{
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif!important;
+}
 </style>
 </head>
 <body>
@@ -717,7 +721,23 @@ window.initMap=function(){
   syncStreetViewExit();
   geocoder=new google.maps.Geocoder();
   window.__cbGooglePoiOpen=false;
-  map.addListener('click',e=>{window.__cbGooglePoiOpen=Boolean(e&&e.placeId)});
+  window.__cbPendingGooglePoi=null;
+  map.addListener('click',async e=>{
+   window.__cbGooglePoiOpen=Boolean(e&&e.placeId);
+   if(!e?.placeId){window.__cbPendingGooglePoi=null;return}
+   try{
+    const response=await geocoder.geocode({placeId:e.placeId});
+    const result=response?.results?.[0];
+    const loc=result?.geometry?.location;
+    if(!result||!loc)return;
+    const point={lat:loc.lat(),lng:loc.lng()};
+    const prefill=await reverseGeocodeVacancyPoint(point);
+    window.__cbPendingGooglePoi={placeId:e.placeId,point,prefill};
+    scheduleGooglePoiVacancyButton();
+   }catch(err){
+    console.warn('Google POI 地址取得失敗',err);
+   }
+  });
   installVacancyLongPress();
   infoWindow=new google.maps.InfoWindow();
   // Google Maps uses "close" for both the X button and programmatic dismissal.
@@ -1343,6 +1363,39 @@ const vacancyAddStyle=document.createElement('style');vacancyAddStyle.textConten
 const vacancyCompactStyle=document.createElement('style');vacancyCompactStyle.textContent=".vacancy-add-dialog>.vacancy-form{gap:6px!important;padding:10px 13px 13px!important;border:0!important;border-radius:0!important;background:#fff!important}.vacancy-add-header{padding:9px 13px!important}.vacancy-add-dialog .vacancy-form input:not([type=\"checkbox\"]):not([type=\"file\"]),.vacancy-add-dialog .vacancy-form select{height:37px!important;min-height:37px!important;font-size:14px!important;padding:0 9px!important;box-sizing:border-box}.vacancy-add-dialog .vacancy-form label{font-size:12px!important;line-height:1.35!important}.vacancy-add-dialog .vacancy-location-row{gap:6px!important}.vacancy-add-dialog .vacancy-location-item{gap:3px!important}.vacancy-add-dialog .extra-fields{gap:6px!important}.vacancy-add-dialog .vacancy-area-field{margin:1px 0!important}.vacancy-add-dialog .vacancy-area-field legend{margin-bottom:5px!important;font-size:12px!important}.vacancy-add-dialog .vacancy-area-options{gap:5px!important}.vacancy-add-dialog .vacancy-area-options label{padding:6px!important;min-height:31px!important;font-size:12px!important;line-height:1.35!important}.vacancy-add-dialog .vacancy-form button[type=\"submit\"]{padding:9px!important;font-size:14px!important}.vacancy-add-dialog .vacancy-note{font-size:11px!important;line-height:1.4!important}.vacancy-add-dialog .vacancy-form input[type=\"file\"]{height:auto!important;min-height:35px!important;padding:6px!important;font-size:12px!important}.vacancy-add-dialog .vacancy-locate-now{min-height:37px!important;padding:6px 2px!important;font-size:11px!important}";document.head.appendChild(vacancyCompactStyle);
 const vacancyFilterCompactStyle=document.createElement('style');vacancyFilterCompactStyle.textContent=".vacancy-region-filter{padding:8px 10px!important;margin-top:7px!important;border-radius:10px!important}.vacancy-region-selects{gap:6px!important}.vacancy-region-filter .vacancy-region-selects select{height:36px!important;font-size:12px!important;padding:0 6px!important;border-radius:8px!important}.vacancy-region-filter>.vacancy-stage-filter{margin-top:6px!important;padding:0!important}.vacancy-region-filter>.vacancy-stage-filter+.vacancy-stage-filter{padding-top:6px!important}.vacancy-region-filter .vacancy-stage-filter label{gap:6px!important;font-size:12px!important}.vacancy-region-filter .vacancy-stage-filter select{padding:6px 7px!important;min-height:35px!important;font-size:12px!important}.vacancy-region-filter .vacancy-stage-filter>div:first-child{margin-bottom:5px!important;font-size:12px!important}.vacancy-region-filter [data-rent]{height:35px!important;font-size:12px!important;padding:0 7px!important;border-radius:8px!important}";document.head.appendChild(vacancyFilterCompactStyle);
 const vacancyLocationStyle=document.createElement('style');vacancyLocationStyle.textContent='.vacancy-location-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;align-items:end}.vacancy-location-item{display:flex!important;flex-direction:column;gap:5px;min-width:0!important;width:100%!important}.vacancy-location-item select{width:100%!important;min-width:0!important;box-sizing:border-box}.vacancy-locate-now{width:100%!important;max-width:none!important;min-width:0!important;min-height:39px!important;padding:7px 3px!important;font-size:12px!important;white-space:nowrap;border-radius:9px!important;background:#f3f3f3!important;color:#a52025!important;border:1px solid #ddd!important}.vacancy-locate-now:disabled{opacity:.55}';document.head.appendChild(vacancyLocationStyle);
+function openGooglePoiAsVacancy(){
+ const poi=window.__cbPendingGooglePoi;
+ if(!poi?.point||!poi?.prefill)return;
+ pendingVacancyMapPoint={lat:poi.point.lat,lng:poi.point.lng};
+ pendingVacancyMapPrefill={...poi.prefill};
+ vacancyPanelMode='add';
+ showVacancies();
+ applyPendingVacancyMapPrefill();
+}
+function scheduleGooglePoiVacancyButton(){
+ let attempts=0;
+ const inject=()=>{
+  attempts++;
+  const poi=window.__cbPendingGooglePoi;
+  if(!poi)return;
+  const candidates=[...document.querySelectorAll('.gm-style-iw-c')];
+  const popup=candidates[candidates.length-1];
+  if(!popup){if(attempts<20)setTimeout(inject,100);return}
+  if(popup.querySelector('[data-google-poi-add-vacancy]'))return;
+  const content=popup.querySelector('.gm-style-iw-d')||popup;
+  const wrap=document.createElement('div');
+  wrap.style.cssText='padding:8px 12px 12px';
+  const button=document.createElement('button');
+  button.type='button';
+  button.setAttribute('data-google-poi-add-vacancy','1');
+  button.textContent='新增為空舖';
+  button.style.cssText='display:block;width:100%;min-height:42px;border:0;border-radius:10px;background:#d71920;color:#fff;font-size:14px;font-weight:900;padding:10px 14px;cursor:pointer';
+  button.onclick=e=>{e.preventDefault();e.stopPropagation();openGooglePoiAsVacancy()};
+  wrap.appendChild(button);
+  content.appendChild(wrap);
+ };
+ setTimeout(inject,60);
+}
 function installVacancyLongPress(){
  const el=document.getElementById('map');
  const overlay=new google.maps.OverlayView();
@@ -1388,7 +1441,12 @@ function installVacancyLongPress(){
  el.addEventListener('contextmenu',e=>{if(withinMap(e.target)){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.()}},true);
 }
 
-async function reverseGeocodeVacancyPoint(point){
+async const googlePoiPopupObserver=new MutationObserver(()=>{
+ if(window.__cbPendingGooglePoi&&document.querySelector('.gm-style-iw-c:not(:has([data-google-poi-add-vacancy]))'))scheduleGooglePoiVacancyButton();
+});
+googlePoiPopupObserver.observe(document.body,{childList:true,subtree:true});
+
+function reverseGeocodeVacancyPoint(point){
  if(!window.google?.maps?.Geocoder)throw Error('GEOCODER_NOT_READY');
  const coder=geocoder||new google.maps.Geocoder();
  const response=await coder.geocode({location:point,region:'TW'});
