@@ -2552,7 +2552,7 @@ function renderResults(){
  const meta=el('p','vacancy-note','上次搜尋：'+safe(date(active.searchedAt))+'　｜　共 '+active.items.length+' 則　｜　來源：'+safe(active.provider));target.append(meta);
  const warn=el('div','intel-limitations',active.limitations.map(x=>'來源受限：'+safe(x.category)+' — '+safe(x.reason)).join('<p>'));target.append(warn);
  const summary=active.analysis||{};
- target.append(el('div','intel-summary','<strong>COMEBUY 商業情報摘要</strong><p>目前為規則式摘要，非生成式 AI 分析。</p><p>重點五則：'+(summary.top||[]).map(safe).join('；')+'</p><p>門市異動相關 '+(summary.newStores||0)+' 則；活動促銷 '+(summary.marketing||0)+' 則；加盟市場 '+(summary.competition||0)+' 則。</p><p>風險：新聞索引可能漏報或誤判，涉及展店及營運決策應以官方原始資料人工查證。</p>'));
+ target.append(el('div','intel-summary','<strong>COMEBUY 商業情報摘要</strong><p>目前為規則式摘要，非生成式 AI 分析。索引日期不保證等於原文發布日期。</p><p>重點五則：'+(summary.top||[]).map(safe).join('；')+'</p><p>門市異動相關 '+(summary.newStores||0)+' 則；活動促銷 '+(summary.marketing||0)+' 則；加盟市場 '+(summary.competition||0)+' 則。</p><p>風險：新聞索引可能漏報或誤判，涉及展店及營運決策應以官方原始資料人工查證。</p>'));
  const filter=el('select','intel-filter','<option value="">全部分類</option>'+categories.map(x=>'<option>'+safe(x)+'</option>').join(''));target.append(filter);
  const list=el('div','intel-list');target.append(list);
  function draw(){
@@ -2560,7 +2560,7 @@ function renderResults(){
  if(!shown.length){list.textContent='此條件沒有可確認發布日期的公開新聞。';return}
  shown.forEach(x=>{
  const st=states[x.id]||{},card=el('article','intel-news');
- card.innerHTML='<div class="intel-news-top"><span>'+safe(date(x.publishedAt))+'　'+safe(x.category)+'</span><b>'+safe(x.importance)+'</b></div><h3>'+safe(x.title)+'</h3><p>'+safe(x.summary)+'</p><p>影響：'+safe(x.impact)+'</p><p>來源：'+safe(x.source)+'（'+safe(x.sourceType)+'）</p><div class="intel-actions"><a href="'+safe(x.url)+'" target="_blank" rel="noopener noreferrer">原始來源</a><button data-action="read">'+(st.read?'已讀':'未讀')+'</button><button data-action="save">'+(st.saved?'★ 已收藏':'☆ 收藏')+'</button>'+(st.firstSeen?'':'<span class="intel-new">NEW</span>')+'</div>';
+ card.innerHTML='<div class="intel-news-top"><span>新聞索引日期：'+safe(date(x.publishedAt))+'　'+safe(x.category)+'</span><b>'+safe(x.importance)+'</b></div><h3>'+safe(x.title)+'</h3><p>'+safe(x.summary)+'</p><p>影響：'+safe(x.impact)+'</p><p>來源：'+safe(x.source)+'（'+safe(x.sourceType)+'）</p><div class="intel-actions"><a href="'+safe(x.url)+'" target="_blank" rel="noopener noreferrer">原始來源</a><button data-action="read">'+(st.read?'已讀':'未讀')+'</button><button data-action="save">'+(st.saved?'★ 已收藏':'☆ 收藏')+'</button>'+(st.firstSeen?'':'<span class="intel-new">NEW</span>')+'</div>';
  card.querySelector('a').onclick=()=>{states[x.id]={...states[x.id],read:true,firstSeen:true};save()};
  card.querySelector('[data-action="read"]').onclick=()=>{states[x.id]={...states[x.id],read:!states[x.id]?.read,firstSeen:true};save();draw()};
  card.querySelector('[data-action="save"]').onclick=()=>{states[x.id]={...states[x.id],saved:!states[x.id]?.saved,firstSeen:true};save();draw()};
@@ -2572,7 +2572,7 @@ function renderResults(){
 window.showComebuyIntelligence=function(){
  setDrawerLayout('compact');nav={level:'intelligence',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='最新訊息';backBtn.style.visibility='visible';setGradientHeading('settings');
  body().innerHTML='';
- const wrap=el('section','intel-panel','<div class="intel-heading">▤ 最新訊息｜商業情報</div><label>搜尋時間<select id="intel-period"><option value="day">最近24小時</option><option value="week" selected>最近7天</option><option value="month">最近30天</option><option value="quarter">最近90天</option><option value="custom">自訂起訖日期</option></select></label><div class="intel-dates" hidden><input type="date" id="intel-start"><input type="date" id="intel-end"></div><strong>搜尋分類（可複選）</strong><div class="intel-categories">'+categories.map(x=>'<label><input type="checkbox" checked value="'+safe(x)+'"> '+safe(x)+'</label>').join('')+'</div><button class="intel-search" id="intel-search">開始搜尋</button><div class="intel-feedback" role="status"></div><div class="intel-history"></div><div id="intel-results"></div>');
+ const wrap=el('section','intel-panel','<div class="intel-heading"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h6v5H7zM16 8h2M16 12h2M7 16h11"/></svg>最新訊息｜商業情報</div><label>搜尋時間<select id="intel-period"><option value="day">最近24小時</option><option value="week" selected>最近7天</option><option value="month">最近30天</option><option value="quarter">最近90天</option><option value="custom">自訂起訖日期</option></select></label><div class="intel-dates" hidden><input type="date" id="intel-start"><input type="date" id="intel-end"></div><strong>搜尋分類（可複選）</strong><div class="intel-categories">'+categories.map(x=>'<label><input type="checkbox" checked value="'+safe(x)+'"> '+safe(x)+'</label>').join('')+'</div><button class="intel-search" id="intel-search">開始搜尋</button><div class="intel-feedback" role="status"></div><div class="intel-history"></div><div id="intel-results"></div>');
  body().append(wrap);
  const period=wrap.querySelector('#intel-period'),dates=wrap.querySelector('.intel-dates');
  period.onchange=()=>dates.hidden=period.value!=='custom';
