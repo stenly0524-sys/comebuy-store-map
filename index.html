@@ -1549,12 +1549,17 @@ function showVacancies(){
  if(vacancyPanelMode!=='list'&&vacancyPanelMode!=='archive')return;
  const isArchive=vacancyPanelMode==='archive';
  const visibleVacancies=vacancies.filter(v=>Boolean(v.archived)===isArchive);
- const cities=[...new Set(visibleVacancies.map(v=>vacancyCity(v)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ const cityCounts=new Map();
+ visibleVacancies.forEach(v=>{const c=vacancyCity(v);if(c)cityCounts.set(c,(cityCounts.get(c)||0)+1)});
+ const cities=[...cityCounts.keys()].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
  if(vacancyFilterCity&&!cities.includes(vacancyFilterCity)){vacancyFilterCity='';vacancyFilterDistrict=''}
- const districts=[...new Set(visibleVacancies.filter(v=>!vacancyFilterCity||vacancyCity(v)===vacancyFilterCity).map(v=>vacancyDistrict(v)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+ const districtSource=visibleVacancies.filter(v=>!vacancyFilterCity||vacancyCity(v)===vacancyFilterCity);
+ const districtCounts=new Map();
+ districtSource.forEach(v=>{const d=vacancyDistrict(v);if(d)districtCounts.set(d,(districtCounts.get(d)||0)+1)});
+ const districts=[...districtCounts.keys()].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
  if(vacancyFilterDistrict&&!districts.includes(vacancyFilterDistrict))vacancyFilterDistrict='';
  const filter=document.createElement('div');filter.className='vacancy-region-filter';
- filter.innerHTML='<div class="vacancy-region-selects"><select aria-label="縣市篩選"><option value="">全部縣市</option>'+cities.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select><select aria-label="行政區篩選"><option value="">全部行政區</option>'+districts.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select></div>';
+ filter.innerHTML='<div class="vacancy-region-selects"><select aria-label="縣市篩選"><option value="">全部縣市 ('+visibleVacancies.length+')</option>'+cities.map(x=>'<option value="'+esc(x)+'">'+esc(x)+' ('+(cityCounts.get(x)||0)+')</option>').join('')+'</select><select aria-label="行政區篩選"><option value="">全部行政區 ('+districtSource.length+')</option>'+districts.map(x=>'<option value="'+esc(x)+'">'+esc(x)+' ('+(districtCounts.get(x)||0)+')</option>').join('')+'</select></div>';
  drawerBody.appendChild(filter);
  const [citySelect,districtSelect]=filter.querySelectorAll('select');citySelect.value=vacancyFilterCity;districtSelect.value=vacancyFilterDistrict;
  citySelect.onchange=()=>{vacancyFilterCity=citySelect.value;vacancyFilterDistrict='';showVacancies()};
