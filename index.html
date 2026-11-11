@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-toolbar-toggle-v7">
+<meta name="comebuy-build" content="2026-11-11-styled-backup-confirm-v8">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -2169,13 +2169,37 @@ async function importBackupJson(file){
   const data=JSON.parse(await file.text());
   if(!data||data.format!=='comebuy-map-backup'||data.version!==1||!Array.isArray(data.vacancies)||!Array.isArray(data.franchiseLeads)||!data.storeOpeningDates||typeof data.storeOpeningDates!=='object'||Array.isArray(data.storeOpeningDates)||!data.storeEdits||typeof data.storeEdits!=='object'||Array.isArray(data.storeEdits))throw Error('JSON 格式不符合 COMEBUY MAP 備份 V1');
   if(data.vacancies.some(v=>!v||typeof v.id!=='string'||typeof v.address!=='string')||data.franchiseLeads.some(v=>!v||typeof v!=='object'||Array.isArray(v)))throw Error('備份內含不合法的空舖或加盟資料');
-  if(!confirm('確定匯入備份？\\n將以檔案內容取代目前裝置的空舖、加盟主、門市營業日期及門市編輯資料。\\n請先匯出目前備份，以免資料遺失。'))return;
+  if(!await confirmBackupImportStyled())return;
   const changes=[[VACANCY_KEY,data.vacancies],[FRANCHISE_KEY,data.franchiseLeads],[STORE_OPENING_KEY,data.storeOpeningDates],[STORE_EDITS_KEY,data.storeEdits]];
   const old=changes.map(([key])=>[key,localStorage.getItem(key)]);
   try{changes.forEach(([key,value])=>localStorage.setItem(key,JSON.stringify(value)))}catch(e){old.forEach(([key,value])=>{try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}catch(_) {}});throw Error('儲存空間不足或無法寫入，已嘗試還原原資料')}
   alert('備份匯入成功，頁面即將重新載入。');
   location.reload();
  }catch(e){alert('匯入失敗：'+e.message)}
+}
+function confirmBackupImportStyled(){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');
+  overlay.className='cb-backup-confirm-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,20,26,.52)';
+  const modal=document.createElement('div');
+  modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','cbBackupConfirmTitle');
+  modal.style.cssText='width:min(100%,430px);max-height:calc(100dvh - 48px);overflow:auto;background:#fff;border-radius:22px;box-shadow:0 16px 48px #0004;color:#262323';
+  modal.innerHTML='<div style="background:linear-gradient(100deg,#a90912,#d71920 65%,#c85c60);color:#fff;padding:18px 22px;font-size:20px;font-weight:900" id="cbBackupConfirmTitle">匯入備份確認</div>'
+   +'<div style="padding:20px 22px 8px"><p style="margin:0 0 12px;font-size:16px;font-weight:800;line-height:1.5">確定要匯入這份備份嗎？</p>'
+   +'<p style="margin:0 0 12px;font-size:14px;line-height:1.65">匯入後將以備份檔案內容取代本裝置目前的空舖、加盟主、門市營業日期及門市編輯資料。</p>'
+   +'<p style="margin:0;font-size:14px;font-weight:700;line-height:1.6;color:#b10c16">請先匯出目前備份，以免原有資料遺失。此操作無法自動復原。</p></div>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:20px 22px 22px"><button type="button" data-choice="cancel" style="min-height:46px;border:1px solid #d8d4d2;border-radius:12px;background:#fff;color:#272323;font-size:15px;font-weight:800">取消</button><button type="button" data-choice="confirm" style="min-height:46px;border:0;border-radius:12px;background:#d71920;color:#fff;font-size:15px;font-weight:900">確認匯入</button></div>';
+  overlay.appendChild(modal);document.body.appendChild(overlay);
+  let settled=false;
+  const finish=value=>{if(settled)return;settled=true;document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};
+  const onKey=e=>{if(e.key==='Escape')finish(false)};
+  document.addEventListener('keydown',onKey);
+  modal.querySelector('[data-choice="cancel"]').onclick=()=>finish(false);
+  modal.querySelector('[data-choice="confirm"]').onclick=()=>finish(true);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false)});
+  modal.querySelector('[data-choice="cancel"]').focus();
+ });
 }
 function addBackupImportAction(){
  const input=document.createElement('input');input.type='file';input.accept='.json,application/json';input.hidden=true;
