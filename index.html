@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-store-contact-and-lead-layout-v20">
+<meta name="comebuy-build" content="2026-11-12-intelligence-rss-v1">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -523,6 +523,23 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="deposit"])>[data-act="delete"],
 .drawer:has(.lead-summary-row) .vacancy-item>.lead-controls:has([data-act="training"])>[data-act="delete"]{grid-row:2!important}
 .drawer:has(.lead-summary-row) .vacancy-item>.lead-deposit-received{width:100%!important}
+</style><style id="cb-intelligence-style">
+.intel-panel{display:flex;flex-direction:column;gap:10px;min-width:0;padding:4px 2px 12px;font-size:13px}
+.intel-heading{background:linear-gradient(90deg,#a80d16,#e1272c);color:white;border-radius:10px;padding:12px;font-weight:900;font-size:16px}
+.intel-panel label{display:block;font-weight:750}
+.intel-panel select,.intel-panel input[type=date]{width:100%;min-width:0;max-width:100%;padding:10px;border:1px solid #ddd4d0;border-radius:9px;background:white;color:#242424}
+.intel-dates:not([hidden]){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.intel-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.intel-categories label{border:1px solid #ddd4d0;border-radius:9px;padding:9px 6px;background:white;font-size:12px;display:flex;gap:4px;align-items:flex-start}
+.intel-search{background:#d71920;color:white;border:0;border-radius:10px;padding:13px;font-weight:900}
+.intel-history{display:flex;gap:6px;flex-wrap:wrap}.intel-history strong{width:100%}.intel-history button,.intel-actions button{background:white;border:1px solid #ddd4d0;border-radius:8px;padding:7px;color:#333}
+.intel-limitations{font-size:12px;color:#a31620}.intel-limitations p{margin:3px 0}
+.intel-summary,.intel-news{background:#faf8f7;border:1px solid #e4d9d5;border-radius:12px;padding:11px;margin:8px 0;overflow-wrap:anywhere}
+.intel-summary p,.intel-news p{margin:6px 0;line-height:1.5}.intel-news h3{font-size:14px;margin:7px 0}
+.intel-news-top,.intel-actions{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.intel-news-top{font-size:11px;color:#777}.intel-actions a{color:#c5141e;overflow-wrap:anywhere}.intel-new{font-weight:900;color:#d71920}
+.drawer:has(.intel-panel){max-height:calc(100dvh - var(--drawer-top,260px) - 8px)!important;height:auto!important;overflow:hidden}
+.drawer:has(.intel-panel) .drawerbody{overflow-y:auto!important;min-height:0!important}
 </style></head>
 <body>
 
@@ -1067,7 +1084,7 @@ syncCompactMapHeader();
 
 document.querySelector('#openList').onclick=()=>{drawer.classList.add('open');showCities()};
 document.querySelector('#closeBtn').onclick=()=>drawer.classList.remove('open');
-backBtn.onclick=()=>{if(nav.level==='franchise'||nav.level==='dashboard'){showCaseManagement();return}if(nav.level==='vacancies'){showVacancies();return}if(nav.level==='store')showStores(nav.city,nav.district);else if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
+backBtn.onclick=()=>{if(nav.level==='intelligence'){showSettings();return}if(nav.level==='franchise'||nav.level==='dashboard'){showCaseManagement();return}if(nav.level==='vacancies'){showVacancies();return}if(nav.level==='store')showStores(nav.city,nav.district);else if(nav.level==='stores')showDistricts(nav.city);else if(nav.level==='districts')showCities();else drawer.classList.remove('open')};
 let nav={level:'cities',city:null,district:null};
 function menuRow(title,sub,count,onClick){
   const b=document.createElement('button');b.className='menurow';
@@ -2467,7 +2484,7 @@ function showCaseManagement(){
 }
 function showSettings(){
  setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';requestAnimationFrame(syncActionButtons);setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
- const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;const backupRow=document.createElement('div');backupRow.className='cb-settings-button-row';backupRow.appendChild(btn);const backupImport=addBackupImportAction();backupRow.appendChild(backupImport.button);drawerBody.append(backupRow,backupImport.input);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
+ const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);window.addComebuyIntelligenceSettingsButton?.();addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;const backupRow=document.createElement('div');backupRow.className='cb-settings-button-row';backupRow.appendChild(btn);const backupImport=addBackupImportAction();backupRow.appendChild(backupImport.button);drawerBody.append(backupRow,backupImport.input);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
 }
 document.getElementById('openDashboard').onclick=showSettings;
 function showProtection(){
@@ -2517,5 +2534,68 @@ syncActionButtons();
 showCities();
 </script>
 <script>window.gm_authFailure=function(){window.__cbSplash?.fail('Google Maps 驗證失敗，請檢查 API Key／計費／網站限制。');const s=document.getElementById('status');if(s)s.textContent='Google Maps 驗證失敗：請檢查 API Key／計費／網站限制';}</script><script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8gz4dUPx-OVptXYPQ0_IErSFHKxUR_nY&callback=initMap&libraries=places&language=zh-TW&region=TW"></script>
-</body>
+<script id="cb-intelligence-module">
+(()=>{
+const API='https://comebuy-intelligence-api.onrender.com';
+const categories=['品牌活動及促銷','新店開幕及門市異動','加盟與展店資訊','網路事件及消費者評論','企業經營及商業資訊','競爭品牌及市場動態'];
+const key='cb_intelligence_history_v1',stateKey='cb_intelligence_state_v1';
+const safe=x=>String(x||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const read=(k,def)=>{try{return JSON.parse(localStorage.getItem(k)||'null')||def}catch{return def}};
+let history=read(key,[]),states=read(stateKey,{}),active=null;
+const save=()=>{try{localStorage.setItem(key,JSON.stringify(history.slice(0,15)));localStorage.setItem(stateKey,JSON.stringify(states))}catch(e){console.warn('情報儲存空間不足',e)}};
+const date=x=>x?new Date(x).toLocaleString('zh-TW',{hour12:false}):'日期未確認';
+const body=()=>document.getElementById('drawerBody');
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!==undefined)e.innerHTML=html;return e};
+function renderResults(){
+ const target=document.getElementById('intel-results');if(!target)return;target.innerHTML='';
+ if(!active){target.textContent='尚無搜尋結果。僅按下「開始搜尋」才會連線搜尋。';return}
+ const meta=el('p','vacancy-note','上次搜尋：'+safe(date(active.searchedAt))+'　｜　共 '+active.items.length+' 則　｜　來源：'+safe(active.provider));target.append(meta);
+ const warn=el('div','intel-limitations',active.limitations.map(x=>'來源受限：'+safe(x.category)+' — '+safe(x.reason)).join('<p>'));target.append(warn);
+ const summary=active.analysis||{};
+ target.append(el('div','intel-summary','<strong>COMEBUY 商業情報摘要</strong><p>目前為規則式摘要，非生成式 AI 分析。</p><p>重點五則：'+(summary.top||[]).map(safe).join('；')+'</p><p>門市異動相關 '+(summary.newStores||0)+' 則；活動促銷 '+(summary.marketing||0)+' 則；加盟市場 '+(summary.competition||0)+' 則。</p><p>風險：新聞索引可能漏報或誤判，涉及展店及營運決策應以官方原始資料人工查證。</p>'));
+ const filter=el('select','intel-filter','<option value="">全部分類</option>'+categories.map(x=>'<option>'+safe(x)+'</option>').join(''));target.append(filter);
+ const list=el('div','intel-list');target.append(list);
+ function draw(){
+ list.innerHTML='';const shown=active.items.filter(x=>!filter.value||x.category===filter.value);
+ if(!shown.length){list.textContent='此條件沒有可確認發布日期的公開新聞。';return}
+ shown.forEach(x=>{
+ const st=states[x.id]||{},card=el('article','intel-news');
+ card.innerHTML='<div class="intel-news-top"><span>'+safe(date(x.publishedAt))+'　'+safe(x.category)+'</span><b>'+safe(x.importance)+'</b></div><h3>'+safe(x.title)+'</h3><p>'+safe(x.summary)+'</p><p>影響：'+safe(x.impact)+'</p><p>來源：'+safe(x.source)+'（'+safe(x.sourceType)+'）</p><div class="intel-actions"><a href="'+safe(x.url)+'" target="_blank" rel="noopener noreferrer">原始來源</a><button data-action="read">'+(st.read?'已讀':'未讀')+'</button><button data-action="save">'+(st.saved?'★ 已收藏':'☆ 收藏')+'</button>'+(st.firstSeen?'':'<span class="intel-new">NEW</span>')+'</div>';
+ card.querySelector('a').onclick=()=>{states[x.id]={...states[x.id],read:true,firstSeen:true};save()};
+ card.querySelector('[data-action="read"]').onclick=()=>{states[x.id]={...states[x.id],read:!states[x.id]?.read,firstSeen:true};save();draw()};
+ card.querySelector('[data-action="save"]').onclick=()=>{states[x.id]={...states[x.id],saved:!states[x.id]?.saved,firstSeen:true};save();draw()};
+ list.append(card)
+ })
+ }
+ filter.onchange=draw;draw();
+}
+window.showComebuyIntelligence=function(){
+ setDrawerLayout('compact');nav={level:'intelligence',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='最新訊息';backBtn.style.visibility='visible';backBtn.onclick=()=>showSettings();setGradientHeading('settings');
+ body().innerHTML='';
+ const wrap=el('section','intel-panel','<div class="intel-heading">▤ 最新訊息｜商業情報</div><label>搜尋時間<select id="intel-period"><option value="day">最近24小時</option><option value="week" selected>最近7天</option><option value="month">最近30天</option><option value="quarter">最近90天</option><option value="custom">自訂起訖日期</option></select></label><div class="intel-dates" hidden><input type="date" id="intel-start"><input type="date" id="intel-end"></div><strong>搜尋分類（可複選）</strong><div class="intel-categories">'+categories.map(x=>'<label><input type="checkbox" checked value="'+safe(x)+'"> '+safe(x)+'</label>').join('')+'</div><button class="intel-search" id="intel-search">開始搜尋</button><div class="intel-feedback" role="status"></div><div class="intel-history"></div><div id="intel-results"></div>');
+ body().append(wrap);
+ const period=wrap.querySelector('#intel-period'),dates=wrap.querySelector('.intel-dates');
+ period.onchange=()=>dates.hidden=period.value!=='custom';
+ const historyBox=wrap.querySelector('.intel-history');
+ function showHistory(){historyBox.innerHTML='<strong>歷史搜尋紀錄</strong>'+history.map((h,i)=>'<button type="button" data-index="'+i+'">'+safe(date(h.searchedAt))+'（'+h.items.length+' 則）</button>').join('');historyBox.querySelectorAll('button').forEach(b=>b.onclick=()=>{active=history[+b.dataset.index];renderResults()})}
+ active=history[0]||null;showHistory();renderResults();
+ wrap.querySelector('#intel-search').onclick=async()=>{
+ const selected=[...wrap.querySelectorAll('.intel-categories input:checked')].map(x=>x.value),btn=wrap.querySelector('#intel-search'),feedback=wrap.querySelector('.intel-feedback');
+ if(!selected.length){feedback.textContent='請至少選擇一個分類';return}
+ if(period.value==='custom'&&(!wrap.querySelector('#intel-start').value||!wrap.querySelector('#intel-end').value)){feedback.textContent='請選擇起訖日期';return}
+ btn.disabled=true;feedback.textContent='正在查詢公開新聞來源…';
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),65000);
+ try{
+ const res=await fetch(API+'/search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({period:period.value,categories:selected,start:wrap.querySelector('#intel-start').value,end:wrap.querySelector('#intel-end').value}),signal:controller.signal});
+ const result=await res.json();if(!res.ok)throw Error(result.error||'HTTP '+res.status);
+ active=result;history.unshift(result);history=history.slice(0,15);save();showHistory();renderResults();feedback.textContent='搜尋完成，取得 '+result.items.length+' 則（僅涵蓋可存取的公開新聞索引）。';
+ }catch(e){feedback.textContent='搜尋未完成：'+(e.name==='AbortError'?'連線逾時':e.message)+'。請稍後重試；沒有使用模擬新聞。'}finally{clearTimeout(timer);btn.disabled=false}
+ };
+};
+window.addComebuyIntelligenceSettingsButton=function(){
+ const target=document.getElementById('drawerBody');if(!target||target.querySelector('#openIntelligence'))return;
+ const b=el('button','dashboard-backup','▤ 最新訊息');b.id='openIntelligence';b.onclick=window.showComebuyIntelligence;target.prepend(b);
+};
+})();
+</script></body>
 </html>
