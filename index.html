@@ -2575,7 +2575,7 @@ function renderResults(){
  if(!active){target.textContent='尚無搜尋結果。請按「開始搜尋」。';return}
  const meta=el('p','vacancy-note','搜尋時間：'+safe(date(active.searchedAt))+'｜共 '+active.items.length+' 則');target.append(meta);
  const limit=active.period==='quarter'?20:active.period==='month'?10:active.period==='week'?5:active.period==='day'?5:Math.min(20,Math.max(5,Math.ceil((Date.parse(active.end||active.searchedAt)-Date.parse(active.start||active.searchedAt))/86400000/3)));
- const top=(active.items||[]).slice(0,limit).map(x=>x.title);
+ const top=(active.items||[]).slice(0,limit).map(x=>{const kind=x.category==='品牌活動'?'品牌行銷動向':x.category==='加盟與展店資訊'?'展店開發動向':x.category==='企業經營與商業資訊'?'企業經營動向':x.category==='網路事件與消費者評論'?'輿情觀察':'市場競爭動向';return kind+'：'+x.title+'。資料來源：'+(x.source||'公開新聞索引')+'；仍須查證原始報導。'});
  const info=el('section','intel-summary','<div class="intel-summary-title">COMEBUY 商業情報摘要</div><div class="intel-summary-label">資訊分析</div><ol class="intel-summary-points">'+(top.length?top.map(x=>'<li>'+safe(x)+'</li>').join(''):'<li>本次沒有可分析的有效情報。</li>')+'</ol><div class="intel-summary-label">情報分類統計</div><div class="intel-stat-grid">'+categories.map(c=>'<div><b>'+active.items.filter(x=>x.category===c).length+'</b><span>'+safe(c)+'</span></div>').join('')+'</div>');
  target.append(info);
  const toolbar=el('div','intel-result-toolbar','<label>情報分類<select class="intel-filter"><option value="">全部分類</option>'+categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join('')+'</select></label>');
