@@ -383,6 +383,24 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
   border-color:#ddd!important;
   opacity:1!important;
 }
+
+/* Mobile iOS: confine any status-bar translucency to the safe-area strip only. */
+@media (orientation:portrait) and (max-width:759px){
+  body::before{
+    content:"";
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    height:calc(env(safe-area-inset-top,0px) + 2px);
+    background:#8ad5e6;
+    z-index:19;
+    pointer-events:none;
+  }
+  .top{
+    top:calc(env(safe-area-inset-top,0px) + 4px)!important;
+  }
+}
 </style>
 </head>
 <body>
