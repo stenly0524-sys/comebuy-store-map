@@ -810,10 +810,22 @@ window.initMap=function(){
     if(!result||!loc)throw Error('POI_GEOCODE_EMPTY');
     const point={lat:loc.lat(),lng:loc.lng()};
     let prefill;
-    try{prefill=await reverseGeocodeVacancyPoint(point)}
-    catch(_){
-     const raw=String(result.formatted_address||'').replace(/^台灣(?:省)?\s*/,'').replace(/^臺灣(?:省)?\s*/,'').replace(/^\d{3,5}\s*/,'').trim();
-     prefill={city:'',district:'',address:raw};
+    try{
+     prefill=vacancyPrefillFromGeocodeResult(result);
+     if(!prefill.city||!prefill.district||!prefill.address){
+      const supplement=await reverseGeocodeVacancyPoint(point);
+      prefill={
+       city:prefill.city||supplement.city,
+       district:prefill.district||supplement.district,
+       address:prefill.address||supplement.address
+      };
+     }
+    }catch(_){
+     try{prefill=await reverseGeocodeVacancyPoint(point)}
+     catch(__){
+      const raw=String(result.formatted_address||'').replace(/^台灣(?:省)?\s*/,'').replace(/^臺灣(?:省)?\s*/,'').replace(/^\d{3,5}\s*/,'').trim();
+      prefill={city:'',district:'',address:raw};
+     }
     }
     window.__cbPendingGooglePoi={placeId,point,prefill};
     if(!infoWindow)infoWindow=new google.maps.InfoWindow();
@@ -1538,40 +1550,64 @@ const googlePoiPopupObserver=new MutationObserver(()=>{
 });
 googlePoiPopupObserver.observe(document.body,{childList:true,subtree:true});
 
+function vacancyPrefillFromGeocodeResult(result){
+ if(!result)throw Error('EMPTY_GEOCODE_RESULT');
+ const parts=result.address_components||[];
+ const normalize=v=>String(v||'').normalize('NFKC').replace(/臺/g,'台').replace(/\s/g,'').trim();
+ const part=(...types)=>{for(const t of types){const c=parts.find(x=>x.types?.includes(t));if(c?.long_name)return normalize(c.long_name)}return ''};
+ let formatted=normalize(String(result.formatted_address||'')
+   .replace(/^台灣(?:省)?\s*/,'')
+   .replace(/^臺灣(?:省)?\s*/,'')
+   .replace(/^\d{3,5}\s*/,''));
+ if(!formatted){
+  const route=part('route'),streetNo=part('street_number');
+  formatted=[part('administrative_area_level_1','locality'),part('administrative_area_level_3','sublocality_level_1','sublocality'),route,streetNo].filter(Boolean).join('');
+ }
+ if(!formatted)throw Error('NO_POSTAL_ADDRESS');
+ const cityNames=['台北市','新北市','桃園市','台中市','台南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','台東縣','澎湖縣','金門縣','連江縣'];
+ const componentCandidates=[
+  part('administrative_area_level_1'),
+  part('locality'),
+  part('administrative_area_level_2')
+ ].filter(Boolean);
+ let city=cityNames.find(name=>componentCandidates.some(v=>v===name||v.includes(name)))||
+   cityNames.find(name=>formatted.includes(name))||'';
+ const districtCandidates=[
+  part('administrative_area_level_3'),
+  part('sublocality_level_1'),
+  part('sublocality'),
+  part('administrative_area_level_2'),
+  part('locality')
+ ].filter(Boolean);
+ let district=districtCandidates.find(v=>/[區鄉鎮市]$/.test(v)&&v!==city&&!cityNames.includes(v))||'';
+ if(!district&&city&&formatted.includes(city)){
+  const rest=formatted.slice(formatted.indexOf(city)+city.length);
+  district=(rest.match(/^(.{1,10}?(?:區|鄉|鎮|市))/)||[])[1]||'';
+ }
+ return {city:normalize(city),district:normalize(district),address:formatted};
+}
 async function reverseGeocodeVacancyPoint(point){
  if(!window.google?.maps?.Geocoder)throw Error('GEOCODER_NOT_READY');
  const coder=geocoder||new google.maps.Geocoder();
  const response=await coder.geocode({location:point,region:'TW'});
  const results=response?.results||[];
  if(!results.length)throw Error('ZERO_RESULTS');
- const best=results.find(x=>x.types?.includes('street_address'))||
-   results.find(x=>x.types?.includes('premise')||x.types?.includes('subpremise'))||
-   results.find(x=>x.types?.includes('route'))||
-   results[0];
- const parts=best.address_components||[];
- const part=(...types)=>{for(const t of types){const c=parts.find(x=>x.types?.includes(t));if(c?.long_name)return c.long_name}return ''};
- const normalize=v=>String(v||'').replace(/臺/g,'台').replace(/\s/g,'').trim();
- let formatted=normalize(String(best.formatted_address||'')
-   .replace(/^台灣(?:省)?\s*/,'')
-   .replace(/^臺灣(?:省)?\s*/,'')
-   .replace(/^\d{3,5}\s*/,''));
- if(!formatted)throw Error('NO_POSTAL_ADDRESS');
- const cityNames=['台北市','新北市','桃園市','台中市','台南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','台東縣','澎湖縣','金門縣','連江縣'];
- let city=cityNames.find(c=>formatted.startsWith(c))||'';
- if(!city){
-  const raw=normalize(part('administrative_area_level_1','administrative_area_level_2','locality'));
-  city=cityNames.find(c=>raw===c||raw.includes(c))||'';
+ const ranked=[
+  ...results.filter(x=>x.types?.includes('street_address')),
+  ...results.filter(x=>x.types?.includes('premise')||x.types?.includes('subpremise')),
+  ...results.filter(x=>x.types?.includes('route')),
+  ...results
+ ];
+ let bestPrefill=null;
+ for(const candidate of ranked){
+  try{
+   const parsed=vacancyPrefillFromGeocodeResult(candidate);
+   if(parsed.city&&parsed.district&&parsed.address)return parsed;
+   if(!bestPrefill||(!bestPrefill.city&&parsed.city)||(!bestPrefill.district&&parsed.district))bestPrefill=parsed;
+  }catch(_){}
  }
- let district='';
- if(city){
-  const rest=formatted.slice(formatted.indexOf(city)+city.length);
-  district=(rest.match(/^([^0-9]{1,10}(?:區|鄉|鎮|市))/)||[])[1]||'';
- }
- if(!district){
-  const candidates=[part('administrative_area_level_3'),part('sublocality_level_1'),part('sublocality'),part('administrative_area_level_2')].map(normalize).filter(Boolean);
-  district=candidates.find(v=>/[區鄉鎮市]$/.test(v)&&v!==city)||'';
- }
- return {city:normalize(city),district:normalize(district),address:formatted};
+ if(bestPrefill)return bestPrefill;
+ throw Error('NO_POSTAL_ADDRESS');
 }
 function applyPendingVacancyMapPrefill(){
  const prefill=pendingVacancyMapPrefill;
