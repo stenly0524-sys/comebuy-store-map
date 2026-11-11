@@ -549,6 +549,21 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .intel-result-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin-top:8px}.intel-result-toolbar>button{background:#fff;border:1px solid #d71920;border-radius:9px;color:#bd1520;padding:11px;font-weight:800}
 .intel-result-toolbar label{flex:1;min-width:150px}.intel-category-badge{background:#f1e0df;color:#a9141c;border-radius:6px;padding:3px 6px;font-weight:800}
 .intel-news-top{justify-content:flex-start}.intel-news-top b:last-child{margin-left:auto}
+</style><style id="cb-intelligence-favorites-dialog">
+.intel-main-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0;margin:10px 0}
+.intel-main-actions button{width:100%;min-width:0;margin:0!important;padding:12px 5px!important;border-radius:10px;font-weight:800;font-size:14px}
+#intel-open-favorites{background:#fff;color:#bc101b;border:1px solid #d71920}
+.intel-favorites-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.56);display:flex;justify-content:center;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+.intel-favorites-dialog{background:#fff;width:min(100%,680px);max-height:100%;display:flex;flex-direction:column;border-radius:17px;overflow:hidden;box-shadow:0 10px 35px #0004}
+.intel-favorites-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:linear-gradient(90deg,#ad0713,#ed5360);color:white;font-weight:900;font-size:19px}
+.intel-favorites-close{border:0;border-radius:50%;width:38px;height:38px;background:white;color:#b00;font-size:27px;line-height:1;flex-shrink:0}
+.intel-favorites-content{padding:12px;overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.intel-favorites-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.intel-favorites-categories button{min-width:0;white-space:normal;overflow-wrap:anywhere;border:1px solid #e1d4d0;border-radius:8px;padding:9px 5px;background:#fff;color:#222;font-size:12px;font-weight:700}
+.intel-favorites-categories button.active{background:#d71920;color:white;border-color:#d71920}
+.intel-favorites-count{padding:10px 2px;color:#666;font-size:12px}
+.intel-favorites-list{min-width:0;overflow-wrap:anywhere}
+@media (orientation:landscape) and (max-height:500px){.intel-favorites-overlay{padding:4px 12px}.intel-favorites-header{padding:5px 12px}.intel-favorites-content{padding:8px}}
 </style></head>
 <body>
 
@@ -2563,35 +2578,54 @@ function renderResults(){
  const top=(summary.top||[]).filter(x=>/comebuy|長沂|手搖飲|飲料|加盟/i.test(x)).slice(0,5);
  const info=el('section','intel-summary','<div class="intel-summary-title">COMEBUY 商業情報摘要</div><div class="intel-summary-label">本次重點情報</div><ol class="intel-summary-points">'+(top.length?top.map(x=>'<li>'+safe(x)+'</li>').join(''):'<li>本次沒有符合品牌與產業條件的重點消息。</li>')+'</ol><div class="intel-summary-label">情報分類統計</div><div class="intel-stat-grid">'+categories.map(c=>'<div><b>'+active.items.filter(x=>x.category===c).length+'</b><span>'+safe(c)+'</span></div>').join('')+'</div><div class="intel-summary-label">分析說明</div><p>目前採公開新聞索引與規則式摘要，尚未啟用生成式 AI；新聞索引日期不一定是原文發布日期。</p>');
  target.append(info);
- const toolbar=el('div','intel-result-toolbar','<button type="button" class="intel-fav-toggle">☆ 已收藏（'+Object.keys(states).filter(id=>states[id]?.saved).length+'）</button><label>情報分類<select class="intel-filter"><option value="">全部分類</option>'+categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join('')+'</select></label>');
+ const toolbar=el('div','intel-result-toolbar','<label>情報分類<select class="intel-filter"><option value="">全部分類</option>'+categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join('')+'</select></label>');
  target.append(toolbar);
  const list=el('div','intel-list');target.append(list);
- let favoritesOnly=false;
  function draw(){
-  toolbar.querySelector('.intel-fav-toggle').textContent=(favoritesOnly?'★ 顯示全部':'☆ 已收藏')+'（'+Object.keys(states).filter(id=>states[id]?.saved).length+'）';
-  const savedFromHistory=history.flatMap(h=>h.items||[]);
-  const pool=favoritesOnly?[...new Map(savedFromHistory.filter(x=>states[x.id]?.saved).map(x=>[x.id,x])).values()]:active.items;
-  const shown=pool.filter(x=>!toolbar.querySelector('select').value||x.category===toolbar.querySelector('select').value);
+  const shown=active.items.filter(x=>!toolbar.querySelector('select').value||x.category===toolbar.querySelector('select').value);
   list.innerHTML='';
-  if(!shown.length){list.textContent=favoritesOnly?'尚無收藏情報。':'此分類沒有符合條件的消息。';return}
-  shown.forEach(x=>{
-   const st=states[x.id]||{},card=el('article','intel-news');
-   card.innerHTML='<div class="intel-news-top"><span>新聞索引日期：'+safe(date(x.publishedAt))+'</span><span class="intel-category-badge">'+safe(x.category)+'</span><b>'+safe(x.importance)+'</b></div><h3>'+safe(x.title)+'</h3><p>'+safe(x.summary)+'</p><p><b>營運影響：</b>'+safe(x.impact)+'</p><p>來源：'+safe(x.source)+'（'+safe(x.sourceType)+'）</p><div class="intel-actions"><a href="'+safe(x.url)+'" target="_blank" rel="noopener noreferrer">原始來源</a><button data-action="read">'+(st.read?'已讀':'未讀')+'</button><button data-action="save">'+(st.saved?'★ 已收藏':'☆ 收藏')+'</button>'+(st.firstSeen?'':'<span class="intel-new">NEW</span>')+'</div>';
-   card.querySelector('a').onclick=()=>{states[x.id]={...states[x.id],read:true,firstSeen:true};save()};
-   card.querySelector('[data-action="read"]').onclick=()=>{states[x.id]={...states[x.id],read:!states[x.id]?.read,firstSeen:true};save();draw()};
-   card.querySelector('[data-action="save"]').onclick=()=>{states[x.id]={...states[x.id],saved:!states[x.id]?.saved,firstSeen:true};save();draw()};
-   list.append(card);
-  });
+  if(!shown.length){list.textContent='此分類沒有符合條件的消息。';return}
+  shown.forEach(x=>list.append(newsCard(x,draw)));
  }
- toolbar.querySelector('select').onchange=draw;
- toolbar.querySelector('.intel-fav-toggle').onclick=()=>{favoritesOnly=!favoritesOnly;draw()};
+ toolbar.querySelector('select').onchange=draw;draw();
+}
+function newsCard(x,refresh){
+ const st=states[x.id]||{},card=el('article','intel-news');
+ card.innerHTML='<div class="intel-news-top"><span>新聞索引日期：'+safe(date(x.publishedAt))+'</span><span class="intel-category-badge">'+safe(x.category)+'</span><b>'+safe(x.importance)+'</b></div><h3>'+safe(x.title)+'</h3><p>'+safe(x.summary)+'</p><p><b>營運影響：</b>'+safe(x.impact)+'</p><p>來源：'+safe(x.source)+'（'+safe(x.sourceType)+'）</p><div class="intel-actions"><a href="'+safe(x.url)+'" target="_blank" rel="noopener noreferrer">原始來源</a><button data-action="read">'+(st.read?'已讀':'未讀')+'</button><button data-action="save">'+(st.saved?'★ 已收藏':'☆ 收藏')+'</button>'+(st.firstSeen?'':'<span class="intel-new">NEW</span>')+'</div>';
+ card.querySelector('a').onclick=()=>{states[x.id]={...states[x.id],read:true,firstSeen:true};save();refresh()};
+ card.querySelector('[data-action="read"]').onclick=()=>{states[x.id]={...states[x.id],read:!states[x.id]?.read,firstSeen:true};save();refresh()};
+ card.querySelector('[data-action="save"]').onclick=()=>{states[x.id]={...states[x.id],saved:!states[x.id]?.saved,firstSeen:true};save();refresh()};
+ return card;
+}
+function openIntelFavorites(){
+ document.getElementById('intel-favorites-modal')?.remove();
+ const overlay=el('div','intel-favorites-overlay');overlay.id='intel-favorites-modal';
+ overlay.innerHTML='<section class="intel-favorites-dialog" role="dialog" aria-modal="true" aria-label="已收藏情報"><header class="intel-favorites-header"><span>★ 已收藏</span><button type="button" class="intel-favorites-close" aria-label="關閉">×</button></header><div class="intel-favorites-content"><div class="intel-favorites-categories"></div><div class="intel-favorites-count"></div><div class="intel-favorites-list"></div></div></section>';
+ document.body.append(overlay);
+ const close=()=>overlay.remove();
+ overlay.querySelector('.intel-favorites-close').onclick=close;
+ overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+ const tabs=overlay.querySelector('.intel-favorites-categories'),list=overlay.querySelector('.intel-favorites-list'),count=overlay.querySelector('.intel-favorites-count');
+ let selected='';
+ function draw(){
+  const all=[...new Map(history.flatMap(h=>h.items||[]).filter(x=>states[x.id]?.saved).map(x=>[x.id,x])).values()].sort((a,b)=>Date.parse(b.publishedAt||0)-Date.parse(a.publishedAt||0));
+  tabs.innerHTML='';
+  ['',...categories].forEach(c=>{const b=el('button',c===selected?'active':'',safe(c||'全部收藏')+'（'+(c?all.filter(x=>x.category===c).length:all.length)+'）');b.type='button';b.onclick=()=>{selected=c;draw()};tabs.append(b)});
+  const shown=selected?all.filter(x=>x.category===selected):all;
+  count.textContent='共 '+shown.length+' 則收藏情報';
+  list.innerHTML='';
+  if(!shown.length){list.textContent='此分類尚無收藏情報。';return}
+  shown.forEach(x=>list.append(newsCard(x,()=>{draw();renderResults()})));
+ }
  draw();
 }
+
 window.showComebuyIntelligence=function(){
  setDrawerLayout('compact');nav={level:'intelligence',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='最新訊息';backBtn.style.visibility='visible';setGradientHeading('settings');
  body().innerHTML='';
- const wrap=el('section','intel-panel','<div class="intel-heading"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h6v5H7zM16 8h2M16 12h2M7 16h11"/></svg>最新訊息｜商業情報</div><label>搜尋時間<select id="intel-period"><option value="day">最近24小時</option><option value="week" selected>最近7天</option><option value="month">最近30天</option><option value="quarter">最近90天</option><option value="custom">自訂起訖日期</option></select></label><div class="intel-dates" hidden><input type="date" id="intel-start"><input type="date" id="intel-end"></div><strong>搜尋分類（可複選）</strong><div class="intel-categories">'+categories.map(x=>'<label><input type="checkbox" checked value="'+safe(x)+'"> '+safe(x)+'</label>').join('')+'</div><button class="intel-search" id="intel-search">開始搜尋</button><div class="intel-feedback" role="status"></div><div id="intel-results"></div>');
+ const wrap=el('section','intel-panel','<div class="intel-heading"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h6v5H7zM16 8h2M16 12h2M7 16h11"/></svg>最新訊息｜商業情報</div><label>搜尋時間<select id="intel-period"><option value="day">最近24小時</option><option value="week" selected>最近7天</option><option value="month">最近30天</option><option value="quarter">最近90天</option><option value="custom">自訂起訖日期</option></select></label><div class="intel-dates" hidden><input type="date" id="intel-start"><input type="date" id="intel-end"></div><strong>搜尋分類（可複選）</strong><div class="intel-categories">'+categories.map(x=>'<label><input type="checkbox" checked value="'+safe(x)+'"> '+safe(x)+'</label>').join('')+'</div><div class="intel-main-actions"><button class="intel-search" id="intel-search">開始搜尋</button><button type="button" id="intel-open-favorites">★ 已收藏</button></div><div class="intel-feedback" role="status"></div><div id="intel-results"></div>');
  body().append(wrap);
+ wrap.querySelector('#intel-open-favorites').onclick=openIntelFavorites;
  const period=wrap.querySelector('#intel-period'),dates=wrap.querySelector('.intel-dates');
  period.onchange=()=>dates.hidden=period.value!=='custom';
 
