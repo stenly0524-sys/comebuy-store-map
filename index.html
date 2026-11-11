@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-native-poi-overlay-v5">
+<meta name="comebuy-build" content="2026-11-11-poi-modal-return-v6">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -1519,6 +1519,7 @@ function confirmRestoreVacancy(){return new Promise(resolve=>{const overlay=docu
 function confirmArchiveVacancy(){return new Promise(resolve=>{const overlay=document.createElement('div');overlay.className='archive-confirm-overlay';overlay.innerHTML='<div class="archive-confirm-box" role="dialog" aria-modal="true" aria-labelledby="archiveConfirmMessage"><p class="archive-confirm-message" id="archiveConfirmMessage">將空舖移至「封存店鋪」？</p><div class="archive-confirm-actions"><button type="button" class="archive-confirm-cancel">取消</button><button type="button" class="archive-confirm-accept">確認</button></div></div>';document.body.appendChild(overlay);const cancel=overlay.querySelector('.archive-confirm-cancel'),accept=overlay.querySelector('.archive-confirm-accept');const finish=value=>{document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};const onKey=e=>{if(e.key==='Escape')finish(false)};document.addEventListener('keydown',onKey);cancel.onclick=()=>finish(false);accept.onclick=()=>finish(true);overlay.onclick=e=>{if(e.target===overlay)finish(false)};cancel.focus()})}
 let vacancyPanelMode='list';
 let pendingVacancyMapPoint=null;
+let vacancyFromGooglePoi=false;
 const vacancyAddStyle=document.createElement('style');vacancyAddStyle.textContent=".vacancy-tabs button[data-mode=\"add\"]{flex:0 0 auto!important;padding:9px 12px!important;font-size:12px!important;border-radius:10px!important}.vacancy-add-overlay{position:fixed;inset:0;z-index:1200;background:#0009;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}.vacancy-add-dialog{background:#fff;border-radius:16px;width:min(100%,480px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px #0005}.vacancy-add-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #eee;flex-shrink:0}.vacancy-add-header strong{font-size:17px}.vacancy-add-close{width:32px;height:32px;border-radius:50%;border:1px solid #ddd;background:#f7f7f7;color:#333;font-size:22px;line-height:1}.vacancy-add-dialog>.vacancy-form{padding:14px 16px 24px;margin:0;overflow-y:auto;min-height:0;overscroll-behavior:contain}";document.head.appendChild(vacancyAddStyle);
 const vacancyCompactStyle=document.createElement('style');vacancyCompactStyle.textContent=".vacancy-add-dialog>.vacancy-form{gap:6px!important;padding:10px 13px 13px!important;border:0!important;border-radius:0!important;background:#fff!important}.vacancy-add-header{padding:9px 13px!important}.vacancy-add-dialog .vacancy-form input:not([type=\"checkbox\"]):not([type=\"file\"]),.vacancy-add-dialog .vacancy-form select{height:37px!important;min-height:37px!important;font-size:14px!important;padding:0 9px!important;box-sizing:border-box}.vacancy-add-dialog .vacancy-form label{font-size:12px!important;line-height:1.35!important}.vacancy-add-dialog .vacancy-location-row{gap:6px!important}.vacancy-add-dialog .vacancy-location-item{gap:3px!important}.vacancy-add-dialog .extra-fields{gap:6px!important}.vacancy-add-dialog .vacancy-area-field{margin:1px 0!important}.vacancy-add-dialog .vacancy-area-field legend{margin-bottom:5px!important;font-size:12px!important}.vacancy-add-dialog .vacancy-area-options{gap:5px!important}.vacancy-add-dialog .vacancy-area-options label{padding:6px!important;min-height:31px!important;font-size:12px!important;line-height:1.35!important}.vacancy-add-dialog .vacancy-form button[type=\"submit\"]{padding:9px!important;font-size:14px!important}.vacancy-add-dialog .vacancy-note{font-size:11px!important;line-height:1.4!important}.vacancy-add-dialog .vacancy-form input[type=\"file\"]{height:auto!important;min-height:35px!important;padding:6px!important;font-size:12px!important}.vacancy-add-dialog .vacancy-locate-now{min-height:37px!important;padding:6px 2px!important;font-size:11px!important}";document.head.appendChild(vacancyCompactStyle);
 const vacancyFilterCompactStyle=document.createElement('style');vacancyFilterCompactStyle.textContent=".vacancy-region-filter{padding:8px 10px!important;margin-top:7px!important;border-radius:10px!important}.vacancy-region-selects{gap:6px!important}.vacancy-region-filter .vacancy-region-selects select{height:36px!important;font-size:12px!important;padding:0 6px!important;border-radius:8px!important}.vacancy-region-filter>.vacancy-stage-filter{margin-top:6px!important;padding:0!important}.vacancy-region-filter>.vacancy-stage-filter+.vacancy-stage-filter{padding-top:6px!important}.vacancy-region-filter .vacancy-stage-filter label{gap:6px!important;font-size:12px!important}.vacancy-region-filter .vacancy-stage-filter select{padding:6px 7px!important;min-height:35px!important;font-size:12px!important}.vacancy-region-filter .vacancy-stage-filter>div:first-child{margin-bottom:5px!important;font-size:12px!important}.vacancy-region-filter [data-rent]{height:35px!important;font-size:12px!important;padding:0 7px!important;border-radius:8px!important}";document.head.appendChild(vacancyFilterCompactStyle);
@@ -1526,6 +1527,7 @@ const vacancyLocationStyle=document.createElement('style');vacancyLocationStyle.
 function openGooglePoiAsVacancy(){
  const poi=window.__cbPendingGooglePoi;
  if(!poi?.point||!poi?.prefill)return;
+ vacancyFromGooglePoi=true;
  pendingVacancyMapPoint={lat:poi.point.lat,lng:poi.point.lng};
  pendingVacancyMapPrefill={...poi.prefill};
  vacancyPanelMode='add';
@@ -1555,6 +1557,7 @@ function installNativePoiVacancyAction(){
   return found.sort((a,b)=>a.getBoundingClientRect().width-b.getBoundingClientRect().width)[0]||null;
  };
  const refresh=()=>{
+  if(vacancyFromGooglePoi||document.querySelector('.vacancy-add-overlay')){action.style.display='none';return}
   const next=findCard();
   if(!next){card=null;action.style.display='none';return}
   card=next;
@@ -1590,8 +1593,8 @@ function installNativePoiVacancyAction(){
    if(!prefill&&point)prefill=await reverseGeocodeVacancyPoint(point);
    if(!point||!prefill)throw Error('ADDRESS_NOT_FOUND');
    window.__cbPendingGooglePoi={placeId:existing?.placeId||'',point,prefill,name:lines[0]||'Google Maps 地標'};
-   openGooglePoiAsVacancy();
    action.style.display='none';
+   openGooglePoiAsVacancy();
   }catch(err){
    console.warn('Google 地標地址無法取得',err);
    alert('無法取得這個地標的完整地址，請確認地標顯示門牌後重試。');
@@ -1908,15 +1911,19 @@ function showVacancies(){
   }
   vacancies.unshift(v);if(!saveVacancies()){vacancies.shift();btn.disabled=false;return}
   pendingVacancyMapPoint=null;
-  syncFranchiseVacancyLinks();refreshVacancyMarkers();document.querySelector('.vacancy-add-overlay')?.remove();vacancyPanelMode='list';showVacancies();
+  const wasPoi=vacancyFromGooglePoi;
+  vacancyFromGooglePoi=false;
+  syncFranchiseVacancyLinks();refreshVacancyMarkers();document.querySelector('.vacancy-add-overlay')?.remove();vacancyPanelMode='list';
+  if(wasPoi){drawer.classList.remove('open');return}
+  showVacancies();
  };
  if(vacancyPanelMode==='add'){
   const previous=document.querySelector('.vacancy-add-overlay');if(previous)previous.remove();
   const overlay=document.createElement('div');overlay.className='vacancy-add-overlay';
   const dialog=document.createElement('section');dialog.className='vacancy-add-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','新增空舖');
   const header=document.createElement('div');header.className='vacancy-add-header';header.innerHTML='<strong>新增空舖</strong><button type="button" class="vacancy-add-close" aria-label="關閉新增空舖視窗">×</button>';
-  dialog.appendChild(header);dialog.appendChild(form);overlay.appendChild(dialog);document.body.appendChild(overlay);applyPendingVacancyMapPrefill();
-  const close=()=>{pendingVacancyMapPoint=null;pendingVacancyMapPrefill=null;overlay.remove();vacancyPanelMode='list';showVacancies()};
+  dialog.appendChild(header);dialog.appendChild(form);overlay.appendChild(dialog);document.body.appendChild(overlay);if(vacancyFromGooglePoi)drawer.classList.remove('open');applyPendingVacancyMapPrefill();
+  const close=()=>{const wasPoi=vacancyFromGooglePoi;pendingVacancyMapPoint=null;pendingVacancyMapPrefill=null;vacancyFromGooglePoi=false;overlay.remove();vacancyPanelMode='list';if(wasPoi){drawer.classList.remove('open');return}showVacancies()};
   header.querySelector('button').onclick=close;
   overlay.onclick=e=>{if(e.target===overlay)close()};
   vacancyPanelMode='list';
