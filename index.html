@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-poi-placeid-address-v16">
+<meta name="comebuy-build" content="2026-11-11-poi-fresh-location-v17">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -1579,18 +1579,18 @@ function installNativePoiVacancyAction(){
    // Never replace it with a geocoded nearby building or a stale previous POI.
    // Google POI cards may split the address across nested elements or return
    // a short innerText; inspect visible descendants and preserve the displayed house number.
+   const rawText=String(card?.innerText||card?.textContent||cardText||'').replace(/\u00a0/g,' ').replace(/臺/g,'台');
    const cardCandidates=[
-    card?.innerText,card?.textContent,cardText,
+    rawText,cardText,
     ...Array.from(card?.querySelectorAll('*')||[]).flatMap(el=>[el.innerText,el.textContent,el.getAttribute('aria-label'),el.getAttribute('title')])
-   ].map(x=>String(x||'').replace(/\u00a0/g,' ').trim()).filter(Boolean);
+   ].map(x=>String(x||'').replace(/\u00a0/g,' ').replace(/臺/g,'台').trim()).filter(Boolean);
    const lines=cardCandidates.flatMap(x=>x.split(/\n+/)).map(x=>x.trim()).filter(Boolean);
    const streetPattern=/(?:路|街|大道|巷|弄|段).{0,80}\d+(?:之\d+|-\d+)?號/;
+   // Prefer the address line displayed on the actual Google POI card.
    const rawAddress=lines.find(x=>streetPattern.test(x))
-     ||lines.find(x=>/(?:台|臺|新北|桃園|高雄|基隆|新竹|嘉義|宜蘭|花蓮|台東|臺東|澎湖|金門|連江).{2,90}\d+(?:之\d+|-\d+)?號/.test(x))
+     ||lines.find(x=>/(?:路|街|大道|巷|弄|段).{0,80}\d+(?:之\d+|-\d+)?號/.test(x.replace(/\s/g,'')))
      ||'';
-   let address=rawAddress.replace(/^\s*\d{3,5}\s*/,'').replace(/^台灣(?:省)?/,'').replace(/臺/g,'台').trim();
-   // Keep the street number from the Google card even when geocoding resolves a nearby building.
-   // If the card is incomplete, allow the form to open for manual correction.
+   let address=rawAddress.replace(/^\s*\d{3,5}\s*/,'').replace(/^台灣(?:省)?/,'').replace(/\s/g,'').trim();
    const hasExactStreet=streetPattern.test(address);
    const cityNames=['台北市','新北市','桃園市','台中市','台南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','台東縣','澎湖縣','金門縣','連江縣'];
    let city=cityNames.find(x=>address.includes(x))||'';
@@ -1599,7 +1599,9 @@ function installNativePoiVacancyAction(){
     const rest=address.slice(address.indexOf(city)+city.length);
     district=(rest.match(/^(.{1,9}?(?:區|鄉|鎮|市))/)||[])[1]||'';
    }
-   const existing=window.__cbPendingGooglePoi;
+   // Clear any prior POI: a new card must never inherit another location's city/district.
+   const existing=null;
+   window.__cbPendingGooglePoi=null;
    let point=null;
    // If Maps supplied the clicked place ID, fetch the exact place address first.
    // This avoids replacing the POI's house number with a nearby reverse-geocode result.
@@ -1794,6 +1796,7 @@ function applyPendingVacancyMapPrefill(){
   return;
  }
  if(!prefill)return;
+ city.value='';setLeadDistrictSelector(city,district,'');
  const normalizedCity=String(prefill.city||'').replace(/臺/g,'台').trim();
  const normalizedDistrict=String(prefill.district||'').replace(/臺/g,'台').trim();
  if(normalizedCity&&[...city.options].some(o=>o.value===normalizedCity)){
