@@ -1,3 +1,4 @@
+const sources=require('./intelligence-sources.json');
 const http=require('node:http');
 const PORT=Number(process.env.PORT||10000);
 const ORIGIN=process.env.ALLOWED_ORIGIN||'https://comebuy-store-map.onrender.com';
@@ -10,7 +11,8 @@ const recentRequests=new Map();
 const json=(res,status,obj)=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':ORIGIN,'vary':'Origin','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify(obj))};
 http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':ORIGIN,'access-control-allow-methods':'POST,GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
- if(req.url==='/health')return json(res,200,{ok:true,provider:'Google News public RSS',ai:false});
+ if(req.url==='/health')return json(res,200,{ok:true,provider:'Google News public RSS + official page reachability checks',ai:false});
+ if(req.url==='/sources'&&req.method==='GET')return json(res,200,{sources});
  if(req.url!=='/search'||req.method!=='POST')return json(res,404,{error:'not found'});
  const client=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'unknown').split(',')[0];const nowMs=Date.now();const hits=(recentRequests.get(client)||[]).filter(t=>nowMs-t<60000);if(hits.length>=8)return json(res,429,{error:'搜尋過於頻繁，請稍後再試'});hits.push(nowMs);recentRequests.set(client,hits);if(recentRequests.size>500)recentRequests.clear();
  if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin not allowed'});
@@ -47,6 +49,11 @@ http.createServer(async(req,res)=>{
   const queries=specs.map(x=>x.q+' after:'+after+' before:'+before);
   const responses=await Promise.allSettled(queries.map(q=>fetchWithTimeout('https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=zh-TW&gl=TW&ceid=TW:zh-Hant')));
   const entries=[],limitations=[];
+  const sourceStatuses=sources.map(x=>({...x}));
+  const setStatus=(id,status,reason)=>{const x=sourceStatuses.find(s=>s.id===id);if(x){x.status=status;x.lastSearchedAt=now.toISOString();if(reason)x.detail=reason}};
+  // Official pages: availability probe only. Never label this as content extraction.
+  const officialChecks=await Promise.allSettled([1,10,12].map(async id=>{const source=sources.find(x=>x.id===id);const html=await fetchWithTimeout(source.url);return {id,hasHtml:/<html|<!doctype/i.test(html)}}));
+  officialChecks.forEach((r,i)=>{const id=[1,10,12][i];if(r.status==='fulfilled')setStatus(id,r.value.hasHtml?'reachable_not_extracted':'unexpected_content','頁面連線測試；未解析發布日期或門市異動');else setStatus(id,'access_limited','官方網站存取失敗或逾時')});
   responses.forEach((r,i)=>{
    const category=specs[i].category;
    if(r.status!=='fulfilled'){limitations.push({category,reason:'公開 RSS 來源無法存取或逾時'});return}
@@ -63,8 +70,10 @@ http.createServer(async(req,res)=>{
     entries.push({id:Buffer.from((title+'|'+url).slice(0,250)).toString('base64url'),title,url,publishedAt:new Date(ts).toISOString(),category,source:source||'Google 新聞索引',sourceType:'第三方索引（未核實官方原文）',summary:description.slice(0,300)||title,importance:/歇業|撤店|加盟|展店|開幕|裁罰|食安|爭議/.test(title)?'高':/促銷|優惠|營運|市場|新品|聯名/.test(title)?'中':'低',impact:/開幕|展店|加盟/.test(title)?'可能涉及展店機會，須核對官方門市清單':/歇業|搬遷/.test(title)?'可能涉及門市異動，須人工查證':'供加盟拓展與品牌營運參考，尚需查證'});
    }
   });
+  const okRss=responses.filter(r=>r.status==='fulfilled').length;
+  setStatus(13,okRss===responses.length?'success':okRss?'partial':'failed',`RSS 查詢成功 ${okRss}/${responses.length} 組；只涵蓋新聞索引，不代表已直接搜尋其他來源`);
   const unique=new Map();for(const x of entries){const key=x.title.replace(/\s*[-–|｜].*$/,'').replace(/\s/g,'').toLowerCase();if(!unique.has(key))unique.set(key,x)}
   const items=[...unique.values()].sort((a,b)=>b.publishedAt.localeCompare(a.publishedAt)).slice(0,120);
-  return json(res,200,{searchedAt:now.toISOString(),provider:'Google News 公開 RSS（非所有平台完整搜尋）',items,limitations:[...limitations,{category:'其他官方社群及商工登記',reason:'本階段未接入官方網站、Facebook、Instagram、LINE、104、1111、商工登記及你訂的專屬資料介面；不得視為已搜尋'}],analysis:{type:'規則式摘要（非生成式 AI）',top:items.slice(0,5).map(x=>x.title),newStores:items.filter(x=>/開幕|新店|搬遷|歇業/.test(x.title)).length,marketing:items.filter(x=>/活動|促銷|優惠|聯名/.test(x.title)).length,competition:items.filter(x=>/市場|競爭|加盟/.test(x.title)).length,note:'以下僅為公開新聞索引的關鍵字整理，非 AI 查證結論。啟用生成式 AI 需另行確認 API 與費用。'}});
+  return json(res,200,{searchedAt:now.toISOString(),provider:'Google News 公開 RSS + 官方頁面連線檢查（非27站內容搜尋）',items,sources:sourceStatuses,limitations:[...limitations,{category:'來源覆蓋限制',reason:'官方頁面僅連線測試；其餘平台未直接擷取，新聞 RSS 索引不等於逐站搜尋。商工登記、招募與門市異動尚未建立可核驗的結構化擷取。'}],analysis:{type:'規則式摘要（非生成式 AI）',top:items.slice(0,5).map(x=>x.title),newStores:items.filter(x=>/開幕|新店|搬遷|歇業/.test(x.title)).length,marketing:items.filter(x=>/活動|促銷|優惠|聯名/.test(x.title)).length,competition:items.filter(x=>/市場|競爭|加盟/.test(x.title)).length,note:'以下僅為公開新聞索引的關鍵字整理，非 AI 查證結論。啟用生成式 AI 需另行確認 API 與費用。'}});
  }catch(e){return json(res,502,{error:'搜尋失敗：'+String(e.message||e).slice(0,140)})}
 }).listen(PORT,'0.0.0.0');
