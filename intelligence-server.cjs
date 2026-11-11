@@ -25,13 +25,17 @@ http.createServer(async(req,res)=>{
   // Search several narrow queries per category. Official-site indexing is explicitly
   // supplementary: Google News does not guarantee coverage of official posts.
   const brandPattern=/(?:comebuy|come[\s-]*buy|長沂國際|康沛|comebuytea)/i;
-  const activityPattern=/活動|聯名|優惠|促銷|新品|新飲|上市|限定|買一送一|折扣|集點|會員|抽獎|贈送|節慶|合作|快閃|行銷|公關/i;
+  const activityPattern=/活動|聯名|優惠|促銷|新品|新飲|上市|限定|買一送一|折扣|集點|會員|抽獎|贈送|節慶|合作|快閃|行銷|公關|再婚皇后|黑糖珍珠|黑糖系列|珍珠系列|新品系列|聯名款/i;
   const marketPattern=/手搖飲|飲料|茶飲|加盟|品牌|市場|連鎖|展店|開店|消費|競爭|新品|聯名/i;
   const specs=selected.flatMap(category=>{
    if(category==='品牌活動')return [
     {category,q:'("COMEBUY" OR "COMEBUY TEA" OR "長沂國際") (活動 OR 聯名 OR 優惠 OR 促銷 OR 新品 OR 限定)'},
     {category,q:'("COMEBUY" OR "康沛" OR "長沂國際") (會員 OR 集點 OR 抽獎 OR 買一送一 OR 上市 OR 合作)'},
-    {category,q:'site:comebuy2002.com.tw (活動 OR 新品 OR 優惠 OR 聯名)'}
+    {category,q:'site:comebuy2002.com.tw (活動 OR 新品 OR 優惠 OR 聯名)'},
+    {category,q:'("COMEBUY" OR "COMEBUYTEA" OR "康沛") "再婚皇后"'},
+    {category,q:'("COMEBUY" OR "COMEBUYTEA" OR "康沛") ("黑糖珍珠" OR "黑糖系列" OR "珍珠系列")'},
+    {category,q:'("COMEBUY" OR "COMEBUYTEA") ("聯名" OR "新品上市" OR "期間限定" OR "品牌活動")'},
+    {category,q:'site:comebuy2002.com.tw ("再婚皇后" OR "黑糖珍珠" OR "聯名" OR "新品")'}
    ];
    if(category==='競爭品牌與市場動態')return [
     {category,q:'("手搖飲" OR "飲料加盟" OR "茶飲市場") (市場 OR 趨勢 OR 聯名 OR 新品 OR 加盟)'},
