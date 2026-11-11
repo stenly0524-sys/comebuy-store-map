@@ -1610,7 +1610,7 @@ function installNativePoiVacancyAction(){
      if(exact){
       const parsed=vacancyPrefillFromGeocodeResult(exact);
       city=city||parsed.city;district=district||parsed.district;
-      if(/(?:路|街|大道|巷|弄|段).{0,80}\\d+(?:之\\d+|-\\d+)?號/.test(parsed.address))address=parsed.address;
+      if(/(?:路|街|大道|巷|弄|段).{0,80}\d+(?:之\d+|-\d+)?號/.test(parsed.address))address=parsed.address;
       const loc=exact.geometry?.location;
       if(loc)point={lat:loc.lat(),lng:loc.lng()};
      }
