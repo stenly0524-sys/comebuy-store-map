@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#8ad5e6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
@@ -511,15 +511,17 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 
 <script>
 (function(){
-  // Standalone iOS: keep the map aligned with the actual layout viewport.
-  // Avoid screen.height, which is in a different coordinate system on iOS.
+  // iOS PWA: let the map cover the entire layout viewport, including the status-bar safe area.
   function fit(){
-    const h=window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
     const el=document.getElementById('map');
-    if(el && h>0){el.style.height=Math.ceil(h)+'px';if(window.google?.maps && window.__comebuyMap)google.maps.event.trigger(window.__comebuyMap,'resize');}
+    if(!el)return;
+    el.style.top='0';
+    el.style.bottom='0';
+    el.style.height='100dvh';
+    el.style.minHeight='100dvh';
+    if(window.google?.maps && window.__comebuyMap)google.maps.event.trigger(window.__comebuyMap,'resize');
   }
   window.addEventListener('resize',fit);
-  window.visualViewport?.addEventListener('resize',fit);
   window.addEventListener('orientationchange',fit);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)fit()});
   fit();
