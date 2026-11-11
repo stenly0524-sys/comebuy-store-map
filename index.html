@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-poi-modal-return-v6">
+<meta name="comebuy-build" content="2026-11-11-toolbar-toggle-v7">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -2345,6 +2345,27 @@ function showProtection(){
  protectionToggle.onclick=toggleProtection;
 }
 document.getElementById('openProtection').onclick=showProtection;
+// Main toolbar: tap a section to open; tap the same section again to close.
+const mainToolbarSections=[
+ ['openList',()=>!['vacancies','protection','cases','franchise','leads','lead','case','settings','dashboard'].includes(nav.level)],
+ ['openVacancies',()=>nav.level==='vacancies'],
+ ['openProtection',()=>nav.level==='protection'],
+ ['openFranchise',()=>['cases','franchise','leads','lead','case'].includes(nav.level)],
+ ['openDashboard',()=>['settings','dashboard'].includes(nav.level)]
+];
+mainToolbarSections.forEach(([id,isCurrent])=>{
+ const button=document.getElementById(id);
+ const original=button.onclick;
+ button.onclick=function(event){
+  if(drawer.classList.contains('open')&&isCurrent()){
+   document.querySelector('.vacancy-add-overlay')?.remove();
+   vacancyFromGooglePoi=false;
+   drawer.classList.remove('open');
+   return;
+  }
+  return original?.call(this,event);
+ };
+});
 const actionButtons=[document.getElementById('openList'),document.getElementById('openVacancies'),document.getElementById('openProtection'),document.getElementById('openFranchise'),document.getElementById('openDashboard')];
 function syncActionButtons(){
  const active=drawer.classList.contains('open')?(nav.level==='vacancies'?'openVacancies':nav.level==='protection'?'openProtection':['cases','franchise','leads','lead','case'].includes(nav.level)?'openFranchise':['settings','dashboard'].includes(nav.level)?'openDashboard':'openList'):null;
