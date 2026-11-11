@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-styled-backup-success-v9">
+<meta name="comebuy-build" content="2026-11-11-settings-two-column-v10">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -495,7 +495,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
   }
 }
 </style>
-</head>
+<style id="cb-settings-button-row-style">.cb-settings-button-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;width:100%;margin:10px 0}.cb-settings-button-row>.dashboard-backup{width:100%;min-width:0;margin:0!important;min-height:54px;padding:10px 5px!important;font-size:clamp(12px,3.2vw,16px)!important;line-height:1.35;white-space:normal;text-align:center}</style></head>
 <body>
 
 <div id="cb-splash" role="status" aria-live="polite" aria-label="COMEBUY MAPS 載入中">
@@ -2220,7 +2220,7 @@ function addBackupImportAction(){
  const button=document.createElement('button');button.type='button';button.className='dashboard-backup';button.textContent='匯入備份（JSON）';
  button.onclick=()=>input.click();
  input.onchange=async()=>{const file=input.files?.[0];if(!file)return;button.disabled=true;await importBackupJson(file);button.disabled=false;input.value=''};
- drawerBody.append(button,input);
+ return {button,input};
 }
 
 const VACANCY_DOC_HEADERS=['城市','區域','空舖地址','月租金','坪數','面寬(公尺)','聯絡人','聯絡電話'];
@@ -2345,14 +2345,13 @@ async function importVacancyXlsx(file){
  const result=document.createElement('div');result.innerHTML='<p class="vacancy-import-summary">已成功建檔 '+accepted.length+' 筆</p><p>依城市、區域歸類完成。地圖定位成功 '+located+' 筆，待定位 '+(accepted.length-located)+' 筆；跳過重複 '+duplicateCount+' 筆。</p>';await vacancyImportDialog('空舖資料建檔完成',result,'完成',false);
 }
 function addVacancyDocActions(){
- const generate=document.createElement('button');generate.className='dashboard-backup';generate.textContent='生成空舖資料表（XLSX）';
+ const generate=document.createElement('button');generate.className='dashboard-backup';generate.textContent='匯出空舖資料表';
  generate.onclick=async()=>{generate.disabled=true;try{await generateVacancyXlsx()}catch(e){alert('產生 XLSX 失敗：'+e.message)}finally{generate.disabled=false}};
- drawerBody.appendChild(generate);
- const upload=document.createElement('button');upload.className='dashboard-backup';upload.textContent='上傳空舖資料';
+ const upload=document.createElement('button');upload.className='dashboard-backup';upload.textContent='匯入空舖資料表';
  const picker=document.createElement('input');picker.type='file';picker.accept='.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';picker.hidden=true;
  upload.onclick=()=>picker.click();
- picker.onchange=async()=>{if(!picker.files?.[0])return;upload.disabled=true;upload.textContent='匯入處理中…';try{await importVacancyXlsx(picker.files[0])}catch(e){alert('匯入失敗：'+e.message)}finally{upload.disabled=false;upload.textContent='上傳空舖資料';picker.value=''}};
- drawerBody.append(upload,picker);
+ picker.onchange=async()=>{if(!picker.files?.[0])return;upload.disabled=true;upload.textContent='匯入處理中…';try{await importVacancyXlsx(picker.files[0])}catch(e){alert('匯入失敗：'+e.message)}finally{upload.disabled=false;upload.textContent='匯入空舖資料表';picker.value=''}};
+ const row=document.createElement('div');row.className='cb-settings-button-row';row.append(generate,upload);drawerBody.append(row,picker);
 }
 function showCaseManagement(){
  setDrawerLayout('dashboard');nav={level:'cases',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='項目';requestAnimationFrame(syncActionButtons);setGradientHeading('cases');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
@@ -2367,7 +2366,7 @@ function showCaseManagement(){
 }
 function showSettings(){
  setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';requestAnimationFrame(syncActionButtons);setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
- const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;drawerBody.appendChild(btn);addBackupImportAction();const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
+ const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;const backupRow=document.createElement('div');backupRow.className='cb-settings-button-row';backupRow.appendChild(btn);const backupImport=addBackupImportAction();backupRow.appendChild(backupImport.button);drawerBody.append(backupRow,backupImport.input);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
 }
 document.getElementById('openDashboard').onclick=showSettings;
 function showProtection(){
