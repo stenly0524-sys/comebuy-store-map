@@ -716,6 +716,8 @@ window.initMap=function(){
   document.addEventListener('touchend',()=>requestAnimationFrame(syncStreetViewExit),true);
   syncStreetViewExit();
   geocoder=new google.maps.Geocoder();
+  window.__cbGooglePoiOpen=false;
+  map.addListener('click',e=>{window.__cbGooglePoiOpen=Boolean(e&&e.placeId)});
   installVacancyLongPress();
   infoWindow=new google.maps.InfoWindow();
   // Google Maps uses "close" for both the X button and programmatic dismissal.
@@ -1358,12 +1360,19 @@ function installVacancyLongPress(){
   vacancyPanelMode='add';showVacancies();applyPendingVacancyMapPrefill();
  };
  const withinMap=target=>target instanceof Node&&el.contains(target);
- const begin=(x,y)=>{cancel();opened=false;start={x,y};timer=setTimeout(()=>{
+ const begin=(x,y)=>{cancel();opened=false;start={x,y};timer=setTimeout(async()=>{
    timer=null;if(!start)return;
    const rect=el.getBoundingClientRect(),projection=overlay.getProjection();
    if(!projection)return;
    const px=Math.max(0,Math.min(rect.width,start.x-rect.left)),py=Math.max(0,Math.min(rect.height,start.y-rect.top));
-   openPoint(projection.fromContainerPixelToLatLng(new google.maps.Point(px,py)));
+   const ll=projection.fromContainerPixelToLatLng(new google.maps.Point(px,py));
+   try{
+    if(infoWindow)infoWindow.close();
+    window.__cbGooglePoiOpen=false;
+    google.maps.event.trigger(map,'click',{latLng:ll});
+    document.activeElement?.blur?.();
+   }catch(_){}
+   await openPoint(ll);
  },700)};
  const move=(x,y)=>{if(start&&Math.hypot(x-start.x,y-start.y)>14)cancel()};
  // Capture on document: Google Maps handles map gestures on its own nested panes.
@@ -1376,7 +1385,7 @@ function installVacancyLongPress(){
  document.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')move(e.clientX,e.clientY)},true);
  document.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')cancel()},true);
  map.addListener('rightclick',e=>openPoint(e.latLng));
- el.addEventListener('contextmenu',e=>{if(withinMap(e.target))e.preventDefault()},true);
+ el.addEventListener('contextmenu',e=>{if(withinMap(e.target)){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.()}},true);
 }
 
 async function reverseGeocodeVacancyPoint(point){
@@ -1405,7 +1414,7 @@ async function reverseGeocodeVacancyPoint(point){
  const districtCandidates=[districtRaw,...parts.map(x=>x.long_name),formatted].filter(Boolean);
 
  const knownCities=Object.keys(LEAD_DISTRICTS||{});
- const city=knownCities.find(c=>cityCandidates.some(v=>normalize(v)===normalize(c)||normalize(v).includes(normalize(c))))||
+ let city=knownCities.find(c=>cityCandidates.some(v=>normalize(v)===normalize(c)||normalize(v).includes(normalize(c))))||
    knownCities.find(c=>normalize(formatted).includes(normalize(c)))||'';
  const knownDistricts=LEAD_DISTRICTS?.[city]||[];
  let district=knownDistricts.find(d=>districtCandidates.some(v=>normalize(v)===normalize(d)||normalize(v).includes(normalize(d))))||
@@ -1414,6 +1423,15 @@ async function reverseGeocodeVacancyPoint(point){
  if(!district){
   const named=parts.map(x=>x.long_name).find(v=>/[區鄉鎮市]$/.test(String(v||''))&&normalize(v)!==normalize(city));
   if(named)district=named;
+ }
+ if(!city){
+  const m=formatted.replace(/^臺/,'台').match(/^(台北市|新北市|桃園市|台中市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|台東縣|澎湖縣|金門縣|連江縣)/);
+  if(m)city=m[1];
+ }
+ if(!district&&city){
+  const rest=formatted.replace(/^臺/,'台').slice(city.length);
+  const m=rest.match(/^([^0-9\s]{1,8}(?:區|鄉|鎮|市))/);
+  if(m)district=m[1];
  }
  return {city,district,address:formatted};
 }
@@ -1432,6 +1450,7 @@ function applyPendingVacancyMapPrefill(){
  if(prefill.city&&[...city.options].some(o=>o.value===prefill.city)){
   city.value=prefill.city;
   setLeadDistrictSelector(city,district);
+  city.dispatchEvent(new Event('change',{bubbles:true}));
  }
  if(prefill.district){
   if(![...district.options].some(o=>o.value===prefill.district))district.add(new Option(prefill.district,prefill.district));
