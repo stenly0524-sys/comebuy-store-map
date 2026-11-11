@@ -1478,12 +1478,12 @@ function installVacancyLongPress(){
  el.addEventListener('contextmenu',e=>{if(withinMap(e.target)){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.()}},true);
 }
 
-async const googlePoiPopupObserver=new MutationObserver(()=>{
+const googlePoiPopupObserver=new MutationObserver(()=>{
  if(window.__cbPendingGooglePoi&&document.querySelector('.gm-style-iw-c:not(:has([data-google-poi-add-vacancy]))'))scheduleGooglePoiVacancyButton();
 });
 googlePoiPopupObserver.observe(document.body,{childList:true,subtree:true});
 
-function reverseGeocodeVacancyPoint(point){
+async function reverseGeocodeVacancyPoint(point){
  if(!window.google?.maps?.Geocoder)throw Error('GEOCODER_NOT_READY');
  const coder=geocoder||new google.maps.Geocoder();
  const response=await coder.geocode({location:point,region:'TW'});
