@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-native-poi-filter-fix-v12">
+<meta name="comebuy-build" content="2026-11-11-exact-poi-address-v13">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -1575,32 +1575,46 @@ function installNativePoiVacancyAction(){
   if(busy)return;
   busy=true;action.disabled=true;action.textContent='正在取得地址…';
   try{
-   const lines=cardText.split(/\n+/).map(x=>x.trim()).filter(Boolean);
-   const address=lines.find(x=>/(台|臺|新北|桃園|新竹|基隆|高雄|台中|臺中|台南|臺南|宜蘭|花蓮|屏東|彰化|南投|苗栗|雲林|嘉義|台東|臺東|澎湖|金門|連江).{0,30}(?:區|鄉|鎮|市).{1,80}(?:路|街|巷|弄|號)/.test(x))
-      ||lines.find(x=>/(路|街).{0,50}號/.test(x))
-      ||'';
+   // The visible Google POI card is authoritative for the street number.
+   // Never replace it with a geocoded nearby building or a stale previous POI.
+   const liveText=card?.innerText||card?.textContent||cardText;
+   const lines=String(liveText||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+   const rawAddress=lines.find(x=>/(?:路|街|大道|巷|弄).{0,70}\d+(?:之\d+|-\d+)?號/.test(x))
+     ||lines.find(x=>/(?:路|街|大道|巷|弄).{0,70}\d+(?:之\d+|-\d+)?(?:號|樓)/.test(x))
+     ||'';
+   const address=rawAddress.replace(/^\s*\d{3,5}\s*/,'').replace(/^台灣(?:省)?/,'').replace(/臺/g,'台').trim();
+   if(!address||!/(?:路|街|大道|巷|弄).{0,70}\d+(?:之\d+|-\d+)?號/.test(address)){
+    throw Error('VISIBLE_STREET_ADDRESS_REQUIRED');
+   }
+   const cityNames=['台北市','新北市','桃園市','台中市','台南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','台東縣','澎湖縣','金門縣','連江縣'];
+   let city=cityNames.find(x=>address.includes(x))||'';
+   let district='';
+   if(city){
+    const rest=address.slice(address.indexOf(city)+city.length);
+    district=(rest.match(/^(.{1,9}?(?:區|鄉|鎮|市))/)||[])[1]||'';
+   }
    const existing=window.__cbPendingGooglePoi;
-   let point=existing?.point||null,prefill=existing?.prefill||null;
-   if(address){
+   let point=null;
+   try{
     const response=await geocoder.geocode({address,region:'TW'});
     const result=response?.results?.[0];
     if(result){
-     prefill=vacancyPrefillFromGeocodeResult(result);
+     const parsed=vacancyPrefillFromGeocodeResult(result);
+     city=city||parsed.city;
+     district=district||parsed.district;
      const loc=result.geometry?.location;
      if(loc)point={lat:loc.lat(),lng:loc.lng()};
-     // Preserve the native card's actual street address, rather than a nearby Plus Code.
-     if(!/^[A-Z0-9+ ]{7,}$/.test(address))prefill.address=address.replace(/^\d{3,5}/,'').replace(/臺/g,'台');
     }
-   }
+   }catch(err){console.warn('地標地址定位失敗，保留原始門牌',err)}
+   if(!point&&existing?.point&&existing?.prefill?.address===address)point=existing.point;
    if(!point&&map?.getCenter()){const loc=map.getCenter();point={lat:loc.lat(),lng:loc.lng()}}
-   if(!prefill&&point)prefill=await reverseGeocodeVacancyPoint(point);
-   if(!point||!prefill)throw Error('ADDRESS_NOT_FOUND');
-   window.__cbPendingGooglePoi={placeId:existing?.placeId||'',point,prefill,name:lines[0]||'Google Maps 地標'};
+   if(!point)throw Error('POI_LOCATION_NOT_FOUND');
+   window.__cbPendingGooglePoi={placeId:'',point,prefill:{city,district,address},name:lines[0]||'Google Maps 地標'};
    action.style.display='none';
    openGooglePoiAsVacancy();
   }catch(err){
    console.warn('Google 地標地址無法取得',err);
-   alert('無法取得這個地標的完整地址，請確認地標顯示門牌後重試。');
+   alert('無法讀取地標資訊卡的完整門牌地址，請確認 Google 地標顯示路名與門牌後重試；系統不會改填附近其他門牌。');
   }finally{busy=false;action.disabled=false;action.textContent='＋ 加入空舖'}
  };
  const observer=new MutationObserver(()=>{if(!window.__cbPoiRefreshPending){window.__cbPoiRefreshPending=true;requestAnimationFrame(()=>{window.__cbPoiRefreshPending=false;refresh()})}});
