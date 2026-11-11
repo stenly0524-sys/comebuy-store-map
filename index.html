@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#8ad5e6">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="comebuy-build" content="2026-11-11-1602-poi-safearea-v2">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -457,6 +459,23 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
     -webkit-backdrop-filter:none!important;
   }
 }
+
+/* 2026-11-11 iOS PWA: extend the real Google map canvas behind the status bar. */
+@supports (padding-top: env(safe-area-inset-top)){
+ @media (orientation:portrait) and (max-width:759px){
+  html,body{padding:0!important;background:transparent!important}
+  #map{
+   position:fixed!important;
+   left:0!important;right:0!important;
+   top:calc(-1 * env(safe-area-inset-top,0px))!important;
+   bottom:0!important;
+   width:100vw!important;
+   height:calc(100dvh + env(safe-area-inset-top,0px))!important;
+   min-height:calc(100dvh + env(safe-area-inset-top,0px))!important;
+   background:#8ad5e6!important;
+  }
+ }
+}
 </style>
 </head>
 <body>
@@ -762,18 +781,34 @@ window.initMap=function(){
   window.__cbGooglePoiOpen=false;
   window.__cbPendingGooglePoi=null;
   map.addListener('click',async e=>{
-   window.__cbGooglePoiOpen=Boolean(e&&e.placeId);
-   if(!e?.placeId){window.__cbPendingGooglePoi=null;return}
+   const placeId=e?.placeId||'';
+   window.__cbGooglePoiOpen=Boolean(placeId);
+   if(!placeId){window.__cbPendingGooglePoi=null;return}
+   if(typeof e.stop==='function')e.stop();
    try{
-    const response=await geocoder.geocode({placeId:e.placeId});
+    const response=await geocoder.geocode({placeId});
     const result=response?.results?.[0];
     const loc=result?.geometry?.location;
-    if(!result||!loc)return;
+    if(!result||!loc)throw Error('POI_GEOCODE_EMPTY');
     const point={lat:loc.lat(),lng:loc.lng()};
-    const prefill=await reverseGeocodeVacancyPoint(point);
-    window.__cbPendingGooglePoi={placeId:e.placeId,point,prefill};
-    scheduleGooglePoiVacancyButton();
+    let prefill;
+    try{prefill=await reverseGeocodeVacancyPoint(point)}
+    catch(_){
+     const raw=String(result.formatted_address||'').replace(/^台灣(?:省)?\s*/,'').replace(/^臺灣(?:省)?\s*/,'').replace(/^\d{3,5}\s*/,'').trim();
+     prefill={city:'',district:'',address:raw};
+    }
+    window.__cbPendingGooglePoi={placeId,point,prefill};
+    if(!infoWindow)infoWindow=new google.maps.InfoWindow();
+    const addressText=prefill.address||String(result.formatted_address||'').trim()||'地址待確認';
+    infoWindow.setContent('<div style="min-width:230px;max-width:300px;padding:2px 2px 4px"><div style="font-size:12px;color:#766e69;margin-bottom:5px">Google Maps 地點</div><div style="font-size:14px;line-height:1.55;font-weight:800">'+esc(addressText)+'</div><button type="button" id="cbPoiAddVacancy" style="display:block;width:100%;min-height:43px;margin-top:10px;border:0;border-radius:10px;background:#d71920;color:#fff;font-size:14px;font-weight:900;padding:10px 14px">新增為空舖</button></div>');
+    infoWindow.setPosition(point);
+    infoWindow.open({map});
+    google.maps.event.addListenerOnce(infoWindow,'domready',()=>{
+     const btn=document.getElementById('cbPoiAddVacancy');
+     if(btn)btn.onclick=evt=>{evt.preventDefault();evt.stopPropagation();openGooglePoiAsVacancy()};
+    });
    }catch(err){
+    window.__cbPendingGooglePoi=null;
     console.warn('Google POI 地址取得失敗',err);
    }
   });
@@ -1498,39 +1533,27 @@ async function reverseGeocodeVacancyPoint(point){
  const parts=best.address_components||[];
  const part=(...types)=>{for(const t of types){const c=parts.find(x=>x.types?.includes(t));if(c?.long_name)return c.long_name}return ''};
  const normalize=v=>String(v||'').replace(/臺/g,'台').replace(/\s/g,'').trim();
- let formatted=String(best.formatted_address||'')
+ let formatted=normalize(String(best.formatted_address||'')
    .replace(/^台灣(?:省)?\s*/,'')
    .replace(/^臺灣(?:省)?\s*/,'')
-   .replace(/^\d{3,5}\s*/,'')
-   .trim();
- if(!formatted||/^-?\d+(?:\.\d+)?\s*[,，]\s*-?\d+(?:\.\d+)?$/.test(formatted))throw Error('NO_POSTAL_ADDRESS');
-
- const cityRaw=part('administrative_area_level_1','administrative_area_level_2','locality');
- const districtRaw=part('administrative_area_level_3','administrative_area_level_2','sublocality_level_1','sublocality','locality');
- const cityCandidates=[cityRaw,...parts.map(x=>x.long_name),formatted].filter(Boolean);
- const districtCandidates=[districtRaw,...parts.map(x=>x.long_name),formatted].filter(Boolean);
-
- const knownCities=Object.keys(LEAD_DISTRICTS||{});
- let city=knownCities.find(c=>cityCandidates.some(v=>normalize(v)===normalize(c)||normalize(v).includes(normalize(c))))||
-   knownCities.find(c=>normalize(formatted).includes(normalize(c)))||'';
- const knownDistricts=LEAD_DISTRICTS?.[city]||[];
- let district=knownDistricts.find(d=>districtCandidates.some(v=>normalize(v)===normalize(d)||normalize(v).includes(normalize(d))))||
-   knownDistricts.find(d=>normalize(formatted).includes(normalize(d)))||'';
-
- if(!district){
-  const named=parts.map(x=>x.long_name).find(v=>/[區鄉鎮市]$/.test(String(v||''))&&normalize(v)!==normalize(city));
-  if(named)district=named;
- }
+   .replace(/^\d{3,5}\s*/,''));
+ if(!formatted)throw Error('NO_POSTAL_ADDRESS');
+ const cityNames=['台北市','新北市','桃園市','台中市','台南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','台東縣','澎湖縣','金門縣','連江縣'];
+ let city=cityNames.find(c=>formatted.startsWith(c))||'';
  if(!city){
-  const m=formatted.replace(/^臺/,'台').match(/^(台北市|新北市|桃園市|台中市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|台東縣|澎湖縣|金門縣|連江縣)/);
-  if(m)city=m[1];
+  const raw=normalize(part('administrative_area_level_1','administrative_area_level_2','locality'));
+  city=cityNames.find(c=>raw===c||raw.includes(c))||'';
  }
- if(!district&&city){
-  const rest=formatted.replace(/^臺/,'台').slice(city.length);
-  const m=rest.match(/^([^0-9\s]{1,8}(?:區|鄉|鎮|市))/);
-  if(m)district=m[1];
+ let district='';
+ if(city){
+  const rest=formatted.slice(formatted.indexOf(city)+city.length);
+  district=(rest.match(/^([^0-9]{1,10}(?:區|鄉|鎮|市))/)||[])[1]||'';
  }
- return {city,district,address:formatted};
+ if(!district){
+  const candidates=[part('administrative_area_level_3'),part('sublocality_level_1'),part('sublocality'),part('administrative_area_level_2')].map(normalize).filter(Boolean);
+  district=candidates.find(v=>/[區鄉鎮市]$/.test(v)&&v!==city)||'';
+ }
+ return {city:normalize(city),district:normalize(district),address:formatted};
 }
 function applyPendingVacancyMapPrefill(){
  const prefill=pendingVacancyMapPrefill;
@@ -1544,16 +1567,18 @@ function applyPendingVacancyMapPrefill(){
   return;
  }
  if(!prefill)return;
- if(prefill.city&&[...city.options].some(o=>o.value===prefill.city)){
-  city.value=prefill.city;
-  setLeadDistrictSelector(city,district);
-  city.dispatchEvent(new Event('change',{bubbles:true}));
+ const normalizedCity=String(prefill.city||'').replace(/臺/g,'台').trim();
+ const normalizedDistrict=String(prefill.district||'').replace(/臺/g,'台').trim();
+ if(normalizedCity&&[...city.options].some(o=>o.value===normalizedCity)){
+  city.value=normalizedCity;
+  setLeadDistrictSelector(city,district,normalizedDistrict);
  }
- if(prefill.district){
-  if(![...district.options].some(o=>o.value===prefill.district))district.add(new Option(prefill.district,prefill.district));
-  district.disabled=false;district.value=prefill.district;
+ if(normalizedDistrict){
+  if(![...district.options].some(o=>o.value===normalizedDistrict))district.add(new Option(normalizedDistrict,normalizedDistrict));
+  district.disabled=false;
+  district.value=normalizedDistrict;
  }
- address.value=prefill.address||'';
+ address.value=String(prefill.address||'').replace(/臺/g,'台').trim();
  address.placeholder='請核對地址與門牌';
  if(error)error.textContent=city.value&&district.value&&address.value?'':'地址已取得，但城市或區域辨識不完整，請確認';
 }
