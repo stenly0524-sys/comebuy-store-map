@@ -2570,7 +2570,7 @@ function renderResults(){
  filter.onchange=draw;draw();
 }
 window.showComebuyIntelligence=function(){
- setDrawerLayout('compact');nav={level:'intelligence',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='最新訊息';backBtn.style.visibility='visible';backBtn.onclick=()=>showSettings();setGradientHeading('settings');
+ setDrawerLayout('compact');nav={level:'intelligence',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='最新訊息';backBtn.style.visibility='visible';setGradientHeading('settings');
  body().innerHTML='';
  const wrap=el('section','intel-panel','<div class="intel-heading">▤ 最新訊息｜商業情報</div><label>搜尋時間<select id="intel-period"><option value="day">最近24小時</option><option value="week" selected>最近7天</option><option value="month">最近30天</option><option value="quarter">最近90天</option><option value="custom">自訂起訖日期</option></select></label><div class="intel-dates" hidden><input type="date" id="intel-start"><input type="date" id="intel-end"></div><strong>搜尋分類（可複選）</strong><div class="intel-categories">'+categories.map(x=>'<label><input type="checkbox" checked value="'+safe(x)+'"> '+safe(x)+'</label>').join('')+'</div><button class="intel-search" id="intel-search">開始搜尋</button><div class="intel-feedback" role="status"></div><div class="intel-history"></div><div id="intel-results"></div>');
  body().append(wrap);
