@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-native-poi-only-v11">
+<meta name="comebuy-build" content="2026-11-11-native-poi-filter-fix-v12">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -1561,7 +1561,7 @@ function installNativePoiVacancyAction(){
   const next=findCard();
   if(!next){card=null;action.style.display='none';return}
   // COMEBUY-owned store and vacancy cards must never offer a duplicate add-vacancy action.
-  const ownPopup=next.querySelector('.store-popup-details,[data-vacancy-detail],#cbPoiAddVacancy')||/class=["']store-popup-details|data-vacancy-detail=/.test(String(infoWindow?.getContent?.()||''));
+  const ownPopup=Boolean(next.querySelector('.store-popup-details,[data-vacancy-detail],#cbPoiAddVacancy'));
   if(ownPopup){card=null;action.style.display='none';return}
   card=next;
   const rect=card.getBoundingClientRect();
