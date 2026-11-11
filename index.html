@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8ad5e6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="comebuy-build" content="2026-11-11-poi-address-dom-fallback-v14">
+<meta name="comebuy-build" content="2026-11-11-poi-name-geocode-fallback-v15">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Comebuy Maps">
 <link rel="icon" type="image/svg+xml" href="/comebuy-map-icon.svg?v=2">
@@ -1601,6 +1601,29 @@ function installNativePoiVacancyAction(){
    }
    const existing=window.__cbPendingGooglePoi;
    let point=null;
+   // Fallback: native Google cards sometimes expose no readable address in the DOM.
+   // Query the named POI near the selected map location, not an arbitrary nearby street number.
+   if(!hasExactStreet){
+    const title=lines.find(x=>x.length>2&&!/^(?:無障礙|路線|評論|網站|儲存|分享|營業|電話)/.test(x))||'';
+    const center=map?.getCenter?.();
+    if(title&&center){
+     try{
+      const resultSet=await geocoder.geocode({address:title,location:center,region:'TW'});
+      const candidates=resultSet?.results||[];
+      const match=candidates.find(x=>x.types?.includes('establishment')||x.types?.includes('point_of_interest'))||candidates[0];
+      if(match){
+       const parsed=vacancyPrefillFromGeocodeResult(match);
+       if(parsed.city&&parsed.district){
+        city=parsed.city;district=parsed.district;
+        if(/(?:路|街|大道|巷|弄).{0,80}\d+(?:之\d+|-\d+)?號/.test(parsed.address))address=parsed.address;
+        const loc=match.geometry?.location;
+        if(loc)point={lat:loc.lat(),lng:loc.lng()};
+       }
+      }
+     }catch(err){console.warn('POI name lookup unavailable',err)}
+    }
+   }
+
    try{
     if(!hasExactStreet)throw Error('VISIBLE_ADDRESS_INCOMPLETE');
     const response=await geocoder.geocode({address,region:'TW'});
@@ -1615,6 +1638,7 @@ function installNativePoiVacancyAction(){
    }catch(err){console.warn('地標地址定位失敗，保留原始門牌',err)}
    if(!point&&existing?.point&&(!address||existing?.prefill?.address===address))point=existing.point;
    if(!point&&map?.getCenter()){const loc=map.getCenter();point={lat:loc.lat(),lng:loc.lng()}}
+   if((!city||!district)&&point){try{const nearby=await reverseGeocodeVacancyPoint(point);city=city||nearby.city;district=district||nearby.district}catch(_){}}
    if(!point)throw Error('POI_LOCATION_NOT_FOUND');
    window.__cbPendingGooglePoi={placeId:'',point,prefill:{city,district,address},name:lines[0]||'Google Maps 地標'};
    action.style.display='none';
