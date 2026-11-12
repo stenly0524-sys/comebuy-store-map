@@ -589,6 +589,15 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-sipspot-row{border-bottom:1px solid #eee;font-size:14px;min-width:0}
 .cb-sipspot-row span:first-child{overflow-wrap:anywhere}
 .cb-sipspot-comebuy{background:#ffeded;color:#a90012;font-weight:800}
+.cb-sipspot-cost-row{row-gap:7px}
+.cb-sipspot-costs{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.cb-sipspot-costs>div{min-width:0;display:flex;flex-direction:column;gap:3px;background:#f8f7f7;border:1px solid #efebea;padding:7px 9px;border-radius:7px}
+.cb-sipspot-comebuy .cb-sipspot-costs>div{background:#fffafa}
+.cb-sipspot-costs span{font-size:11px;color:#666}
+.cb-sipspot-costs strong{font-size:12px;line-height:1.45;font-weight:750;color:#222;overflow-wrap:anywhere}
+.cb-sipspot-count{font-weight:750;white-space:nowrap}
+@media(max-width:350px){.cb-sipspot-costs{gap:5px}.cb-sipspot-costs>div{padding:7px 5px}.cb-sipspot-costs strong{font-size:11px}}
+
 </style>
 <style id="cb-profit-styles">
 .cb-profit-entry{display:block;width:100%;margin:12px 0 0;min-height:45px;border:1px solid #ca1b26;border-radius:10px;color:#bc1520;background:#fff;font-weight:800;font-size:15px}
@@ -2719,7 +2728,7 @@ async function openSipspotBrands(){
  const header=document.createElement('header');header.className='cb-sipspot-header';const title=document.createElement('strong');title.textContent='飲料品牌店數';
  const close=document.createElement('button');close.type='button';close.className='cb-sipspot-close';close.textContent='×';close.setAttribute('aria-label','關閉');close.onclick=()=>overlay.remove();header.append(title,close);
  const meta=document.createElement('div');meta.className='cb-sipspot-meta';meta.textContent='正在讀取 SipSpot…';
- const tableHead=document.createElement('div');tableHead.className='cb-sipspot-tablehead';tableHead.innerHTML='<span>品牌名稱（發源城市）</span><span>門市數</span>';
+ const tableHead=document.createElement('div');tableHead.className='cb-sipspot-tablehead';tableHead.innerHTML='<span>品牌名稱（發源城市）／加盟費用</span><span>門市數</span>';
  const list=document.createElement('div');list.className='cb-sipspot-list';list.textContent='資料讀取中…';
  dialog.append(header,meta,tableHead,list);overlay.appendChild(dialog);document.body.appendChild(overlay);
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
@@ -2735,9 +2744,27 @@ async function openSipspotBrands(){
  const render=(data,stale)=>{
   const items=data.items.filter(x=>Number.isFinite(Number(x.count))&&Number(x.count)>=30).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'zh-Hant'));
   const time=data.fetchedAt?new Date(data.fetchedAt).toLocaleString('zh-TW',{hour12:false}):'未知';
-  meta.textContent='來源：SipSpot｜取得時間：'+time+'｜30 家以上共 '+items.length+' 個品牌｜發源城市未核實者標示待查證'+(stale?'｜來源暫時無法讀取，顯示上次成功資料':'');
+  meta.textContent='門市數來源：SipSpot｜取得時間：'+time+'｜30 家以上共 '+items.length+' 個品牌｜費用以各品牌公開資料為準；未公開或未核實者不估算'+(stale?'｜來源暫時無法讀取，顯示上次成功資料':'');
   list.replaceChildren();
-  for(const item of items){const row=document.createElement('div');row.className='cb-sipspot-row'+(/^COMEBUY$/i.test(item.name.trim())?' cb-sipspot-comebuy':'');const name=document.createElement('span');name.textContent=item.name+'（'+(verifiedOrigins[item.name]||'待查證')+'）';const count=document.createElement('span');count.textContent=Number(item.count).toLocaleString('zh-TW');row.append(name,count);list.appendChild(row)}
+  const fmtFee=entry=>{
+   if(!entry||!Number.isFinite(entry.amount))return '未公開／待查證';
+   const n=Number(entry.amount)/10000;
+   const value=Number.isInteger(n)?String(n):String(Math.round(n*100)/100);
+   return 'NT$ '+value+' 萬'+(entry.qualifier||'')+(entry.status==='third_party_brand_listing'?'（第三方）':'');
+  };
+  for(const item of items){
+   const row=document.createElement('div');row.className='cb-sipspot-row cb-sipspot-cost-row'+(/^COMEBUY$/i.test(item.name.trim())?' cb-sipspot-comebuy':'');
+   const name=document.createElement('span');name.className='cb-sipspot-name';name.textContent=item.name+'（'+(verifiedOrigins[item.name]||'待查證')+'）';
+   const count=document.createElement('span');count.className='cb-sipspot-count';count.textContent=Number(item.count).toLocaleString('zh-TW');
+   const fees=document.createElement('div');fees.className='cb-sipspot-costs';
+   const fee=document.createElement('div'),total=document.createElement('div');
+   const feeLabel=document.createElement('span');feeLabel.textContent='加盟金';
+   const feeVal=document.createElement('strong');feeVal.textContent=fmtFee(item.franchiseFee);
+   const totalLabel=document.createElement('span');totalLabel.textContent='開辦總金額';
+   const totalVal=document.createElement('strong');totalVal.textContent=fmtFee(item.openingTotal);
+   fee.append(feeLabel,feeVal);total.append(totalLabel,totalVal);fees.append(fee,total);
+   row.append(name,count,fees);list.appendChild(row);
+  }
  };
  try{
   const response=await fetch('https://comebuy-intelligence-api.onrender.com/sipspot-brands',{cache:'no-store',signal:AbortSignal.timeout(20000)});
