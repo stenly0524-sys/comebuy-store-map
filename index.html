@@ -590,6 +590,40 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-sipspot-row span:first-child{overflow-wrap:anywhere}
 .cb-sipspot-comebuy{background:#ffeded;color:#a90012;font-weight:800}
 </style>
+<style id="cb-profit-styles">
+.cb-profit-entry{display:block;width:100%;margin:12px 0 0;min-height:45px;border:1px solid #ca1b26;border-radius:10px;color:#bc1520;background:#fff;font-weight:800;font-size:15px}
+.cb-profit-overlay{position:fixed;inset:0;z-index:2147483540;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.56);padding:calc(env(safe-area-inset-top,0px) + 9px) 9px calc(env(safe-area-inset-bottom,0px) + 9px);box-sizing:border-box}
+.cb-profit-modal{display:flex;flex-direction:column;min-width:0;width:min(100%,660px);max-height:100%;overflow:hidden;background:#f8f7f7;border-radius:15px;box-shadow:0 10px 36px #0003}
+.cb-profit-header{flex:none;display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(90deg,#bd101c,#e8515c);color:white;padding:10px 14px;font-size:18px}
+.cb-profit-close{width:38px;height:38px;flex:none;border:0;background:#fff;border-radius:50%;font-size:27px;line-height:1;color:#bd101c}
+.cb-profit-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;padding:12px}
+.cb-profit-address{font-size:13px;color:#555;margin:0 0 10px;overflow-wrap:anywhere}
+.cb-profit-section{background:#fff;border:1px solid #e8e1e1;border-radius:11px;margin:0 0 12px;padding:12px;min-width:0}
+.cb-profit-section h3{margin:0 0 10px;font-size:15px;color:#ae111e}
+.cb-profit-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:10px;row-gap:9px}
+.cb-profit-field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:650;color:#424242;min-width:0}
+.cb-profit-field input{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:7px 9px;border-radius:8px;border:1px solid #ccc;background:white;font-size:16px;color:#1f1f1f}
+.cb-profit-field input:focus{outline:2px solid #d71920;outline-offset:1px}
+.cb-profit-total{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #eee;margin-top:12px;padding-top:11px;font-size:13px;font-weight:800}
+.cb-profit-total b{font-size:19px;color:#bf121d;font-variant-numeric:tabular-nums}
+.cb-profit-quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:12px}
+.cb-profit-quick button{border:1px solid #ddd;background:white;border-radius:8px;padding:9px 1px;min-width:0;font-size:12px;font-weight:750;color:#333}
+.cb-profit-quick button.active{background:#c81924;border-color:#c81924;color:white}
+.cb-profit-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.cb-profit-results>div{min-width:0;background:#f8f7f7;padding:9px;border-radius:8px;display:flex;flex-direction:column;gap:5px}
+.cb-profit-results span{font-size:12px;color:#626262}
+.cb-profit-results strong{font-size:15px;font-weight:850;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:#292929}
+.cb-profit-results strong.gain{color:#167a3a}.cb-profit-results strong.loss{color:#c41c2b}
+.cb-profit-pnl{grid-template-columns:minmax(0,1fr)}
+.cb-profit-pnl>div{flex-direction:row;justify-content:space-between;align-items:center;gap:7px}
+.cb-profit-pnl>div strong{text-align:right}
+.cb-profit-disclaimer{margin:8px 2px;font-size:11px;line-height:1.55;color:#777}
+.cb-profit-error{margin:8px 2px;color:#be1723;font-size:12px;font-weight:700}
+.cb-profit-save{width:100%;min-height:46px;background:#d71920;color:#fff;font-size:15px;font-weight:800;border:0;border-radius:10px}
+.cb-profit-save:disabled{opacity:.4}
+@media(max-width:380px){.cb-profit-inputs{grid-template-columns:minmax(0,1fr)}.cb-profit-quick{grid-template-columns:repeat(3,minmax(0,1fr))}.cb-profit-results{grid-template-columns:minmax(0,1fr)}}
+@media(orientation:landscape) and (max-height:500px){.cb-profit-scroll{padding:8px}.cb-profit-section{padding:9px}}
+</style>
 </head>
 <body>
 
@@ -1998,6 +2032,10 @@ function vacancyStoreModal(v){
   const actions=document.createElement('div');actions.className='vacancy-modal-actions';const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
   const render=view=>{view.replaceChildren(vacancyViewRow('城市',v.region?.city||''),vacancyViewRow('區域',vacancyDistrict(v)),...fields.map(([key,label])=>vacancyViewRow(label,key==='rent'&&v[key]!==''&&v[key]!=null?'NT$ '+Number(v[key]).toLocaleString('zh-TW'):v[key],key==='phone')))};
   vacancyEditToggle(body,form,render);
+  const calcButton=document.createElement('button');
+  calcButton.type='button';calcButton.className='cb-profit-entry';calcButton.textContent='損益試算';
+  calcButton.onclick=()=>{if(!window.ComebuyProfitCalculator){alert('損益試算元件尚未載入，請重新整理頁面');return}window.ComebuyProfitCalculator.open(v,saveVacancies)};
+  body.appendChild(calcButton);
   form.onsubmit=async e=>{
    e.preventDefault();
    if(!city.value||!district.value){alert('請選擇城市及區域');return}
@@ -2725,5 +2763,5 @@ window.addComebuyIntelligenceSettingsButton=function(){
  const b=el('button','dashboard-backup','▤ 最新訊息');b.id='openIntelligence';b.onclick=window.showComebuyIntelligence;target.prepend(b);
 };
 })();
-</script></body>
+</script><script src="profit-calculator.js?v=1" defer></script></body>
 </html>
