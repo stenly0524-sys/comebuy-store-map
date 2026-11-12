@@ -171,9 +171,9 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .lead-unpaid-card>.lead-controls-with-deposit [data-act="training"]{position:absolute!important;top:0!important;right:0!important;width:115px!important;min-height:42px!important;margin:0!important;grid-column:auto!important;grid-row:auto!important;justify-self:stretch!important;align-self:stretch!important;color:var(--red)!important;background:#fff4f4!important;border:1px solid var(--red)!important;border-radius:9px!important}
 /* Prevent accidental double-tap page zoom on interactive controls. */
 html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
-#exitStreetView{position:fixed;right:14px;bottom:calc(110px + env(safe-area-inset-bottom,0px));z-index:2147483647;background:#fff;color:#d71920;border:1px solid #e6deda;border-radius:999px;padding:11px 16px;font-size:14px;font-weight:700;box-shadow:0 4px 18px #0003;cursor:pointer}
+#exitStreetView{position:fixed;right:14px;bottom:calc(108px + env(safe-area-inset-bottom,0px));z-index:2147483646;min-width:96px;min-height:44px;display:flex;align-items:center;justify-content:center;background:#fff;color:#d71920;border:2px solid #d71920;border-radius:12px;padding:9px 12px;font-size:14px;font-weight:800;box-shadow:0 4px 18px #0003;cursor:pointer;pointer-events:auto;touch-action:manipulation}
 #exitStreetView[hidden]{display:none!important}
-#gpsLocate{position:fixed;right:14px;bottom:calc(170px + env(safe-area-inset-bottom,0px));z-index:45;width:49px;height:49px;border:1px solid #e4ded9;border-radius:50%;background:#fff;color:#d71920;box-shadow:0 4px 18px #0003;font-size:24px;display:grid;place-items:center;cursor:pointer}
+#gpsLocate{position:fixed;right:14px;bottom:calc(170px + env(safe-area-inset-bottom,0px));z-index:2147483645;width:49px;height:49px;border:1px solid #e4ded9;border-radius:50%;background:#fff;color:#d71920;box-shadow:0 4px 18px #0003;font-size:24px;display:grid;place-items:center;cursor:pointer}
 #gpsLocate[data-mode="following"]{background:#d71920;color:#fff}
 #gpsLocate[data-mode="paused"]{background:#fff;color:#2563eb}
 #gpsLocate:disabled{opacity:.6}
@@ -796,7 +796,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 <div id="map"></div>
 <div id="routeDialog" hidden role="dialog" aria-modal="true" aria-label="規劃路線"><div class="route-card"><div class="route-header"><span>規劃路線</span><button type="button" class="route-close" id="routeClose" aria-label="關閉">×</button></div><div class="route-section route-destination"><div id="routeDestination"></div></div><div class="route-section route-transport"><div class="route-section-title">選擇移動方式</div><div class="route-modes"><button type="button" data-route-mode="walk">步行</button><button type="button" data-route-mode="scooter">機車</button><button type="button" data-route-mode="drive">汽車</button><button type="button" data-route-mode="bus">公車</button><button type="button" data-route-mode="metro">捷運</button></div></div><div class="route-section route-footer"><div class="route-actions"><button type="button" id="routeCancel">取消</button><button type="button" id="routeStart" disabled>開始導航</button></div></div></div></div>
 <button id="gpsLocate" type="button" data-mode="off" title="開始 GPS 即時定位" aria-label="開始 GPS 即時定位">◎</button>
-<button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖">← 返回地圖</button>
+<button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖">退出街景</button>
 
 <div class="top">
   <div class="card">
@@ -1052,24 +1052,41 @@ window.initMap=function(){
   window.__cbSplash?.set(70);
   google.maps.event.addListenerOnce(map,'idle',()=>window.__cbSplash?.finish());
   // GPS updates the blue marker only; the camera moves solely on explicit location-button taps.
-  const streetView=map.getStreetView();
   const exitStreetView=document.getElementById('exitStreetView');
+  let currentPanorama=map.getStreetView();
   const syncStreetViewExit=()=>{
-    const visible=streetView.getVisible()===true;
+    const panorama=map.getStreetView();
+    const visible=Boolean(panorama&&panorama.getVisible());
     exitStreetView.hidden=!visible;
-    exitStreetView.style.setProperty('display',visible?'block':'none','important');
+    exitStreetView.style.setProperty('display',visible?'flex':'none','important');
+    exitStreetView.setAttribute('aria-hidden',visible?'false':'true');
   };
-  streetView.addListener('visible_changed',syncStreetViewExit);
-  streetView.addListener('pano_changed',syncStreetViewExit);
-  exitStreetView.addEventListener('click',()=>{
-    streetView.setVisible(false);
+  const watchPanorama=()=>{
+    const panorama=map.getStreetView();
+    if(!panorama)return;
+    if(panorama!==currentPanorama)currentPanorama=panorama;
+    // Both native Pegman and programmatic Street View entry change visibility.
+    google.maps.event.addListener(panorama,'visible_changed',syncStreetViewExit);
+    google.maps.event.addListener(panorama,'pano_changed',syncStreetViewExit);
+    google.maps.event.addListener(panorama,'position_changed',syncStreetViewExit);
+    syncStreetViewExit();
+  };
+  watchPanorama();
+  map.addListener('streetview_changed',watchPanorama);
+  exitStreetView.addEventListener('click',event=>{
+    event.preventDefault();
+    const panorama=map.getStreetView();
+    if(panorama)panorama.setVisible(false);
     syncStreetViewExit();
   });
-  // The Google panorama can be toggled through the Pegman or its native UI.
-  // Recheck on viewport interactions to handle iOS standalone rendering delays.
-  document.addEventListener('pointerup',()=>requestAnimationFrame(syncStreetViewExit),true);
-  document.addEventListener('touchend',()=>requestAnimationFrame(syncStreetViewExit),true);
-  syncStreetViewExit();
+  // On iOS PWA the Pegman drop can finish after touchend; recheck on later frames.
+  const resyncStreetView=()=>{
+    requestAnimationFrame(syncStreetViewExit);
+    setTimeout(syncStreetViewExit,350);
+    setTimeout(syncStreetViewExit,900);
+  };
+  document.addEventListener('pointerup',resyncStreetView,true);
+  document.addEventListener('touchend',resyncStreetView,true);
   geocoder=new google.maps.Geocoder();
   window.__cbGooglePoiOpen=false;
   window.__cbPendingGooglePoi=null;
