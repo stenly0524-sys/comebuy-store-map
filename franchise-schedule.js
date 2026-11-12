@@ -19,7 +19,7 @@ const dateRe=/^\d{4}-\d{2}-\d{2}$/;
 const dayUTC=s=>Date.parse(s+'T00:00:00Z');
 function addDays(s,n){if(!dateRe.test(s)||!Number.isFinite(dayUTC(s)))return '';return new Date(dayUTC(s)+Math.trunc(n)*86400000).toISOString().slice(0,10)}
 function daysBetween(a,b){return Math.round((dayUTC(b)-dayUTC(a))/86400000)}
-const isSigned=v=>['已簽約','受訓中'].includes(v.stage);
+const isSigned=v=>['已簽約','受訓中','已開幕'].includes(v.stage);
 const isDone=t=>t.status==='已完成'||t.status==='已取消';
 const due=t=>t.deadline||t.plannedEnd||t.plannedStart||t.confirmedDate||t.suggestedDate||'';
 function displayedStatus(t,today=localToday()){const scheduled=t.deadline||t.plannedEnd||t.plannedStart||t.confirmedDate||'';return !isDone(t)&&t.status!=='暫停'&&scheduled&&scheduled<today?'已逾期':t.status}
@@ -50,7 +50,7 @@ function scheduleIfBlank(lead,title,date,reason){
 function seed(lead,rules=defaults()){return window.ComebuyScheduleV2?window.ComebuyScheduleV2.seed(lead,PHASES,rules):false}
 
 function all(leads){return leads.flatMap(l=>allTasks(l).map(t=>({lead:l,task:t})))}
-function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,initialLeadId='',initialPhase=''){
+function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,initialLeadId='',initialPhase='',initialTaskId=''){
  const phaseOnly=Boolean(initialLeadId&&initialPhase&&PHASES.some(p=>p[0]===initialPhase));
  let view=phaseOnly?'phase':initialLeadId?'timeline':'list',filterLead=initialLeadId,filterPhase=phaseOnly?initialPhase:'',filterState='',filterType='',filterOwner='',dateFrom='',dateTo='',month=localToday().slice(0,7);
  const leads=getLeads();let touched=false;for(const lead of leads)touched=seed(lead)||touched;if(touched&&!saveFranchise())throw Error('時程初始化儲存失敗');
@@ -351,6 +351,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
 
     if(eventWithdrawn&&window.ComebuyScheduleV2)window.ComebuyScheduleV2.markWithdrawn(lead,t.title);
     if(t.title==='正式簽約日期'&&next.status==='已完成'&&next.confirmedDate&&!isSigned(lead))lead.stage='已簽約';
+    if(t.title==='確認正式開幕日期'&&next.status==='已完成'&&next.confirmedDate){lead.stage='已開幕';lead.actualOpeningDate=next.confirmedDate;}
     seed(lead);
     if(form._delayProposal?.length&&window.ComebuyScheduleV2){
      window.ComebuyScheduleV2.applyDelay(lead,form._delayProposal,controls.reason.value.trim()||'工程改期');
@@ -363,6 +364,13 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
   });
  }
  render();
+ if(phaseOnly&&initialTaskId){
+  requestAnimationFrame(()=>{
+   const lead=getLeads().find(l=>String(l.id)===String(initialLeadId));
+   const exact=lead&&allTasks(lead).find(t=>String(t.id)===String(initialTaskId)&&t.phase===initialPhase);
+   if(exact&&overlay.isConnected)editTask(lead,exact);
+  });
+ }
  return overlay
 }
 window.ComebuySchedule={open:createApp,phases:PHASES,seed,calculateDue:due,displayedStatus,addDays,daysBetween,defaults};
