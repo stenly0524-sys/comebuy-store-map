@@ -37,7 +37,24 @@ http.createServer(async(req,res)=>{
  if(req.url==='/sipspot-brands'&&req.method==='GET'){
   try{const html=await fetchWithTimeout(SIPSPOT_URL);const items=parseSipspot(html).map(row=>{
     const record=investmentRegistry.brands[row.name]||{};
-    return {...row,franchiseFee:record.franchiseFee||null,openingTotal:record.openingTotal||null};
+    const fee=record.franchiseFee||null,opening=record.openingTotal||null;
+    // Market-wide scenario for missing brand quotes, NEVER a brand-specific factual price.
+    const generic=(min,max,label)=>({amount:min,maxAmount:max,currency:'TWD',qualifier:'約',status:'generic_market_model',sourceName:'2026 手搖飲加盟市場通用情境',sourceUrl:'https://suanlisuo.com/franchise',scope:label+'：通用產業區間，非此品牌實際報價或承諾'});
+    const feeEstimate=fee||generic(100000,500000,'加盟授權費');
+    let openingEstimate=opening;
+    if(!openingEstimate&&fee?.status==='official_package_quote'){
+     openingEstimate={...generic(Math.max(1500000,fee.amount),Math.max(3500000,Math.ceil(fee.amount*1.5/100000)*100000),'含設備裝修等開辦費'),status:'package_based_model',sourceName:fee.sourceName,sourceUrl:fee.sourceUrl};
+    }
+    if(!openingEstimate&&fee?.status==='third_party_package_quote'){
+     openingEstimate={...generic(Math.max(1500000,fee.amount),Math.max(3500000,Math.ceil(fee.amount*1.5/100000)*100000),'含設備裝修等開辦費'),status:'package_based_model',sourceName:fee.sourceName,sourceUrl:fee.sourceUrl};
+    }
+    if(!openingEstimate)openingEstimate=generic(1500000,3500000,'整店開辦資金');
+    if(openingEstimate.status==='third_party_preparation_estimate'&&!Number.isFinite(openingEstimate.maxAmount)){
+      // Allow for cost fluctuation around a third-party point estimate, with clear model flag.
+      const a=openingEstimate.amount;
+      openingEstimate={...openingEstimate,amount:Math.floor(a*.8/100000)*100000,maxAmount:Math.ceil(a*1.2/100000)*100000,status:'third_party_range_model',scope:(openingEstimate.scope||'')+'；以第三方單點估算上下20%規劃緩衝，非品牌正式區間'};
+    }
+    return {...row,franchiseFee:fee,openingTotal:opening,franchiseFeeRange:feeEstimate,openingRange:openingEstimate};
    });sipspotCache={items,fetchedAt:new Date().toISOString(),investmentDataUpdatedAt:investmentRegistry.updatedAt,investmentSource:'已查證來源表；無資料顯示未公開／待查證',source:'SipSpot',sourceUrl:SIPSPOT_URL};return json(res,200,{...sipspotCache,stale:false})}
   catch(e){if(sipspotCache)return json(res,200,{...sipspotCache,stale:true,error:'來源暫時無法讀取，顯示上次成功資料'});return json(res,503,{items:[],stale:true,error:'目前無法取得資料'})}
  }
