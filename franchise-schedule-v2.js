@@ -129,6 +129,9 @@ function seed(lead,phasesIgnored,rulesIgnored){
  }
  const opened=find(lead,'確認正式開幕日期');
  const openedDate=dateOf(opened);
+ if(valid(openedDate)&&opened?.status==='已完成'){
+  if(lead.workflowStage!=='營運輔導'){lead.workflowStage='營運輔導';changed=true}
+ }
  if(valid(openedDate)&&opened?.status==='已完成'&&template.monthlyCoaching!==false){
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).formatToParts(new Date());
   const localMonth=parts.find(x=>x.type==='year').value+'-'+parts.find(x=>x.type==='month').value;
