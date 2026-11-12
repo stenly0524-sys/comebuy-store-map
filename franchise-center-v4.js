@@ -4,7 +4,7 @@
 const PHASES=['加盟開發','加盟簽約','教育訓練','店面開發','工程裝潢','開幕籌備','正式開幕','營運輔導'];
 const SIGNED=['已簽約','受訓中','已開幕'];
 const ESC=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const today=()=>{const d=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());return /^\d{4}-\d{2}-\d{2}$/.test(d)?d:new Date().toISOString().slice(0,10)};
+const today=()=>{const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=k=>parts.find(x=>x.type===k)?.value||'';return get('year')+'-'+get('month')+'-'+get('day')};
 const taskDate=t=>t.confirmedDate||t.deadline||t.plannedEnd||t.plannedStart||t.suggestedDate||'';
 const done=t=>t.status==='已完成'||t.status==='已取消';
 const iso=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
@@ -136,6 +136,18 @@ function openAdd(){
    const l={id,franchiseType:'新加盟主',stage:'新名單',...data,region:(data.city||'')+(data.district||''),scheduleTasks:[],projectHistory:[]};
    record(l,'建立加盟開發',{id,name:l.name,firstContactDate:l.firstContactDate||''});
    all().unshift(l);
+   // A real first-contact date is an actual completed event; auto-rules then
+   // suggest the first follow-up in 7 days, never a duplicated task.
+   if(window.ComebuySchedule?.seed(l)&&iso(l.firstContactDate)){
+    const contact=taskByTitle(l,'首次接洽日期');
+    if(contact&&!contact.confirmedDate){
+     contact.confirmedDate=l.firstContactDate;
+     contact.completedAt=l.firstContactDate;
+     contact.status='已完成';
+     contact.changes.push({at:new Date().toISOString(),reason:'首次接洽建檔',actor:'local-user',changes:{confirmedDate:{from:'',to:l.firstContactDate}}});
+    }
+    window.ComebuySchedule.seed(l);
+   }
    if(!context.save()){all().shift();return}
    close();folderId=id;render()
   };
