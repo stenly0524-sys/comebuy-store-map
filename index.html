@@ -654,7 +654,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-schedule-toolbar button.active{background:#c81824;border-color:#c81824;color:#fff}
 .cb-schedule-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
 .cb-schedule-filters label{min-width:0;font-size:12px;font-weight:700;color:#444}
-.cb-schedule-filters select{display:block;margin-top:4px;min-height:40px;max-width:100%;width:100%;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:13px;padding:5px}
+.cb-schedule-filters select,.cb-schedule-filters input{display:block;margin-top:4px;min-height:40px;max-width:100%;width:100%;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:13px;padding:5px}
 .cb-schedule-content{min-width:0}
 .cb-schedule-actions{display:flex;gap:8px;margin:10px 0}
 .cb-schedule-actions button{border:1px solid #dbc9c9;background:#fff;border-radius:9px;padding:11px 8px;flex:1;font-weight:750;font-size:13px;color:#aa1421}
@@ -663,7 +663,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-schedule-rowline{display:flex;justify-content:space-between;gap:7px;color:#222;font-size:13px}.cb-schedule-rowline span{white-space:nowrap}
 .cb-schedule-row.overdue,.cb-schedule-stage-item.overdue{border-left:4px solid #d71920;background:#fff0f1}
 .cb-schedule-phase{background:#fff;padding:11px;border-radius:11px;margin:9px 0;border:1px solid #e8e3e3}
-.cb-schedule-phase h3{font-size:15px;margin:0 0 6px;color:#bb1320}
+.cb-schedule-lead-link{display:block;border:0;background:transparent;color:#b81220;font-weight:850;font-size:15px;text-align:left;padding:6px 0;text-decoration:underline;cursor:pointer}.cb-schedule-phase h3{font-size:15px;margin:0 0 6px;color:#bb1320}
 .cb-schedule-note{font-size:12px;color:#777;line-height:1.55;overflow-wrap:anywhere}
 .cb-schedule-stage{border-top:1px solid #eee;margin-top:7px}.cb-schedule-stage summary{padding:9px 0;font-weight:800;font-size:13px}
 .cb-schedule-stage-item{display:block;width:100%;padding:8px;text-align:left;border:1px solid #eee;border-radius:7px;margin:3px 0;background:#fff;font-size:12px;color:#333}
@@ -2298,7 +2298,7 @@ document.getElementById('openVacancies').onclick=()=>{document.querySelector('.v
 
 const FRANCHISE_KEY='comebuy_franchise_leads_v1';
 let franchiseLeads=[];try{const raw=JSON.parse(localStorage.getItem(FRANCHISE_KEY)||'[]');if(Array.isArray(raw))franchiseLeads=raw}catch(e){}
-function saveFranchise(){try{localStorage.setItem(FRANCHISE_KEY,JSON.stringify(franchiseLeads));syncFranchiseVacancyLinks();return true}catch(e){alert('儲存失敗，請檢查本機儲存空間');return false}}
+function saveFranchise(){try{if(window.ComebuySchedule)franchiseLeads.forEach(lead=>window.ComebuySchedule.seed(lead));localStorage.setItem(FRANCHISE_KEY,JSON.stringify(franchiseLeads));syncFranchiseVacancyLinks();return true}catch(e){alert('儲存失敗，請檢查本機儲存空間');return false}}
 const LEAD_DISTRICTS=Object.fromEntries(CITY_ORDER.map(c=>[c,[...new Set(stores.filter(s=>s.city===c).map(s=>s.districtName).filter(x=>x&&x!=='其他'))].sort((a,b)=>a.localeCompare(b,'zh-TW'))]));
 function leadCityOptions(selected=''){return '<option value="">請選擇城市</option>'+CITY_ORDER.map(c=>'<option value="'+esc(c)+'" '+(c===selected?'selected':'')+'>'+esc(c)+'</option>').join('')}
 function leadDistrictOptions(city,selected=''){return '<option value="">請選擇區域</option>'+(LEAD_DISTRICTS[city]||[]).map(d=>'<option value="'+esc(d)+'" '+(d===selected?'selected':'')+'>'+esc(d)+'</option>').join('')}
@@ -2446,7 +2446,7 @@ function showFranchise(section=activeFranchiseSection){
   const depositBtn=item.querySelector('[data-act="deposit"]');if(depositBtn)depositBtn.onclick=async()=>{const previous={depositReceived:v.depositReceived,depositAmount:v.depositAmount};const ok=await askFranchiseDeposit(v);if(!ok)return;if(!saveFranchise()){Object.assign(v,previous);return}showFranchise(section)};
   const trainingBtn=item.querySelector('[data-act="training"]');if(trainingBtn)trainingBtn.onclick=async()=>{const previous={trainingPending:v.trainingPending,trainingStart:v.trainingStart,trainingEnd:v.trainingEnd};if(!await askFranchiseTraining(v))return;if(!saveFranchise()){Object.assign(v,previous);return}showFranchise(section)};
   const addressButton=item.querySelector('[data-act="locate-address"]');if(addressButton)addressButton.onclick=()=>locateFranchiseAddress(v,(linked||v.storeAddress).split('；')[0].trim());
-  item.querySelector('[data-act="schedule"]').onclick=()=>{if(!window.ComebuySchedule){alert('時程中心尚未載入');return}window.ComebuySchedule.open(()=>franchiseLeads,saveFranchise,showFranchise,linkedVacancyAddress)};
+  item.querySelector('[data-act="schedule"]').onclick=()=>{if(!window.ComebuySchedule){alert('時程中心尚未載入');return}window.ComebuySchedule.open(()=>franchiseLeads,saveFranchise,showFranchise,linkedVacancyAddress,v.id)};
   item.querySelector('[data-act="edit"]').onclick=()=>{franchiseEditId=franchiseEditId===v.id?null:v.id;showFranchise(section)};
   item.querySelector('[data-act="delete"]').onclick=()=>{if(!confirm('刪除此加盟主資料？'))return;const old=[...franchiseLeads];franchiseLeads=franchiseLeads.filter(x=>x.id!==v.id);if(saveFranchise())showFranchise(section);else franchiseLeads=old};
   if(franchiseEditId===v.id)item.appendChild(leadEditorForm(v));
@@ -2456,7 +2456,7 @@ function showFranchise(section=activeFranchiseSection){
 const leadAddressStyle=document.createElement('style');leadAddressStyle.textContent='.lead-address-link{border:0;background:none;padding:0;color:#c8202d;text-decoration:underline;font:inherit;font-weight:700;text-align:left;cursor:pointer;overflow-wrap:anywhere}';document.head.appendChild(leadAddressStyle);
 const leadPhoneStyle=document.createElement('style');leadPhoneStyle.textContent='.lead-phone-link{color:#c8202d!important;text-decoration:underline!important;font-weight:700;display:inline-block;min-height:24px}';document.head.appendChild(leadPhoneStyle);
 document.getElementById('openFranchise').onclick=showCaseManagement;
-function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits,scheduleRules:(()=>{try{return JSON.parse(localStorage.getItem('cb_schedule_rules_v1')||'null')}catch{return null}})()},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
 async function importBackupJson(file){
  if(!file)return;
@@ -2466,7 +2466,7 @@ async function importBackupJson(file){
   if(!data||data.format!=='comebuy-map-backup'||data.version!==1||!Array.isArray(data.vacancies)||!Array.isArray(data.franchiseLeads)||!data.storeOpeningDates||typeof data.storeOpeningDates!=='object'||Array.isArray(data.storeOpeningDates)||!data.storeEdits||typeof data.storeEdits!=='object'||Array.isArray(data.storeEdits))throw Error('JSON 格式不符合 COMEBUY MAP 備份 V1');
   if(data.vacancies.some(v=>!v||typeof v.id!=='string'||typeof v.address!=='string')||data.franchiseLeads.some(v=>!v||typeof v!=='object'||Array.isArray(v)))throw Error('備份內含不合法的空舖或加盟資料');
   if(!await confirmBackupImportStyled())return;
-  const changes=[[VACANCY_KEY,data.vacancies],[FRANCHISE_KEY,data.franchiseLeads],[STORE_OPENING_KEY,data.storeOpeningDates],[STORE_EDITS_KEY,data.storeEdits]];
+  const changes=[[VACANCY_KEY,data.vacancies],[FRANCHISE_KEY,data.franchiseLeads],[STORE_OPENING_KEY,data.storeOpeningDates],[STORE_EDITS_KEY,data.storeEdits]];if(data.scheduleRules&&typeof data.scheduleRules==='object'&&!Array.isArray(data.scheduleRules))changes.push(['cb_schedule_rules_v1',data.scheduleRules]);
   const old=changes.map(([key])=>[key,localStorage.getItem(key)]);
   try{changes.forEach(([key,value])=>localStorage.setItem(key,JSON.stringify(value)))}catch(e){old.forEach(([key,value])=>{try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}catch(_) {}});throw Error('儲存空間不足或無法寫入，已嘗試還原原資料')}
   await showBackupImportSuccessStyled();
