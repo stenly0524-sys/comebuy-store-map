@@ -756,15 +756,11 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-schedule-delay-item input[type=date]{grid-column:2;width:100%;min-width:0}
 @media(max-width:380px){.cb-schedule-template-bar{grid-template-columns:minmax(0,1fr)}.cb-schedule-template-add{grid-template-columns:minmax(0,1fr)}}
 </style>
-<style id="cb-vacancy-focus-flash-style">
-/* Inset box-shadow animates without changing size, background, padding, or layout. */
-@keyframes cb-vacancy-focus-border{
-  0%,49.9%{box-shadow:inset 0 0 0 2px #d71920}
-  50%,100%{box-shadow:inset 0 0 0 0 transparent}
-}
-.vacancy-item.cb-vacancy-focus-flash{
-  animation:cb-vacancy-focus-border 500ms step-end 3;
-  border-radius:inherit;
+<style id="cb-vacancy-focus-style">
+/* Persistent map-selected card, no animation and no layout shift. */
+.vacancy-item.cb-vacancy-focus-selected{
+  box-shadow:inset 0 0 0 2px #d71920;
+  border-radius:10px;
   scroll-margin-block:12px;
 }
 </style>
@@ -2218,10 +2214,25 @@ function vacancyPhotosModal(v){
 const vacancyModalStyle=document.createElement('style');vacancyModalStyle.textContent='.vacancy-modal-overlay{position:fixed;inset:0;background:#0009;z-index:100001;display:flex;align-items:center;justify-content:center;padding:15px}.vacancy-modal{width:min(96vw,520px);max-height:88dvh;display:flex;flex-direction:column;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px #0005}.vacancy-modal header{background:#c8202d;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between}.vacancy-modal-close{width:32px;height:32px;border:0;border-radius:50%;background:#fff;color:#c8202d;font-size:22px}.vacancy-modal-body{padding:15px;overflow:auto}.vacancy-modal-actions{margin-top:12px;display:flex;justify-content:flex-end}.vacancy-modal-actions button{background:#c8202d;color:#fff;border:0;border-radius:9px;padding:11px 16px;font-weight:800}.vacancy-photo-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.vacancy-photo-cell{position:relative}.vacancy-photo-cell img{width:100%;height:140px;object-fit:cover;border-radius:9px}.vacancy-photo-cell button{position:absolute;right:5px;top:5px;border:0;border-radius:6px;background:#fff;color:#c8202d;padding:5px 8px}';document.head.appendChild(vacancyModalStyle);
 let vacancyListFocusId=null;
 let vacancyFocusSequence=0;
+let vacancyFocusReady=false;
+function clearVacancyListFocus(){
+ vacancyFocusSequence++;
+ vacancyListFocusId=null;
+ vacancyFocusReady=false;
+ drawerBody.querySelectorAll('.cb-vacancy-focus-selected').forEach(el=>el.classList.remove('cb-vacancy-focus-selected'));
+}
+// Handles toolbar switches, drawer X, and any other navigation out of the vacancy list.
+const vacancyFocusObserver=new MutationObserver(()=>{
+ if(vacancyListFocusId!==null&&(!drawer.classList.contains('open')||nav.level!=='vacancies'||vacancyPanelMode!=='list'))clearVacancyListFocus();
+});
+vacancyFocusObserver.observe(drawer,{attributes:true,attributeFilter:['class']});
+vacancyFocusObserver.observe(drawerBody,{childList:true});
+
 function openVacancyInList(id){
  const target=vacancies.find(v=>String(v.id)===String(id)&&!v.archived);
  if(!target){alert('找不到指定空舖，可能已刪除或封存。');return}
  const sequence=++vacancyFocusSequence;
+ vacancyFocusReady=false;
  vacancyListFocusId=String(target.id);vacancyPanelMode='list';
  // A map deep-link takes precedence over any previous list filters.
  vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';
@@ -2262,13 +2273,10 @@ function openVacancyInList(id){
    if(performance.now()-beginning>3200)break;
   }
   if(!isCurrent()||!card.isConnected)return;
-  // A fresh animation instance is created for every click, even for the same ID.
-  card.classList.remove('cb-vacancy-focus-flash');
-  void card.offsetWidth;
-  card.classList.add('cb-vacancy-focus-flash');
-  const remove=()=>card.classList.remove('cb-vacancy-focus-flash');
-  card.addEventListener('animationend',remove,{once:true});
-  setTimeout(remove,1650);
+  // Persistent selection remains for scrolling, edits, and list re-renders.
+  vacancyFocusReady=true;
+  drawerBody.querySelectorAll('.cb-vacancy-focus-selected').forEach(el=>el.classList.remove('cb-vacancy-focus-selected'));
+  card.classList.add('cb-vacancy-focus-selected');
  })();
 }
 function confirmDeleteArchivedVacancyStyled(address){
@@ -2388,6 +2396,7 @@ function showVacancies(){
  if(!visibleVacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent=isArchive?'尚無封存店鋪。':'尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
  filteredVacancies.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';item.dataset.vacancyRecordId=String(v.id);
+  if(vacancyFocusReady&&vacancyPanelMode==='list'&&vacancyListFocusId===String(v.id))item.classList.add('cb-vacancy-focus-selected');
   const rented=v.status==='rented';
   const regionText=[v.region?.city,vacancyDistrict(v)].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
