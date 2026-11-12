@@ -2744,14 +2744,16 @@ async function openSipspotBrands(){
  const render=(data,stale)=>{
   const items=data.items.filter(x=>Number.isFinite(Number(x.count))&&Number(x.count)>=30).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'zh-Hant'));
   const time=data.fetchedAt?new Date(data.fetchedAt).toLocaleString('zh-TW',{hour12:false}):'未知';
-  meta.textContent='門市數來源：SipSpot｜取得時間：'+time+'｜30 家以上共 '+items.length+' 個品牌｜金額均註明官方或第三方／加盟方案與準備金不可視為純加盟金或完整總投入'+(stale?'｜來源暫時無法讀取，顯示上次成功資料':'');
+  meta.textContent='門市數：SipSpot｜'+time+'｜共 '+items.length+' 品牌｜未有品牌報價時顯示產業通用估算（非該品牌報價）'+(stale?'｜來源暫時無法讀取，顯示上次成功資料':'');
   list.replaceChildren();
-  const fmtFee=entry=>{
-   if(!entry||!Number.isFinite(entry.amount))return '未公開／待查證';
+  const genericRange=kind=>({amount:kind==='fee'?100000:1500000,maxAmount:kind==='fee'?500000:3500000,qualifier:'約',status:'generic_market_model'});
+  const fmtFee=(entry,kind)=>{
+   const e=entry&&Number.isFinite(entry.amount)?entry:genericRange(kind);
    const wan=n=>{const x=n/10000;return Number.isInteger(x)?String(x):String(Math.round(x*100)/100)};
-   const amount=wan(entry.amount)+(Number.isFinite(entry.maxAmount)?'–'+wan(entry.maxAmount):'');
-   const cls=entry.status==='official_package_quote'?'官方方案':entry.status==='third_party_preparation_estimate'?'第三方準備金':entry.status==='third_party_package_quote'?'第三方方案':'第三方加盟資訊';
-   return 'NT$ '+amount+' 萬'+(entry.qualifier||'')+'（'+cls+'）';
+   const amount=wan(e.amount)+(Number.isFinite(e.maxAmount)?'–'+wan(e.maxAmount):'');
+   const labels={official_package_quote:'官方加盟方案',third_party_preparation_estimate:'第三方準備金',third_party_package_quote:'第三方加盟方案',third_party_range_model:'第三方數據±20%推估',package_based_model:'加盟方案延伸估算',generic_market_model:'產業通用估算',third_party_brand_listing:'第三方報價'};
+   const source=labels[e.status]||'公開參考資料';
+   return '約 '+amount+' 萬元（'+source+'）';
   };
   for(const item of items){
    const row=document.createElement('div');row.className='cb-sipspot-row cb-sipspot-cost-row'+(/^COMEBUY$/i.test(item.name.trim())?' cb-sipspot-comebuy':'');
@@ -2760,9 +2762,9 @@ async function openSipspotBrands(){
    const fees=document.createElement('div');fees.className='cb-sipspot-costs';
    const fee=document.createElement('div'),total=document.createElement('div');
    const feeLabel=document.createElement('span');feeLabel.textContent='加盟金／加盟方案';
-   const feeVal=document.createElement('strong');feeVal.textContent=fmtFee(item.franchiseFee);
+   const feeVal=document.createElement('strong');feeVal.textContent=fmtFee(item.franchiseFeeRange||item.franchiseFee,'fee');
    const totalLabel=document.createElement('span');totalLabel.textContent='開辦準備金／總投入參考';
-   const totalVal=document.createElement('strong');totalVal.textContent=fmtFee(item.openingTotal);
+   const totalVal=document.createElement('strong');totalVal.textContent=fmtFee(item.openingRange||item.openingTotal,'opening');
    fee.append(feeLabel,feeVal);total.append(totalLabel,totalVal);fees.append(fee,total);
    row.append(name,count,fees);list.appendChild(row);
   }
