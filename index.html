@@ -2751,7 +2751,7 @@ async function openSipspotBrands(){
    const e=entry&&Number.isFinite(entry.amount)?entry:genericRange(kind);
    const wan=n=>{const x=n/10000;return Number.isInteger(x)?String(x):String(Math.round(x*100)/100)};
    const amount=wan(e.amount)+(Number.isFinite(e.maxAmount)?'–'+wan(e.maxAmount):'');
-   const labels={official_package_quote:'官方加盟方案',third_party_preparation_estimate:'第三方準備金',third_party_package_quote:'第三方加盟方案',third_party_range_model:'第三方數據±20%推估',package_based_model:'加盟方案延伸估算',generic_market_model:'產業通用估算',third_party_brand_listing:'第三方報價'};
+   const labels={official_package_quote:'官方加盟方案',third_party_preparation_estimate:'第三方準備金',third_party_package_quote:'第三方加盟方案',third_party_range_model:'第三方數據±20%推估',package_based_model:'加盟方案延伸估算',generic_market_model:'產業通用估算',sourced_lower_bound_model:'公開數字＋25%預算緩衝',third_party_brand_listing:'第三方報價'};
    const source=labels[e.status]||'公開參考資料';
    return '約 '+amount+' 萬元（'+source+'）';
   };
