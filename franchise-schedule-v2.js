@@ -175,9 +175,12 @@ function applyDelay(lead,items,reason){
  let n=0;for(const item of items){if(!item.accept)continue;const t=allTasks(lead).find(x=>x.id===item.id);if(!t||t.dateLocked||t.vendorConfirmed||t.userNoMove||t.confirmedDate||t.status==='已完成')continue;
   const prev=t.suggestedDate||t.plannedStart||'';
   if(!valid(item.proposed)||prev===item.proposed)continue;
+  const changes={suggestedDate:{from:t.suggestedDate||'',to:item.proposed}};
   t.suggestedDate=item.proposed;
-  if(t.deadline&&!t.confirmedDate)t.deadline=item.proposed;
-  audit(t,{suggestedDate:{from:prev,to:item.proposed}},reason||'工程改期確認');n++
+  for(const key of ['plannedStart','plannedEnd','deadline'])if(t[key]){
+   changes[key]={from:t[key],to:item.proposed};t[key]=item.proposed;
+  }
+  audit(t,changes,reason||'工程改期確認');n++
  }return n;
 }
 function createCustomTemplate(name){const cfg=registry(),t=clone(defaultTemplate());t.id='custom-'+Date.now().toString(36);t.name=String(name||'自訂流程').slice(0,50);t.locked=false;cfg.templates.push(t);cfg.activeId=t.id;saveRegistry(cfg);return t}
