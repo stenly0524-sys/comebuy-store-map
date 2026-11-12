@@ -2228,6 +2228,23 @@ const vacancyFocusObserver=new MutationObserver(()=>{
 vacancyFocusObserver.observe(drawer,{attributes:true,attributeFilter:['class']});
 vacancyFocusObserver.observe(drawerBody,{childList:true});
 
+// With a map-selected vacancy active, touching another vacancy card transfers
+// the persistent outline before that card's existing action runs.
+drawerBody.addEventListener('click',event=>{
+ if(!vacancyFocusReady||vacancyListFocusId===null)return;
+ if(nav.level!=='vacancies'||vacancyPanelMode!=='list'||!drawer.classList.contains('open'))return;
+ const target=event.target instanceof Element?event.target:null;
+ const card=target?.closest('[data-vacancy-record-id]');
+ if(!card||!drawerBody.contains(card))return;
+ const id=String(card.dataset.vacancyRecordId||'');
+ if(!id||!vacancies.some(v=>String(v.id)===id&&!v.archived))return;
+ if(id===vacancyListFocusId)return;
+ vacancyFocusSequence++; // Cancel any in-flight focus scroll for the old item.
+ vacancyListFocusId=id;
+ drawerBody.querySelectorAll('.cb-vacancy-focus-selected').forEach(el=>el.classList.remove('cb-vacancy-focus-selected'));
+ card.classList.add('cb-vacancy-focus-selected');
+},true);
+
 function openVacancyInList(id){
  const target=vacancies.find(v=>String(v.id)===String(id)&&!v.archived);
  if(!target){alert('找不到指定空舖，可能已刪除或封存。');return}
