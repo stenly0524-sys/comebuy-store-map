@@ -14,7 +14,7 @@ const STATUS=['未安排','已排程','進行中','已完成','已逾期','暫�
 const DEFAULT_RULES={firstFollowDays:7,intentSignDays:3,signTrainingDays:3,handOverSurveyDays:3,constructionFollowDays:7,openFollow7Days:7,openFollow30Days:30,coachingMonthly:true,reminders:[3,1,0]};
 const RULE_KEY='cb_schedule_rules_v1';
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
-const localToday=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/\//g,'-');
+const localToday=()=>{const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=k=>p.find(v=>v.type===k).value;return x('year')+'-'+x('month')+'-'+x('day')};
 const dateRe=/^\d{4}-\d{2}-\d{2}$/;
 const dayUTC=s=>Date.parse(s+'T00:00:00Z');
 function addDays(s,n){if(!dateRe.test(s)||!Number.isFinite(dayUTC(s)))return '';return new Date(dayUTC(s)+Math.trunc(n)*86400000).toISOString().slice(0,10)}
