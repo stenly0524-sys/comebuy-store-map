@@ -111,9 +111,9 @@ function folder(){
  for(const h of l.projectHistory||[])history.append(el('p','',new Date(h.at).toLocaleString('zh-TW')+'｜'+h.type+'｜'+JSON.stringify(h.changes)));
  context.body.append(history);
 }
-function openPhase(lead,phase){
+function openPhase(lead,phase,taskId=''){
  if(!window.ComebuySchedule){alert('流程模組尚未載入');return}
- window.ComebuySchedule.open(context.getLeads,context.save,()=>{render()},context.linked,String(lead.id),phase)
+ window.ComebuySchedule.open(context.getLeads,context.save,()=>{render()},context.linked,String(lead.id),phase,taskId)
 }
 function popup(title,draw){
  const mask=el('div','cb-v4-mask'),modal=el('section','cb-v4-modal');
@@ -217,7 +217,7 @@ function calendar(){
   context.body.append(el('h3','cb-v4-section-title',label+'（'+items.length+'）'));
   if(!items.length)context.body.append(el('p','cb-v4-empty','無待辦項目'));
   for(const x of items.slice(0,40)){
-   const button=btn('',()=>openPhase(x.lead,x.task.phase),'cb-v4-job');
+   const button=btn('',()=>openPhase(x.lead,x.task.phase,x.task.id),'cb-v4-job');
    button.append(el('strong','',x.lead.name+'｜'+x.task.title),el('span','',x.date+'｜'+x.task.phase+'｜'+fullAddress(x.lead)));
    context.body.append(button)
   }
