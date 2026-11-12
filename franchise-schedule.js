@@ -24,7 +24,7 @@ const isDone=t=>t.status==='已完成'||t.status==='已取消';
 const due=t=>t.deadline||t.plannedEnd||t.plannedStart||'';
 function displayedStatus(t,today=localToday()){return !isDone(t)&&t.status!=='暫停'&&due(t)&&due(t)<today?'已逾期':t.status}
 function defaults(){try{return {...DEFAULT_RULES,...JSON.parse(localStorage.getItem(RULE_KEY)||'{}')}}catch{return {...DEFAULT_RULES}}}
-const idFor=(phase,title)=>'schedule-'+(PHASES.findIndex(p=>p[0]===phase)+1)+'-'+PHASES.find(p=>p[0]===phase).indexOf(title);
+const idFor=(phase,title)=>{const p=PHASES.find(x=>x[0]===phase),i=p?.indexOf(title)??-1;return i>=1?'schedule-'+(PHASES.indexOf(p)+1)+'-'+i:'schedule-extra-'+encodeURIComponent(phase+'|'+title)};
 function blank(lead,phase,title){const now=new Date().toISOString();return {id:idFor(phase,title),leadId:String(lead.id),phase,title,plannedStart:'',plannedEnd:'',deadline:'',completedAt:'',remindAt:'',owner:'',status:'未安排',note:'',changes:[],createdAt:now,updatedAt:now}}
 function allTasks(lead){const tasks=Array.isArray(lead.scheduleTasks)?lead.scheduleTasks:[];return tasks.filter(t=>t&&typeof t.id==='string'&&t.leadId===String(lead.id))}
 function task(lead,title){return allTasks(lead).find(x=>x.title===title)}
@@ -54,7 +54,18 @@ function seed(lead,rules=defaults()){
   if(title.startsWith('工程進度追蹤')&&!task(lead,title)){lead.scheduleTasks.push(blank(lead,'工程裝潢',title));changed=true}
   if(source)changed=scheduleIfBlank(lead,title,addDays(source,offset),'依已確認觸發日期自動建立')||changed
  }
- if(opened){
+ if(started){
+  const completed=due(task(lead,'裝潢工程完成日期')||{});
+  const endLimit=completed&&completed<=localToday()?completed:addDays(started,56);
+  for(let week=1;week<=8;week++){
+   const target=addDays(started,Number(rules.constructionFollowDays||7)*week);
+   if(target>endLimit)break;
+   const title='工程進度追蹤（第'+week+'週）';
+   if(!task(lead,title)){lead.scheduleTasks.push(blank(lead,'工程裝潢',title));changed=true}
+   changed=scheduleIfBlank(lead,title,target,'根據開工日期每7天安排工程追蹤')||changed;
+  }
+ }
+ if(opened&&opened<=localToday()){
   const current=task(lead,'每月定期輔導日期');
   if(current&&current.status==='未安排'&&!current.note){current.note='開幕後每月待安排到店日期；不會推定實際拜訪日';current.updatedAt=new Date().toISOString();changed=true}
   if(rules.coachingMonthly!==false){
