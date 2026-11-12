@@ -151,6 +151,100 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
    const bar=button(x.lead.name+'｜'+t.title,()=>editTask(x.lead,t));bar.style.left=(first*24)+'px';bar.style.width=(Math.min(width,days-first)*24)+'px';bar.className='cb-schedule-gantt-bar'+(displayedStatus(t)==='已逾期'?' overdue':'');row.append(bar);sheet.append(row)}
   frame.append(sheet);container.append(frame);
  }
+ function templateSettings(){
+  const v2=window.ComebuyScheduleV2;if(!v2)return;
+  let registry=v2.registry(),editingId=registry.activeId,dirty=false;
+  const modal=popup('流程模板設定',root=>{
+   const head=elem('div','cb-schedule-template-bar'),select=elem('select');
+   const loadOptions=()=>{select.replaceChildren();opts(select,registry.templates.map(t=>[t.id,t.name+(t.locked?'（系統預設）':'')]));select.value=editingId};
+   const add=button('＋新增自訂模板',()=>{
+    const nameInput=elem('input');nameInput.placeholder='自訂模板名稱';nameInput.maxLength=50;
+    const editor=popup('建立自訂流程模板',area=>{
+     area.append(nameInput,button('建立',()=>{
+      const name=nameInput.value.trim();if(!name){nameInput.focus();return}
+      const source=registry.templates.find(t=>t.id===editingId),copy=JSON.parse(JSON.stringify(source));
+      copy.id='custom-'+Date.now().toString(36);copy.name=name;copy.locked=false;copy.version=(copy.version||2)+1;copy.createdAt=new Date().toISOString();copy.updatedAt=copy.createdAt;
+      registry.templates.push(copy);registry.activeId=copy.id;editingId=copy.id;v2.saveRegistry(registry);editor.remove();loadOptions();draw();
+     },'cb-schedule-primary'))
+    });nameInput.focus();
+   });
+   head.append(select,add);root.append(head);
+   const body=elem('div','cb-schedule-template-body');root.append(body);
+   select.onchange=()=>{editingId=select.value;draw()};
+   const draw=()=>{
+    const t=registry.templates.find(x=>x.id===editingId);if(!t)return;
+    body.replaceChildren();
+    const intro=elem('p','cb-schedule-note',t.locked?'系統預設模板不可直接修改。請先新增自訂模板。':'模板修改不會直接覆蓋已排程案件；可選擇是否套用新模板。');body.append(intro);
+    const locked=!!t.locked;
+    const controls=elem('div','cb-schedule-template-controls');
+    const activate=button('設為新案件預設模板',()=>{registry.activeId=t.id;v2.saveRegistry(registry);draw()},'cb-schedule-primary');
+    controls.append(activate);
+    if(!locked)controls.append(button('儲存模板',()=>{t.updatedAt=new Date().toISOString();v2.saveRegistry(registry);dirty=false;alert('模板已儲存，原有案件排程未變更')} ,'cb-schedule-primary'));
+    controls.append(button('套用至既有案件（需確認）',()=>{
+     if(locked)return;
+     const c=popup('確認套用模板',zone=>{
+      const options=[];
+      zone.append(elem('p','cb-schedule-note','只新增缺少的任務，不覆蓋已存在的日期、已完成項目或歷史紀錄。'));
+      for(const lead of getLeads()){
+       const label=elem('label','cb-schedule-template-apply');const cb=elem('input');cb.type='checkbox';
+       label.append(cb,elem('span','',(lead.name||lead.id)+'｜'+lead.stage));zone.append(label);options.push([lead,cb])
+      }
+      zone.append(button('確認套用至所選案件',()=>{
+       const selected=options.filter(x=>x[1].checked).map(x=>x[0]);if(!selected.length){alert('請選擇案件');return}
+       const snapshots=selected.map(x=>[x,JSON.parse(JSON.stringify(x))]);
+       try{v2.saveRegistry(registry);for(const lead of selected){lead.scheduleTemplateId=t.id;v2.seed(lead)}
+        if(!saveFranchise())throw Error('無法儲存案件');
+        c.remove();render();alert('已套用，既有日期與歷史保留')
+       }catch(e){for(const [lead,old] of snapshots){Object.keys(lead).forEach(k=>delete lead[k]);Object.assign(lead,old)}alert('套用失敗：'+e.message)}
+      },'cb-schedule-primary'))
+     })
+    }));
+    body.append(controls);
+    const sections=elem('div','cb-schedule-template-sections');
+    t.phases.forEach((p,i)=>{
+     const group=elem('details','cb-schedule-template-stage');group.open=i===0;
+     const summary=elem('summary','','第'+(i+1)+'階段：'+p.name+'（'+p.tasks.length+' 項）');group.append(summary);
+     p.tasks.forEach((j,k)=>{
+      const row=elem('div','cb-schedule-template-task');
+      const title=elem('input');title.type='text';title.maxLength=80;title.value=j.title;title.disabled=locked;
+      title.onchange=()=>{if(!title.value.trim()){title.value=j.title;return}j.title=title.value.trim();dirty=true};
+      const enable=elem('input');enable.type='checkbox';enable.checked=j.enabled!==false;enable.disabled=locked;enable.onchange=()=>{j.enabled=enable.checked;dirty=true};
+      const up=button('↑',()=>{if(k===0||locked)return;[p.tasks[k-1],p.tasks[k]]=[p.tasks[k],p.tasks[k-1]];dirty=true;draw()});up.disabled=locked;
+      const down=button('↓',()=>{if(k===p.tasks.length-1||locked)return;[p.tasks[k+1],p.tasks[k]]=[p.tasks[k],p.tasks[k+1]];dirty=true;draw()});down.disabled=locked;
+      const dep=elem('select');opts(dep,[['','無前置依賴'],...t.phases.flatMap(x=>x.tasks.map(y=>[y.title,y.title]))].filter(x=>x[0]!==j.title));dep.value=j.dependsOn||'';dep.disabled=locked;dep.onchange=()=>{j.dependsOn=dep.value;dirty=true};
+      row.append(title,enable,up,down,dep);group.append(row)
+     });
+     if(!locked){const newTitle=elem('input');newTitle.placeholder='新增工作名稱';newTitle.maxLength=80;
+      const addTask=button('＋新增工作',()=>{const title=newTitle.value.trim();if(!title||p.tasks.some(x=>x.title===title)){alert('請填寫未重複的工作名稱');return}p.tasks.push({id:'custom-'+Date.now(),title,enabled:true,dependsOn:''});dirty=true;draw()});
+      const addRow=elem('div','cb-schedule-template-add');addRow.append(newTitle,addTask);group.append(addRow)
+     }
+     sections.append(group)
+    });body.append(sections);
+    const settings=elem('div','cb-schedule-template-rules');settings.append(elem('h3','','事件觸發與提醒規則'));
+    t.triggers.forEach((r,i)=>{
+     const row=elem('div','cb-schedule-rule-row');
+     const check=elem('input');check.type='checkbox';check.checked=r.enabled!==false;check.disabled=locked;check.onchange=()=>{r.enabled=check.checked;dirty=true};
+     const caption=elem('strong','',r.source+' → '+r.target);
+     const offset=elem('input');offset.type='number';offset.min='0';offset.max='365';offset.step='1';offset.value=r.offset;offset.disabled=locked;offset.onchange=()=>{const n=Number(offset.value);if(!Number.isInteger(n)||n<0||n>365){offset.value=r.offset;return}r.offset=n;dirty=true};
+     const mode=elem('select');opts(mode,[['calendar','日曆天'],['workday','工作天（不計週末）']]);mode.value=r.dayMode||'calendar';mode.disabled=locked;mode.onchange=()=>{r.dayMode=mode.value;dirty=true};
+     const remind=elem('input');remind.type='text';remind.value=(r.reminders||[3,1,0]).join(',');remind.placeholder='提醒 3,1,0';remind.disabled=locked;
+     remind.onchange=()=>{const val=remind.value.split(',').map(x=>Number(x.trim()));if(val.some(x=>!Number.isInteger(x)||x<0||x>30)){remind.value=(r.reminders||[3,1,0]).join(',');return}r.reminders=[...new Set(val)];dirty=true};
+     row.append(check,caption,offset,mode,remind);settings.append(row)
+    });
+    if(!locked){
+     const addRow=elem('div','cb-schedule-template-add'),src=elem('select'),target=elem('select'),offset=elem('input'),addRule=button('新增觸發規則',()=>{if(!src.value||!target.value||src.value===target.value){alert('請選擇不同的觸發與目標工作');return}const p=t.phases.find(p=>p.tasks.some(x=>x.title===target.value));if(t.triggers.some(r=>r.source===src.value&&r.target===target.value)){alert('已存在相同規則');return}t.triggers.push({id:'custom-rule-'+Date.now(),source:src.value,target:target.value,phase:p.name,offset:Number(offset.value)||0,dayMode:'calendar',reminders:[3,1,0],enabled:true});dirty=true;draw()});
+     const choices=t.phases.flatMap(x=>x.tasks.map(j=>[j.title,j.title]));
+     opts(src,[['','觸發事件'],...choices]);opts(target,[['','目標工作'],...choices]);
+     offset.type='number';offset.min='0';offset.max='365';offset.value='3';addRow.append(src,target,offset,addRule);settings.append(addRow)
+    }
+    const span=elem('label','','預設工程工期（天）'),length=elem('input');length.type='number';length.min='1';length.max='365';length.value=t.constructionDays||45;length.disabled=locked;
+    length.onchange=()=>{const n=Number(length.value);if(Number.isInteger(n)&&n>=1&&n<=365){t.constructionDays=n;dirty=true}else length.value=t.constructionDays};
+    span.append(length);settings.append(span);
+    body.append(settings)
+   };
+   loadOptions();draw();
+  });
+ }
  function editRules(){
   const box=popup('自動排程與提醒設定',root=>{
    const rules=defaults(),form=elem('form','cb-schedule-form');
