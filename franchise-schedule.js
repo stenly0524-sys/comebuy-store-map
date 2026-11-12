@@ -29,7 +29,7 @@ function reminderText(t,now=localToday(),rules=defaults()){
  const diff=daysBetween(now,target);
  if(diff<0)return '逾期 '+(-diff)+' 天';
  if(diff===0)return '今日到期';
- if((rules.reminders||[3,1,0]).includes(diff))return '提醒：'+diff+' 天後到期';
+ if((t.remindDays||rules.reminders||[3,1,0]).includes(diff))return '提醒：'+diff+' 天後到期';
  return '';
 }
 function defaults(){try{return {...DEFAULT_RULES,...JSON.parse(localStorage.getItem(RULE_KEY)||'{}')}}catch{return {...DEFAULT_RULES}}}
@@ -296,7 +296,8 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     if(['suggestedDate','confirmedDate','plannedStart','plannedEnd','deadline','completedAt','remindAt'].some(k=>next[k]&&(!dateRe.test(next[k])||!Number.isFinite(dayUTC(next[k]))))){alert('日期格式不正確');return}
     if(next.plannedStart&&next.plannedEnd&&next.plannedEnd<next.plannedStart){alert('預定完成日期不得早於開始日期');return}
     const dateChanged=['plannedStart','plannedEnd','deadline','suggestedDate','confirmedDate'].some(k=>next[k]!==String(t[k]||''));
-    if(dateChanged&&!controls.reason.value.trim()){alert('修改預定日期須填寫原因');return}
+    const changedExistingDate=dateChanged&&['plannedStart','plannedEnd','deadline','suggestedDate','confirmedDate'].some(k=>String(t[k]||'')&&next[k]!==String(t[k]||''));
+    if(changedExistingDate&&!controls.reason.value.trim()){alert('修改已存在的日期須填寫原因');return}
     const newFinish=next.confirmedDate||next.plannedEnd||next.suggestedDate||next.deadline||next.plannedStart;
     const v2=window.ComebuyScheduleV2;
     const impacted=t.title==='裝潢工程完成日期'&&dateChanged&&v2?v2.previewDelay(lead,t.title,newFinish):[];
@@ -323,6 +324,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
      return;
     }
     const snapshot=JSON.parse(JSON.stringify(lead.scheduleTasks));
+    const previousStage=lead.stage;
     const eventWithdrawn=(!!t.confirmedDate&&!next.confirmedDate)||(t.status==='已完成'&&next.status!=='已完成'&&!next.confirmedDate);
 
     changeTask(t,next,controls.reason.value.trim()||'編輯時程');
@@ -332,11 +334,12 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     if(next.status==='已完成'&&!next.completedAt)t.completedAt=today();
 
     if(eventWithdrawn&&window.ComebuyScheduleV2)window.ComebuyScheduleV2.markWithdrawn(lead,t.title);
+    if(t.title==='正式簽約日期'&&next.status==='已完成'&&next.confirmedDate&&!isSigned(lead))lead.stage='已簽約';
     seed(lead);
     if(form._delayProposal?.length&&window.ComebuyScheduleV2){
      window.ComebuyScheduleV2.applyDelay(lead,form._delayProposal,controls.reason.value.trim()||'工程改期');
     }
-    if(!saveFranchise()){lead.scheduleTasks=snapshot;alert('儲存失敗，原資料未變動');return}
+    if(!saveFranchise()){lead.scheduleTasks=snapshot;lead.stage=previousStage;alert('儲存失敗，原資料未變動');return}
     mask.remove();render();
    };
    form.addEventListener('input',()=>{form.dataset.delayConfirmed='';const warning=form.querySelector('.cb-schedule-delay-warning');if(warning)warning.remove()});
