@@ -770,6 +770,18 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-vacancy-filter-toggle:focus-visible{outline:2px solid #d71920;outline-offset:2px}
 .cb-vacancy-filter-panel[hidden]{display:none!important}
 </style>
+<style id="cb-archive-reason-style">
+.cb-archive-reason-overlay{z-index:2147483500;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+.cb-archive-reason-box{box-sizing:border-box;max-height:100%;overflow-y:auto;text-align:left;width:min(100%,410px);padding:21px 19px 19px}
+.cb-archive-reason-box .archive-confirm-message{font-size:18px;margin:0 0 10px;text-align:center}
+.cb-archive-address{font-size:13px;color:#575151;line-height:1.5;overflow-wrap:anywhere;margin:0 0 17px}
+.cb-archive-reason-label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:800;color:#222;margin-bottom:10px}
+.cb-archive-reason-select{display:block;box-sizing:border-box;width:100%;min-height:46px;border:1px solid #d9d0cc;border-radius:10px;background:#fff;color:#222;font-size:16px;padding:9px 12px}
+.cb-archive-reason-select:focus{outline:2px solid #d71920;outline-offset:1px}
+.cb-archive-reason-error{color:#b5121a;font-size:12px;margin:0 0 10px}
+.cb-archive-reason-error[hidden]{display:none!important}
+.cb-archive-reason-box .archive-confirm-actions{margin-top:16px}
+</style>
 </head>
 <body>
 
@@ -1811,7 +1823,38 @@ function makeEditor(target,record,fields,save,refresh){
  target.appendChild(form);
 }
 function confirmRestoreVacancy(){return new Promise(resolve=>{const overlay=document.createElement('div');overlay.className='archive-confirm-overlay';overlay.innerHTML='<div class="archive-confirm-box" role="dialog" aria-modal="true" aria-labelledby="restoreConfirmMessage"><p class="archive-confirm-message" id="restoreConfirmMessage">是否恢復此空舖？</p><div class="archive-confirm-actions"><button type="button" class="archive-confirm-cancel">取消</button><button type="button" class="archive-confirm-accept">確認</button></div></div>';document.body.appendChild(overlay);const finish=value=>{document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};const onKey=e=>{if(e.key==='Escape')finish(false)};document.addEventListener('keydown',onKey);overlay.querySelector('.archive-confirm-cancel').onclick=()=>finish(false);overlay.querySelector('.archive-confirm-accept').onclick=()=>finish(true);overlay.onclick=e=>{if(e.target===overlay)finish(false)};overlay.querySelector('.archive-confirm-cancel').focus()})}
-function confirmArchiveVacancy(){return new Promise(resolve=>{const overlay=document.createElement('div');overlay.className='archive-confirm-overlay';overlay.innerHTML='<div class="archive-confirm-box" role="dialog" aria-modal="true" aria-labelledby="archiveConfirmMessage"><p class="archive-confirm-message" id="archiveConfirmMessage">將空舖移至「封存店鋪」？</p><div class="archive-confirm-actions"><button type="button" class="archive-confirm-cancel">取消</button><button type="button" class="archive-confirm-accept">確認</button></div></div>';document.body.appendChild(overlay);const cancel=overlay.querySelector('.archive-confirm-cancel'),accept=overlay.querySelector('.archive-confirm-accept');const finish=value=>{document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};const onKey=e=>{if(e.key==='Escape')finish(false)};document.addEventListener('keydown',onKey);cancel.onclick=()=>finish(false);accept.onclick=()=>finish(true);overlay.onclick=e=>{if(e.target===overlay)finish(false)};cancel.focus()})}
+const VACANCY_ARCHIVE_REASONS=['評分過低','已出租','房租過高','屋況不佳','周遭異常'];
+function confirmArchiveVacancy(address){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');overlay.className='archive-confirm-overlay cb-archive-reason-overlay';
+  const box=document.createElement('section');box.className='archive-confirm-box cb-archive-reason-box';
+  box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-labelledby','cbArchiveTitle');
+  const title=document.createElement('h2');title.id='cbArchiveTitle';title.className='archive-confirm-message';title.textContent='確認封存空舖';
+  const location=document.createElement('p');location.className='cb-archive-address';location.textContent=address||'未填寫地址';
+  const label=document.createElement('label');label.className='cb-archive-reason-label';label.textContent='封存理由（必填）';
+  const select=document.createElement('select');select.className='cb-archive-reason-select';select.required=true;select.setAttribute('aria-label','封存理由');
+  select.appendChild(new Option('請選擇封存理由',''));
+  VACANCY_ARCHIVE_REASONS.forEach(reason=>select.appendChild(new Option(reason,reason)));
+  label.appendChild(select);
+  const error=document.createElement('p');error.className='cb-archive-reason-error';error.setAttribute('role','alert');error.hidden=true;error.textContent='請先選擇封存理由';
+  const actions=document.createElement('div');actions.className='archive-confirm-actions';
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='archive-confirm-cancel';cancel.textContent='取消';
+  const accept=document.createElement('button');accept.type='button';accept.className='archive-confirm-accept';accept.textContent='確認封存';
+  actions.append(cancel,accept);box.append(title,location,label,error,actions);overlay.appendChild(box);document.body.appendChild(overlay);
+  let finished=false;
+  const finish=value=>{if(finished)return;finished=true;document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};
+  const onKey=e=>{if(e.key==='Escape'){e.preventDefault();finish(null)}};
+  document.addEventListener('keydown',onKey);
+  cancel.onclick=()=>finish(null);
+  accept.onclick=()=>{
+   if(!VACANCY_ARCHIVE_REASONS.includes(select.value)){error.hidden=false;select.focus();return}
+   finish(select.value);
+  };
+  select.onchange=()=>{error.hidden=true};
+  overlay.onclick=e=>{if(e.target===overlay)finish(null)};
+  select.focus();
+ });
+}
 let vacancyPanelMode='list';
 let vacancyFiltersExpanded=false; // Collapsed on every fresh entry to the vacancy list.
 let pendingVacancyMapPoint=null;
@@ -2453,14 +2496,14 @@ function showVacancies(){
   const rented=v.status==='rented';
   const regionText=[v.region?.city,vacancyDistrict(v)].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
-  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status" '+(isArchive?'disabled aria-disabled="true"':'')+'>'+(isArchive?'封存':'店鋪資料')+'</button>'+(isArchive?'':'<button type="button" data-act="detail">開發記錄</button><button type="button" data-act="photos">查看圖片</button>')+(isArchive?'<button type="button" data-act="restore">復原</button>':'')+'<button type="button" data-act="delete" class="danger">'+(isArchive?'完全刪除':'刪除')+'</button></div>';
+  item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(rented?'#fff0b5':'#eceef1')+';color:'+(rented?'#876200':'#50555e')+'">'+(rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status" '+(isArchive?'disabled aria-disabled="true"':'')+'>'+(isArchive?'封存':'店鋪資料')+'</button>'+(isArchive?'':'<button type="button" data-act="detail">開發記錄</button><button type="button" data-act="photos">查看圖片</button>')+(isArchive?'<button type="button" data-act="restore">復原</button>':'')+'<button type="button" data-act="delete" class="danger">'+(isArchive?'完全刪除':'封存')+'</button></div>';
   const detailPanel=document.createElement('div');detailPanel.className='vacancy-detail-panel';detailPanel.hidden=vacancyDetailOpenId!==v.id;item.appendChild(detailPanel);
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
   editor.innerHTML='<label>商圈屬性（可複選修改）</label><div class="vacancy-area-options">'+AREA_TYPES.map(t=>'<label><input type="checkbox" value="'+t+'" '+(vacancyAreaNames(v).includes(t)?'checked':'')+'><span>'+t+'</span></label>').join('')+'</div>';
   editor.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.onchange=()=>{v.areaTypes=[...editor.querySelectorAll('input:checked')].map(x=>x.value);v.areaManual=true;saveVacancies();showVacancies()});
   if(isArchive){
    const archiveInfo=document.createElement('div');archiveInfo.className='vacancy-archive-readonly';
-   archiveInfo.innerHTML='<div><strong>商圈屬性：</strong>'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div><strong>開發進度：</strong>'+esc(vacancyStage(v))+'</div><div><strong>媒合加盟主：</strong>'+esc((franchiseLeads.find(x=>String(x.id)===String(v.franchiseLeadId))||{}).name||'尚未媒合')+'</div><div><strong>下次追蹤日期：</strong>'+esc(v.followUpDate||'未設定')+'</div><div><strong>開發備註：</strong>'+esc(v.developmentNote||'無')+'</div><div class="vacancy-note">封存資料僅供檢視，復原後可修改。</div>';
+   archiveInfo.innerHTML='<div><strong>商圈屬性：</strong>'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div><strong>開發進度：</strong>'+esc(vacancyStage(v))+'</div><div><strong>媒合加盟主：</strong>'+esc((franchiseLeads.find(x=>String(x.id)===String(v.franchiseLeadId))||{}).name||'尚未媒合')+'</div><div><strong>下次追蹤日期：</strong>'+esc(v.followUpDate||'未設定')+'</div><div><strong>開發備註：</strong>'+esc(v.developmentNote||'無')+'</div><div><strong>封存理由：</strong>'+esc(v.archiveReason||'歷史資料未記錄')+'</div><div><strong>封存日期：</strong>'+esc(v.archivedAt?new Date(v.archivedAt).toLocaleDateString('zh-TW'):'未記錄')+'</div><div class="vacancy-note">封存資料僅供檢視，復原後可修改。</div>';
    detailPanel.appendChild(archiveInfo);
   }
   if(isArchive){const restore=item.querySelector('[data-act="restore"]');restore.onclick=async()=>{if(!await confirmRestoreVacancy())return;const prevArchived=v.archived,prevAt=v.archivedAt;v.archived=false;delete v.archivedAt;if(!saveVacancies()){v.archived=prevArchived;v.archivedAt=prevAt;return}vacancyDetailOpenId=null;vacancyPanelMode='list';refreshVacancyMarkers();showVacancies()}};
@@ -2474,9 +2517,11 @@ function showVacancies(){
     const original=vacancies;vacancies=vacancies.filter(x=>x.id!==v.id);
     if(!saveVacancies()){vacancies=original;return}
    }else{
-    if(!await confirmArchiveVacancy())return;
-    v.archived=true;v.archivedAt=new Date().toISOString();
-    if(!saveVacancies()){delete v.archived;delete v.archivedAt;return}
+    const reason=await confirmArchiveVacancy(v.address);
+    if(!reason)return;
+    const previous={archived:v.archived,archivedAt:v.archivedAt,archiveReason:v.archiveReason};
+    v.archived=true;v.archivedAt=new Date().toISOString();v.archiveReason=reason;
+    if(!saveVacancies()){v.archived=previous.archived;v.archivedAt=previous.archivedAt;v.archiveReason=previous.archiveReason;return}
    }
    vacancyDetailOpenId=null;refreshVacancyMarkers();showVacancies()
   };
