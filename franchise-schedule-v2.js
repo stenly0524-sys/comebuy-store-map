@@ -130,7 +130,9 @@ function seed(lead,phasesIgnored,rulesIgnored){
  const opened=find(lead,'確認正式開幕日期');
  const openedDate=dateOf(opened);
  if(valid(openedDate)&&opened?.status==='已完成'&&template.monthlyCoaching!==false){
-  const baseMonth=openedDate.slice(0,7)>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).format(new Date())?openedDate.slice(0,7):new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).format(new Date());
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+  const localMonth=parts.find(x=>x.type==='year').value+'-'+parts.find(x=>x.type==='month').value;
+  const baseMonth=openedDate.slice(0,7)>localMonth?openedDate.slice(0,7):localMonth;
   const [y,m]=baseMonth.split('-').map(Number);
   for(let i=0;i<12;i++){
    const month=new Date(Date.UTC(y,m-1+i,1)).toISOString().slice(0,7);
