@@ -23,6 +23,15 @@ const isSigned=v=>['已簽約','受訓中'].includes(v.stage);
 const isDone=t=>t.status==='已完成'||t.status==='已取消';
 const due=t=>t.deadline||t.plannedEnd||t.plannedStart||'';
 function displayedStatus(t,today=localToday()){return !isDone(t)&&t.status!=='暫停'&&due(t)&&due(t)<today?'已逾期':t.status}
+function reminderText(t,now=localToday(),rules=defaults()){
+ if(isDone(t)||t.status==='暫停')return '';
+ const target=due(t);if(!target)return '';
+ const diff=daysBetween(now,target);
+ if(diff<0)return '逾期 '+(-diff)+' 天';
+ if(diff===0)return '今日到期';
+ if((rules.reminders||[3,1,0]).includes(diff))return '提醒：'+diff+' 天後到期';
+ return '';
+}
 function defaults(){try{return {...DEFAULT_RULES,...JSON.parse(localStorage.getItem(RULE_KEY)||'{}')}}catch{return {...DEFAULT_RULES}}}
 const idFor=(phase,title)=>{const p=PHASES.find(x=>x[0]===phase),i=p?.indexOf(title)??-1;return i>=1?'schedule-'+(PHASES.indexOf(p)+1)+'-'+i:'schedule-extra-'+encodeURIComponent(phase+'|'+title)};
 function blank(lead,phase,title){const now=new Date().toISOString();return {id:idFor(phase,title),leadId:String(lead.id),phase,title,plannedStart:'',plannedEnd:'',deadline:'',completedAt:'',remindAt:'',owner:'',status:'未安排',note:'',changes:[],createdAt:now,updatedAt:now}}
@@ -112,7 +121,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
   const planned=(title)=>allRecords.filter(({task:t})=>t.title===title&&due(t)?.startsWith(ym)&&!isDone(t)).length;
   body.replaceChildren();
   const kpis=elem('div','cb-schedule-kpis');
-  [['今日待辦',actionable.filter(x=>due(x.task)===now).length],['未來7天待辦',actionable.filter(x=>due(x.task)>now&&due(x.task)<=in7).length],['已逾期',actionable.filter(x=>due(x.task)<now).length],['本月預計簽約',planned('預定簽約日期')],['本月預計開幕',planned('預計正式開幕日期')],['本月待執行輔導',allRecords.filter(({task:t})=>t.phase==='營運輔導'&&due(t).startsWith(ym)&&!isDone(t)).length]].forEach(([name,count])=>kpis.append(card(name,count)));
+  [['今日待辦',actionable.filter(x=>due(x.task)===now).length],['未來7天待辦',actionable.filter(x=>due(x.task)>now&&due(x.task)<=in7).length],['已逾期',actionable.filter(x=>due(x.task)<now).length],['本月預計簽約',planned('預定簽約日期')],['本月預計開幕',planned('預計正式開幕日期')],['本月待執行輔導',allRecords.filter(({task:t})=>t.phase==='營運輔導'&&!isDone(t)&&(due(t).startsWith(ym)||t.title.includes('（'+ym+'）'))).length]].forEach(([name,count])=>kpis.append(card(name,count)));
   body.append(kpis);
   const toolbar=elem('div','cb-schedule-toolbar');
   [['list','待辦清單'],['calendar','月曆'],['timeline','案件時間軸'],['gantt','工程甘特圖'],['coaching','營運輔導']].forEach(([v,l])=>toolbar.append(button(l,()=>{view=v;render()},v===view?'active':'')));
@@ -142,7 +151,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
   records.sort((a,b)=>(due(a.task)||'9999').localeCompare(due(b.task)||'9999'));
   if(!records.length)container.append(elem('p','cb-schedule-note','此範圍尚無已安排的時程，請先為案件設定日期。'));
   for(const x of records){const t=x.task,box=elem('button','cb-schedule-row'+(displayedStatus(t)==='已逾期'?' overdue':''));box.type='button';
-   const line=elem('div','cb-schedule-rowline');line.append(elem('strong','',x.lead.name||'未命名加盟主'),elem('span','',due(t)||'未安排'));box.append(line,elem('div','',t.phase+'｜'+t.title+'｜'+displayedStatus(t)));box.onclick=()=>editTask(x.lead,t);container.append(box)}
+   const line=elem('div','cb-schedule-rowline');line.append(elem('strong','',x.lead.name||'未命名加盟主'),elem('span','',due(t)||'未安排'));box.append(line,elem('div','',t.phase+'｜'+t.title+'｜'+displayedStatus(t)+(reminderText(t)?'｜'+reminderText(t):'')));box.onclick=()=>editTask(x.lead,t);container.append(box)}
  }
  function chooseLead(){
   const box=popup('選擇案件',e=>{
@@ -158,6 +167,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
    const section=elem('section','cb-schedule-phase');
    const title=button(lead.name+'｜'+(isSigned(lead)?'加盟案件':'加盟開發'),()=>{close();showFranchise(isSigned(lead)?'cases':'owners')});title.className='cb-schedule-lead-link';section.append(title);
    const addr=linkedVacancyAddress(lead)||lead.storeAddress||'尚未關聯空舖';section.append(elem('div','cb-schedule-note','店面：'+addr));
+   const next=allTasks(lead).filter(t=>!isDone(t)&&due(t)).sort((a,b)=>due(a).localeCompare(due(b)))[0];const expected=task(lead,'預計正式開幕日期');section.append(elem('div','cb-schedule-note','下一個重要日期：'+(next?next.title+' '+due(next):'尚未安排')+'｜預計開幕：'+(expected&&due(expected)||'未安排')));
    for(const p of PHASES){
     const tasks=allTasks(lead).filter(t=>t.phase===p[0]),done=tasks.filter(t=>t.status==='已完成').length;
     const group=elem('details','cb-schedule-stage');group.open=p[0]==='加盟開發';
@@ -183,7 +193,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
   const days=Math.min(90,Math.max(14,daysBetween(start,finish)+7)),frame=elem('div','cb-schedule-gantt');
   const sheet=elem('div','cb-schedule-gantt-sheet');sheet.style.width=(Math.max(days*24,700))+'px';
   const head=elem('div','cb-schedule-gantt-days');for(let i=0;i<days;i++)head.append(elem('span','',addDays(start,i).slice(5)));sheet.append(head);
-  for(const x of projects){const t=x.task,first=Math.max(0,daysBetween(start,t.plannedStart||due(t))),width=Math.max(1,daysBetween(t.plannedStart||due(t),t.plannedEnd||due(t))+1);const row=elem('div','cb-schedule-gantt-row');row.title=x.lead.name+'：'+t.title;
+  for(const x of projects){const t=x.task,first=Math.max(0,daysBetween(start,t.plannedStart||due(t))),width=Math.max(1,daysBetween(t.plannedStart||due(t),t.plannedEnd||due(t))+1);const row=elem('div','cb-schedule-gantt-row');const late=Math.max(0,daysBetween(due(t),today()));row.title=x.lead.name+'：'+t.title+'｜狀態：'+displayedStatus(t)+'｜延期 '+(isDone(t)?0:late)+' 天';
    const bar=button(x.lead.name+'｜'+t.title,()=>editTask(x.lead,t));bar.style.left=(first*24)+'px';bar.style.width=(Math.min(width,days-first)*24)+'px';bar.className='cb-schedule-gantt-bar'+(displayedStatus(t)==='已逾期'?' overdue':'');row.append(bar);sheet.append(row)}
   frame.append(sheet);container.append(frame);
  }
