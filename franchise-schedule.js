@@ -21,7 +21,7 @@ function addDays(s,n){if(!dateRe.test(s)||!Number.isFinite(dayUTC(s)))return '';
 function daysBetween(a,b){return Math.round((dayUTC(b)-dayUTC(a))/86400000)}
 const isSigned=v=>['已簽約','受訓中'].includes(v.stage);
 const isDone=t=>t.status==='已完成'||t.status==='已取消';
-const due=t=>t.deadline||t.plannedEnd||t.plannedStart||'';
+const due=t=>t.deadline||t.plannedEnd||t.plannedStart||t.suggestedDate||'';
 function displayedStatus(t,today=localToday()){return !isDone(t)&&t.status!=='暫停'&&due(t)&&due(t)<today?'已逾期':t.status}
 function reminderText(t,now=localToday(),rules=defaults()){
  if(isDone(t)||t.status==='暫停')return '';
@@ -297,14 +297,28 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     if(next.plannedStart&&next.plannedEnd&&next.plannedEnd<next.plannedStart){alert('預定完成日期不得早於開始日期');return}
     const dateChanged=['plannedStart','plannedEnd','deadline','suggestedDate','confirmedDate'].some(k=>next[k]!==String(t[k]||''));
     if(dateChanged&&!controls.reason.value.trim()){alert('修改預定日期須填寫原因');return}
-    const impacted=t.phase==='工程裝潢'&&dateChanged?['設備進場日期','試營業日期','預計正式開幕日期'].map(title=>task(lead,title)).filter(x=>x&&due(x)):[];
+    const newFinish=next.confirmedDate||next.plannedEnd||next.suggestedDate||next.deadline||next.plannedStart;
+    const v2=window.ComebuyScheduleV2;
+    const impacted=t.title==='裝潢工程完成日期'&&dateChanged&&v2?v2.previewDelay(lead,t.title,newFinish):[];
     if(impacted.length&&form.dataset.delayConfirmed!=='yes'){
      let notice=form.querySelector('.cb-schedule-delay-warning');
      if(!notice){
       notice=elem('div','cb-schedule-delay-warning');
-      const warning=elem('p','','工程日期變更可能影響：'+impacted.map(x=>x.title+'（'+due(x)+'）').join('、')+'。現有下游日期不會自動變更，請確認後再儲存。');
-      const approve=button('我已確認，儲存工程改期',()=>{form.dataset.delayConfirmed='yes';form.requestSubmit()});
-      notice.append(warning,approve);form.insertBefore(notice,actions);
+      notice.append(elem('p','','工程改期 '+(impacted[0]?.delta>0?'+':'')+(impacted[0]?.delta||0)+' 天。以下是受影響工作；已完成、已鎖定、廠商已確認及已正式確認日期不可自動調整：'));
+      const picks=[];
+      impacted.forEach(item=>{
+       const line=elem('label','cb-schedule-delay-item');
+       const check=elem('input');check.type='checkbox';check.checked=!item.locked;check.disabled=item.locked;
+       const text=elem('span','',item.title+'｜原 '+(item.current||'未安排')+' → 建議 '+item.proposed+(item.locked?'（日期保護：'+item.reason+'）':''));
+       const edit=elem('input');edit.type='date';edit.value=item.proposed;edit.disabled=item.locked;
+       line.append(check,text,edit);notice.append(line);picks.push({item,check,edit});
+      });
+      const approve=button('確認本次改期與選取的建議',()=>{
+       if(picks.some(p=>p.check.checked&&!v2.valid(p.edit.value))){alert('請輸入正確的建議日期');return}
+       form._delayProposal=picks.map(p=>({...p.item,accept:p.check.checked&&!p.item.locked,proposed:p.edit.value}));
+       form.dataset.delayConfirmed='yes';form.requestSubmit();
+      });
+      notice.append(approve);form.insertBefore(notice,actions);
      }
      return;
     }
@@ -316,6 +330,9 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     if(next.status==='已完成'&&!next.completedAt)t.completedAt=today();
 
     seed(lead);
+    if(form._delayProposal?.length&&window.ComebuyScheduleV2){
+     window.ComebuyScheduleV2.applyDelay(lead,form._delayProposal,controls.reason.value.trim()||'工程改期');
+    }
     if(!saveFranchise()){lead.scheduleTasks=snapshot;alert('儲存失敗，原資料未變動');return}
     mask.remove();render();
    };
