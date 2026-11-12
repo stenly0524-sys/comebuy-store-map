@@ -2538,18 +2538,25 @@ async function openSipspotBrands(){
  const header=document.createElement('header');header.className='cb-sipspot-header';const title=document.createElement('strong');title.textContent='飲料品牌店數';
  const close=document.createElement('button');close.type='button';close.className='cb-sipspot-close';close.textContent='×';close.setAttribute('aria-label','關閉');close.onclick=()=>overlay.remove();header.append(title,close);
  const meta=document.createElement('div');meta.className='cb-sipspot-meta';meta.textContent='正在讀取 SipSpot…';
- const tableHead=document.createElement('div');tableHead.className='cb-sipspot-tablehead';tableHead.innerHTML='<span>品牌名稱</span><span>門市數</span>';
+ const tableHead=document.createElement('div');tableHead.className='cb-sipspot-tablehead';tableHead.innerHTML='<span>品牌名稱（發源城市）</span><span>門市數</span>';
  const list=document.createElement('div');list.className='cb-sipspot-list';list.textContent='資料讀取中…';
  dialog.append(header,meta,tableHead,list);overlay.appendChild(dialog);document.body.appendChild(overlay);
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
  const cacheKey='cb_sipspot_brands_v1';
  const readCache=()=>{try{return JSON.parse(localStorage.getItem(cacheKey)||'null')}catch{return null}};
+ // 發源地僅採已核對的創始門市／官方品牌沿革；沒有可靠證據的品牌顯示「待查證」。
+ const verifiedOrigins={
+  '清心':'台南市','50嵐':'台南市','麻古':'高雄市','茶魔':'台南市',
+  '迷客夏':'台南市','CoCo':'台北市','可不可':'台中市','COMEBUY':'台北市',
+  '茶湯會':'台中市','一沐日':'台中市','烏弄':'高雄市',
+  '大苑子':'彰化縣員林市','春水堂':'台中市','珍煮丹':'台北市','八曜和茶':'高雄市'
+ };
  const render=(data,stale)=>{
-  const items=data.items.slice().sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'zh-Hant'));
+  const items=data.items.filter(x=>Number.isFinite(Number(x.count))&&Number(x.count)>=30).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'zh-Hant'));
   const time=data.fetchedAt?new Date(data.fetchedAt).toLocaleString('zh-TW',{hour12:false}):'未知';
-  meta.textContent='來源：SipSpot｜取得時間：'+time+'｜共 '+items.length+' 個品牌'+(stale?'｜來源暫時無法讀取，顯示上次成功資料':'');
+  meta.textContent='來源：SipSpot｜取得時間：'+time+'｜30 家以上共 '+items.length+' 個品牌｜發源城市未核實者標示待查證'+(stale?'｜來源暫時無法讀取，顯示上次成功資料':'');
   list.replaceChildren();
-  for(const item of items){const row=document.createElement('div');row.className='cb-sipspot-row'+(/^COMEBUY$/i.test(item.name.trim())?' cb-sipspot-comebuy':'');const name=document.createElement('span');name.textContent=item.name;const count=document.createElement('span');count.textContent=Number(item.count).toLocaleString('zh-TW');row.append(name,count);list.appendChild(row)}
+  for(const item of items){const row=document.createElement('div');row.className='cb-sipspot-row'+(/^COMEBUY$/i.test(item.name.trim())?' cb-sipspot-comebuy':'');const name=document.createElement('span');name.textContent=item.name+'（'+(verifiedOrigins[item.name]||'待查證')+'）';const count=document.createElement('span');count.textContent=Number(item.count).toLocaleString('zh-TW');row.append(name,count);list.appendChild(row)}
  };
  try{
   const response=await fetch('https://comebuy-intelligence-api.onrender.com/sipspot-brands',{cache:'no-store',signal:AbortSignal.timeout(20000)});
