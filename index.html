@@ -624,6 +624,21 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 @media(max-width:380px){.cb-profit-inputs{grid-template-columns:minmax(0,1fr)}.cb-profit-quick{grid-template-columns:repeat(3,minmax(0,1fr))}.cb-profit-results{grid-template-columns:minmax(0,1fr)}}
 @media(orientation:landscape) and (max-height:500px){.cb-profit-scroll{padding:8px}.cb-profit-section{padding:9px}}
 </style>
+<style id="cb-delete-confirm-style">
+.cb-delete-confirm-overlay{position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 14px);background:rgba(15,20,26,.55)}
+.cb-delete-confirm-dialog{box-sizing:border-box;display:flex;flex-direction:column;min-width:0;width:min(100%,440px);max-height:100%;overflow:hidden;border-radius:17px;background:#fff;box-shadow:0 12px 36px #0004}
+.cb-delete-confirm-header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 15px;background:linear-gradient(90deg,#bb0d1b,#ee555f);color:white;font-size:18px}
+.cb-delete-confirm-close{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:#fff;color:#b60e1c;font-size:28px;line-height:1;cursor:pointer}
+.cb-delete-confirm-body{overflow-y:auto;min-height:0;padding:18px 18px 8px;line-height:1.6;font-size:15px;color:#222}
+.cb-delete-confirm-body p{margin:0 0 9px}
+.cb-delete-confirm-question{font-weight:800}.cb-delete-confirm-warning{font-weight:800;color:#bf1621}
+.cb-delete-confirm-address{font-size:14px;color:#555;overflow-wrap:anywhere;white-space:normal}
+.cb-delete-confirm-actions{flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px 18px 18px}
+.cb-delete-confirm-actions button{min-height:46px;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer}
+.cb-delete-confirm-cancel{border:1px solid #d6d1d1;background:#fff;color:#333}
+.cb-delete-confirm-accept{border:0;background:#d71920;color:#fff}
+.cb-delete-confirm-close:focus-visible,.cb-delete-confirm-actions button:focus-visible{outline:3px solid #303030;outline-offset:2px}
+</style>
 </head>
 <body>
 
@@ -2081,6 +2096,32 @@ function openVacancyInList(id){
  vacancyDetailOpenId=null;infoWindow.close();showVacancies();
  requestAnimationFrame(()=>{const el=drawerBody.querySelector('[data-vacancy-record-id]');if(el)el.scrollIntoView({block:'start',behavior:'instant'})});
 }
+function confirmDeleteArchivedVacancyStyled(address){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');overlay.className='cb-delete-confirm-overlay';
+  const dialog=document.createElement('section');dialog.className='cb-delete-confirm-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','cbDeleteConfirmTitle');
+  const header=document.createElement('header');header.className='cb-delete-confirm-header';
+  const title=document.createElement('strong');title.id='cbDeleteConfirmTitle';title.textContent='完全刪除確認';
+  const close=document.createElement('button');close.type='button';close.className='cb-delete-confirm-close';close.textContent='×';close.setAttribute('aria-label','關閉');
+  header.append(title,close);
+  const body=document.createElement('div');body.className='cb-delete-confirm-body';
+  const question=document.createElement('p');question.className='cb-delete-confirm-question';question.textContent='確定要完全刪除此筆封存店鋪嗎？';
+  const warning=document.createElement('p');warning.className='cb-delete-confirm-warning';warning.textContent='刪除後無法復原。';
+  const location=document.createElement('p');location.className='cb-delete-confirm-address';location.textContent='店鋪地址：'+(address||'未提供地址');
+  body.append(question,warning,location);
+  const actions=document.createElement('div');actions.className='cb-delete-confirm-actions';
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='cb-delete-confirm-cancel';cancel.textContent='取消';
+  const accept=document.createElement('button');accept.type='button';accept.className='cb-delete-confirm-accept';accept.textContent='確認刪除';
+  actions.append(cancel,accept);dialog.append(header,body,actions);overlay.appendChild(dialog);document.body.appendChild(overlay);
+  let settled=false;
+  const finish=value=>{if(settled)return;settled=true;document.removeEventListener('keydown',onKey);overlay.remove();resolve(value)};
+  const onKey=e=>{if(e.key==='Escape')finish(false)};
+  document.addEventListener('keydown',onKey);
+  close.onclick=()=>finish(false);cancel.onclick=()=>finish(false);accept.onclick=()=>finish(true);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false)});
+  cancel.focus();
+ });
+}
 let vacancyDetailOpenId=null;
 function showVacancies(){
  if(typeof franchiseLeads!=='undefined')syncFranchiseVacancyLinks();
@@ -2192,7 +2233,7 @@ function showVacancies(){
   item.querySelector('[data-act="photos"]')?.addEventListener('click',()=>vacancyPhotosModal(v));
   item.querySelector('[data-act="delete"]').onclick=async()=>{
    if(isArchive){
-    if(!confirm('確定完全刪除這筆封存店鋪？刪除後無法復原。\\n'+v.address))return;
+    if(!await confirmDeleteArchivedVacancyStyled(v.address))return;
     const original=vacancies;vacancies=vacancies.filter(x=>x.id!==v.id);
     if(!saveVacancies()){vacancies=original;return}
    }else{
