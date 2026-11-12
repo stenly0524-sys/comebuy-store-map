@@ -10,6 +10,16 @@ const tag=(s,k)=>escapeXml((s.match(new RegExp('<'+k+'(?:\\s[^>]*)?>([\\s\\S]*?)
 const fetchWithTimeout=async(url)=>{for(let attempt=0;attempt<2;attempt++){const c=new AbortController();const t=setTimeout(()=>c.abort(),9000);try{const r=await fetch(url,{signal:c.signal,headers:{'User-Agent':'COMEBUY-MAPS-Intelligence/1.0'}});if(!r.ok)throw Error('HTTP '+r.status);return await r.text()}catch(e){if(attempt)throw e}finally{clearTimeout(t)}}};
 const SIPSPOT_URL='https://sipspot.wisplu.com.tw/brands/';
 let sipspotCache=null;
+const headquartersCache=new Map();
+const HQ_CACHE_MS=12*60*60*1000;
+function parseSipspotHeadquarters(html){
+ const plain=decodeEntities(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim());
+ const match=plain.match(/其中\s*([臺台][北中南東]市|新北市|桃園市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)\s*最多[，,]\s*共\s*([\d,]+)\s*家/);
+ if(!match)return null;
+ const count=Number(match[2].replace(/,/g,''));
+ if(!Number.isSafeInteger(count)||count<1)return null;
+ return {city:match[1].replace(/^臺/,'台'),count};
+}
 const decodeEntities=x=>x.replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));
 function parseSipspot(html){
  const plain=decodeEntities(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim());
@@ -34,6 +44,22 @@ http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':ORIGIN,'access-control-allow-methods':'POST,GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
  if(req.url==='/health')return json(res,200,{ok:true,provider:'Google News public RSS + official page reachability checks',ai:false});
  if(req.url==='/sources'&&req.method==='GET')return json(res,200,{sources});
+ if(req.method==='GET'&&req.url?.startsWith('/sipspot-headquarters?')){
+  try{
+   const q=new URL(req.url,'http://localhost').searchParams;
+   const name=String(q.get('name')||'').trim();
+   if(!name||name.length>60||/[/\\?#]/.test(name))return json(res,400,{error:'無效品牌名稱'});
+   const key=name.normalize('NFKC');
+   const cached=headquartersCache.get(key);
+   if(cached&&Date.now()-cached.fetchedAt<HQ_CACHE_MS)return json(res,200,{...cached.data,cached:true});
+   const brandHtml=await fetchWithTimeout(SIPSPOT_URL+encodeURIComponent(name)+'/');
+   const headquarters=parseSipspotHeadquarters(brandHtml);
+   const data={name,headquarters,source:'SipSpot',fetchedAt:new Date().toISOString()};
+   headquartersCache.set(key,{fetchedAt:Date.now(),data});
+   if(headquartersCache.size>400)headquartersCache.delete(headquartersCache.keys().next().value);
+   return json(res,200,data);
+  }catch(e){return json(res,503,{headquarters:null,error:'品牌縣市資料暫時無法查詢'})}
+ }
  if(req.url==='/sipspot-brands'&&req.method==='GET'){
   try{const html=await fetchWithTimeout(SIPSPOT_URL);const items=parseSipspot(html).map(row=>{
     const record=investmentRegistry.brands[row.name]||{};
