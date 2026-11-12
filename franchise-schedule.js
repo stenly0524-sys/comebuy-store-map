@@ -37,10 +37,10 @@ const idFor=(phase,title)=>{const p=PHASES.find(x=>x[0]===phase),i=p?.indexOf(ti
 function blank(lead,phase,title){const now=new Date().toISOString();return {id:idFor(phase,title),leadId:String(lead.id),phase,title,plannedStart:'',plannedEnd:'',deadline:'',completedAt:'',remindAt:'',owner:'',status:'未安排',note:'',changes:[],createdAt:now,updatedAt:now}}
 function allTasks(lead){const tasks=Array.isArray(lead.scheduleTasks)?lead.scheduleTasks:[];return tasks.filter(t=>t&&typeof t.id==='string'&&t.leadId===String(lead.id))}
 function task(lead,title){return allTasks(lead).find(x=>x.title===title)}
-function changeTask(t,updates,reason='系統自動排程'){
- const old={plannedStart:t.plannedStart||'',plannedEnd:t.plannedEnd||'',deadline:t.deadline||''};
- const changes=Object.fromEntries(['plannedStart','plannedEnd','deadline'].filter(k=>Object.hasOwn(updates,k)&&updates[k]!==old[k]).map(k=>[k,{from:old[k],to:updates[k]}]));
- if(Object.keys(changes).length)t.changes.push({at:new Date().toISOString(),reason,changes});
+function changeTask(t,updates,reason='編輯時程'){
+ const fields=['plannedStart','plannedEnd','deadline','suggestedDate','confirmedDate','completedAt','status','owner','dateLocked','vendorConfirmed','userNoMove','examResult','note','remindAt'];
+ const changes=Object.fromEntries(fields.filter(k=>Object.hasOwn(updates,k)&&updates[k]!==t[k]).map(k=>[k,{from:t[k]??'',to:updates[k]}]));
+ if(Object.keys(changes).length){if(!Array.isArray(t.changes))t.changes=[];t.changes.push({at:new Date().toISOString(),reason,actor:'local-user',changes})}
  Object.assign(t,updates);t.updatedAt=new Date().toISOString();
 }
 function scheduleIfBlank(lead,title,date,reason){
@@ -296,7 +296,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     if(t.phase==='營運輔導')next.issues=controls.issues.value.trim();
     next.dateLocked=lock.checked;next.vendorConfirmed=vendor.checked;next.userNoMove=noMove.checked;
     if(controls.examResult)next.examResult=controls.examResult.value;
-    if(next.status==='已完成'&&!next.completedAt)next.completedAt=today();
+    if(next.status==='已完成'&&!next.completedAt){alert('請先填寫實際完成日期，不能自動假定工作已完成');return}
     if(['suggestedDate','confirmedDate','plannedStart','plannedEnd','deadline','completedAt','remindAt'].some(k=>next[k]&&(!dateRe.test(next[k])||!Number.isFinite(dayUTC(next[k]))))){alert('日期格式不正確');return}
     if(next.plannedStart&&next.plannedEnd&&next.plannedEnd<next.plannedStart){alert('預定完成日期不得早於開始日期');return}
     const dateChanged=['plannedStart','plannedEnd','deadline','suggestedDate','confirmedDate'].some(k=>next[k]!==String(t[k]||''));
@@ -332,10 +332,8 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     const eventWithdrawn=(!!t.confirmedDate&&!next.confirmedDate)||(t.status==='已完成'&&next.status!=='已完成'&&!next.confirmedDate);
 
     changeTask(t,next,controls.reason.value.trim()||'編輯時程');
-    if(window.ComebuyScheduleV2&&dateChanged){
-     window.ComebuyScheduleV2.audit(t,{confirmedDate:{from:snapshot.find(x=>x.id===t.id)?.confirmedDate||'',to:next.confirmedDate},suggestedDate:{from:snapshot.find(x=>x.id===t.id)?.suggestedDate||'',to:next.suggestedDate}},controls.reason.value.trim()||'日期調整');
-    }
-    if(next.status==='已完成'&&!next.completedAt)t.completedAt=today();
+
+
 
     if(eventWithdrawn&&window.ComebuyScheduleV2)window.ComebuyScheduleV2.markWithdrawn(lead,t.title);
     if(t.title==='正式簽約日期'&&next.status==='已完成'&&next.confirmedDate&&!isSigned(lead))lead.stage='已簽約';
