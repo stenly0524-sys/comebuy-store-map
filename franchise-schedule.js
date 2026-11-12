@@ -22,7 +22,7 @@ function daysBetween(a,b){return Math.round((dayUTC(b)-dayUTC(a))/86400000)}
 const isSigned=v=>['已簽約','受訓中'].includes(v.stage);
 const isDone=t=>t.status==='已完成'||t.status==='已取消';
 const due=t=>t.deadline||t.plannedEnd||t.plannedStart||t.confirmedDate||t.suggestedDate||'';
-function displayedStatus(t,today=localToday()){return !isDone(t)&&t.status!=='暫停'&&due(t)&&due(t)<today?'已逾期':t.status}
+function displayedStatus(t,today=localToday()){const scheduled=t.deadline||t.plannedEnd||t.plannedStart||t.confirmedDate||'';return !isDone(t)&&t.status!=='暫停'&&scheduled&&scheduled<today?'已逾期':t.status}
 function reminderText(t,now=localToday(),rules=defaults()){
  if(isDone(t)||t.status==='暫停')return '';
  const target=due(t);if(!target)return '';
