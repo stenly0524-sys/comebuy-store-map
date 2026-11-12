@@ -619,6 +619,14 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-sipspot-number{font-size:clamp(9px,2.65vw,11px);letter-spacing:-.35px;font-variant-numeric:tabular-nums}
 .cb-sipspot-loading{padding:14px 10px;font-size:12px;color:#666;text-align:center}
 @media(max-width:370px){.cb-sipspot-tablehead,.cb-sipspot-row.cb-sipspot-compact-row{grid-template-columns:minmax(0,1.4fr) minmax(0,.42fr) minmax(0,.97fr) minmax(0,1.15fr);column-gap:3px;padding:8px 4px}.cb-sipspot-number{font-size:9.5px;letter-spacing:-.4px}}
+
+/* V4 brand table: brand / highest-county (count) / all-store count / franchise fee. */
+.cb-sipspot-tablehead,.cb-sipspot-row.cb-sipspot-compact-row{grid-template-columns:minmax(0,1.12fr) minmax(0,1.12fr) minmax(0,.48fr) minmax(0,1.08fr);gap:3px;padding:8px 4px;align-items:center;box-sizing:border-box}
+.cb-sipspot-tablehead span,.cb-sipspot-row.cb-sipspot-compact-row span{min-width:0;max-width:100%;text-align:center!important;box-sizing:border-box;line-height:1.35}
+.cb-sipspot-headquarters{font-size:clamp(10px,2.7vw,12px);white-space:nowrap!important;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.cb-sipspot-compact-name{overflow-wrap:anywhere}
+.cb-sipspot-row.cb-sipspot-compact-row{min-height:39px}
+@media(max-width:370px){.cb-sipspot-tablehead,.cb-sipspot-row.cb-sipspot-compact-row{grid-template-columns:minmax(0,1.03fr) minmax(0,1.15fr) minmax(0,.43fr) minmax(0,1.05fr);gap:2px;padding:7px 3px}.cb-sipspot-headquarters{font-size:10px;letter-spacing:-.5px}}
 </style>
 <style id="cb-profit-styles">
 .cb-profit-entry{display:block;width:100%;margin:12px 0 0;min-height:45px;border:1px solid #ca1b26;border-radius:10px;color:#bc1520;background:#fff;font-weight:800;font-size:15px}
@@ -2962,7 +2970,7 @@ async function openSipspotBrands(){
  const header=document.createElement('header');header.className='cb-sipspot-header';const title=document.createElement('strong');title.textContent='各品牌加盟資訊';
  const close=document.createElement('button');close.type='button';close.className='cb-sipspot-close';close.textContent='×';close.setAttribute('aria-label','關閉');close.onclick=()=>overlay.remove();header.append(title,close);
  const meta=document.createElement('div');meta.className='cb-sipspot-meta';meta.textContent='正在讀取 SipSpot…';
- const tableHead=document.createElement('div');tableHead.className='cb-sipspot-tablehead';tableHead.innerHTML='<span>品牌（城市）</span><span>店數</span><span>加盟費</span><span>開辦金</span>';
+ const tableHead=document.createElement('div');tableHead.className='cb-sipspot-tablehead';tableHead.innerHTML='<span>品牌名稱</span><span>大本營</span><span>店數</span><span>加盟費</span>';
  const list=document.createElement('div');list.className='cb-sipspot-list';
  const loading=document.createElement('div');loading.className='cb-sipspot-loading';loading.textContent='資料讀取中…';
  list.append(tableHead,loading);
@@ -2971,18 +2979,41 @@ async function openSipspotBrands(){
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
  const cacheKey='cb_sipspot_brands_v1';
  const readCache=()=>{try{return JSON.parse(localStorage.getItem(cacheKey)||'null')}catch{return null}};
- // 發源地僅採已核對的創始門市／官方品牌沿革；沒有可靠證據的品牌顯示「待查證」。
- const verifiedOrigins={
-  '清心':'台南市','50嵐':'台南市','麻古':'高雄市','茶魔':'台南市',
-  '迷客夏':'台南市','CoCo':'台北市','可不可':'台中市','COMEBUY':'台北市',
-  '茶湯會':'台中市','一沐日':'台中市','烏弄':'高雄市',
-  '大苑子':'彰化縣員林市','春水堂':'台中市','珍煮丹':'台北市','八曜和茶':'高雄市'
+ const headquartersKey='cb_sipspot_headquarters_v1';
+ const hqMaxAge=12*60*60*1000;
+ const cachedHeadquarters=()=>{try{return JSON.parse(localStorage.getItem(headquartersKey)||'{}')}catch{return {}}};
+ const headquarters=cachedHeadquarters();
+ const saveHeadquarters=()=>{try{localStorage.setItem(headquartersKey,JSON.stringify(headquarters))}catch(_){}};
+ const hqText=x=>x&&x.city&&Number.isSafeInteger(x.count)&&x.count>0?x.city+'（'+x.count+'）':'待查證';
+ // Read the highest-count county from each SipSpot brand detail, not its founding location.
+ const loadHeadquarters=async(items,targets)=>{
+  const names=items.map(x=>x.name);let cursor=0;
+  const worker=async()=>{
+   while(cursor<names.length&&overlay.isConnected){
+    const name=names[cursor++],cell=targets.get(name);
+    if(!cell)continue;
+    const old=headquarters[name];
+    if(old?.at&&Date.now()-old.at<hqMaxAge){cell.textContent=hqText(old.data);continue}
+    try{
+     const response=await fetch('https://comebuy-intelligence-api.onrender.com/sipspot-headquarters?name='+encodeURIComponent(name),{cache:'no-store',signal:AbortSignal.timeout(20000)});
+     if(!response.ok)throw Error('HTTP '+response.status);
+     const data=await response.json();
+     if(!overlay.isConnected)return;
+     if(data.headquarters?.city&&Number.isSafeInteger(data.headquarters.count)){
+      headquarters[name]={at:Date.now(),data:data.headquarters};saveHeadquarters();
+      cell.textContent=hqText(data.headquarters);
+     }else cell.textContent='待查證';
+    }catch(e){if(overlay.isConnected)cell.textContent=hqText(old?.data)}
+   }
+  };
+  await Promise.all(Array.from({length:Math.min(6,names.length)},()=>worker()));
  };
  const render=(data,stale)=>{
   const items=data.items.filter(x=>Number.isFinite(Number(x.count))&&Number(x.count)>=30).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'zh-Hant'));
   const time=data.fetchedAt?new Date(data.fetchedAt).toLocaleString('zh-TW',{hour12:false}):'未知';
   meta.textContent='來源：SipSpot｜'+time+'｜'+items.length+' 品牌｜＊估算範圍，非品牌報價；†第三方資訊'+(stale?'｜沿用上次成功資料':'');
   list.replaceChildren(tableHead);
+  const headquartersTargets=new Map();
   const genericRange=kind=>({amount:kind==='fee'?100000:1500000,maxAmount:kind==='fee'?500000:3500000,status:'generic_market_model'});
   const shortMoney=(entry,kind)=>{
    const e=entry&&Number.isFinite(entry.amount)?entry:genericRange(kind);
@@ -2994,14 +3025,16 @@ async function openSipspotBrands(){
   };
   for(const item of items){
    const row=document.createElement('div');row.className='cb-sipspot-row cb-sipspot-compact-row'+(/^COMEBUY$/i.test(item.name.trim())?' cb-sipspot-comebuy':'');
-   const city=verifiedOrigins[item.name]||'待查';
-   const name=document.createElement('span');name.className='cb-sipspot-compact-name';
-   name.textContent=item.name+'（'+city.replace(/市$|縣$/,'')+'）';name.title=item.name+'（'+city+'）';
+   const name=document.createElement('span');name.className='cb-sipspot-compact-name';name.textContent=item.name;name.title=item.name;
+   const hq=document.createElement('span');hq.className='cb-sipspot-headquarters';
+   const previous=headquarters[item.name];
+   hq.textContent=previous?.at&&Date.now()-previous.at<hqMaxAge?hqText(previous.data):'查詢中';
+   headquartersTargets.set(item.name,hq);
    const count=document.createElement('span');count.className='cb-sipspot-count';count.textContent=Number(item.count).toLocaleString('zh-TW');
    const fee=document.createElement('span');fee.className='cb-sipspot-number';fee.textContent=shortMoney(item.franchiseFeeRange||item.franchiseFee,'fee');
-   const total=document.createElement('span');total.className='cb-sipspot-number';total.textContent=shortMoney(item.openingRange||item.openingTotal,'opening');
-   row.append(name,count,fee,total);list.appendChild(row);
+   row.append(name,hq,count,fee);list.appendChild(row);
   }
+  void loadHeadquarters(items,headquartersTargets);
  };
  try{
   const response=await fetch('https://comebuy-intelligence-api.onrender.com/sipspot-brands',{cache:'no-store',signal:AbortSignal.timeout(20000)});
