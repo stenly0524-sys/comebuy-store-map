@@ -7,12 +7,36 @@ const categoryTerms=['活動 聯名 促銷 行銷 公關','加盟 展店 新店 
 const escapeXml=x=>x.replace(/&amp;/g,'&').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/<[^>]*>/g,'').trim();
 const tag=(s,k)=>escapeXml((s.match(new RegExp('<'+k+'(?:\\s[^>]*)?>([\\s\\S]*?)<\\/'+k+'>','i'))||[])[1]||'');
 const fetchWithTimeout=async(url)=>{for(let attempt=0;attempt<2;attempt++){const c=new AbortController();const t=setTimeout(()=>c.abort(),9000);try{const r=await fetch(url,{signal:c.signal,headers:{'User-Agent':'COMEBUY-MAPS-Intelligence/1.0'}});if(!r.ok)throw Error('HTTP '+r.status);return await r.text()}catch(e){if(attempt)throw e}finally{clearTimeout(t)}}};
+const SIPSPOT_URL='https://sipspot.wisplu.com.tw/brands/';
+let sipspotCache=null;
+const decodeEntities=x=>x.replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));
+function parseSipspot(html){
+ const plain=decodeEntities(html.replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi,'').replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi,'').replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim());
+ const intro=plain.indexOf('點品牌看全台門市分布、菜單與價格');
+ const body=intro>=0?plain.slice(intro).replace(/^.*?價格[。.]\\s*/,''):plain;
+ const pattern=/全台\\s*([\\d,]+)\\s*家/g;let prev=0,match;const items=[];
+ while((match=pattern.exec(body))){
+  const raw=body.slice(prev,match.index).trim();
+  const name=items.length?raw:raw.replace(/^.*?(?:品牌總覽|價格[。.]|數千間門市[。.]|數千間門市。)/,'').trim();
+  const count=Number(match[1].replace(/,/g,''));
+  if(name&&name.length<=60&&Number.isSafeInteger(count)&&count>=0)items.push({name,count});
+  prev=pattern.lastIndex;
+ }
+ const declared=plain.match(/收錄全台\\s*(\\d+)\\s*個手搖飲品牌/);
+ if(items.length<20||declared&&items.length!==Number(declared[1])||!items.some(x=>x.name==='COMEBUY'))throw Error('來源頁面結構變更或品牌數量不完整');
+ if(new Set(items.map(x=>x.name)).size!==items.length)throw Error('品牌資料重複，拒絕不完整結果');
+ return items.sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'zh-Hant'));
+}
 const recentRequests=new Map();
 const json=(res,status,obj)=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','access-control-allow-origin':ORIGIN,'vary':'Origin','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify(obj))};
 http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':ORIGIN,'access-control-allow-methods':'POST,GET,OPTIONS','access-control-allow-headers':'content-type'});return res.end()}
  if(req.url==='/health')return json(res,200,{ok:true,provider:'Google News public RSS + official page reachability checks',ai:false});
  if(req.url==='/sources'&&req.method==='GET')return json(res,200,{sources});
+ if(req.url==='/sipspot-brands'&&req.method==='GET'){
+  try{const html=await fetchWithTimeout(SIPSPOT_URL);const items=parseSipspot(html);sipspotCache={items,fetchedAt:new Date().toISOString(),source:'SipSpot',sourceUrl:SIPSPOT_URL};return json(res,200,{...sipspotCache,stale:false})}
+  catch(e){if(sipspotCache)return json(res,200,{...sipspotCache,stale:true,error:'來源暫時無法讀取，顯示上次成功資料'});return json(res,503,{items:[],stale:true,error:'目前無法取得資料'})}
+ }
  if(req.url!=='/search'||req.method!=='POST')return json(res,404,{error:'not found'});
  const client=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'unknown').split(',')[0];const nowMs=Date.now();const hits=(recentRequests.get(client)||[]).filter(t=>nowMs-t<60000);if(hits.length>=8)return json(res,429,{error:'搜尋過於頻繁，請稍後再試'});hits.push(nowMs);recentRequests.set(client,hits);if(recentRequests.size>500)recentRequests.clear();
  if(req.headers.origin&&req.headers.origin!==ORIGIN)return json(res,403,{error:'Origin not allowed'});
