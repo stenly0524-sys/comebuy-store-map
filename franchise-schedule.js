@@ -47,66 +47,20 @@ function scheduleIfBlank(lead,title,date,reason){
  if(!date)return false;const t=task(lead,title);if(!t||t.plannedStart||t.plannedEnd||t.deadline||isDone(t))return false;
  changeTask(t,{plannedStart:date,plannedEnd:date,deadline:date,status:'已排程'},reason);return true
 }
-function seed(lead,rules=defaults()){
- if(!Array.isArray(lead.scheduleTasks))lead.scheduleTasks=[];
- const known=new Set(allTasks(lead).map(t=>t.id));let changed=false;
- for(const p of PHASES)for(const title of p.slice(1)){const id=idFor(p[0],title);if(!known.has(id)){lead.scheduleTasks.push(blank(lead,p[0],title));changed=true}}
- if(lead.trainingStart)changed=scheduleIfBlank(lead,'開始受訓日期',lead.trainingStart,'既有受訓開始日期')||changed;
- if(lead.trainingEnd)changed=scheduleIfBlank(lead,'預計完訓日期',lead.trainingEnd,'既有受訓結束日期')||changed;
- const contact=due(task(lead,'首次接洽日期')||{});
- const intent=due(task(lead,'加盟意向確認日期')||{});
- const signed=due(task(lead,'正式簽約日期')||{});
- const handover=due(task(lead,'店面交屋日期')||{});
- const started=due(task(lead,'實際開工日期')||{});
- const opened=due(task(lead,'確認正式開幕日期')||{});
- for(const [source,title,offset] of [[contact,'首次追蹤日期',rules.firstFollowDays],[intent,'預定簽約日期',rules.intentSignDays],[signed,'受訓安排日期',rules.signTrainingDays],[handover,'工程丈量日期',rules.handOverSurveyDays],[started,'工程進度追蹤（第1週）',rules.constructionFollowDays],[opened,'開幕後7天追蹤日期',rules.openFollow7Days],[opened,'開幕後30天追蹤日期',rules.openFollow30Days]]){
-  if(title.startsWith('工程進度追蹤')&&!task(lead,title)){lead.scheduleTasks.push(blank(lead,'工程裝潢',title));changed=true}
-  if(source)changed=scheduleIfBlank(lead,title,addDays(source,offset),'依已確認觸發日期自動建立')||changed
- }
- if(started){
-  const completed=due(task(lead,'裝潢工程完成日期')||{});
-  const endLimit=completed&&completed<=localToday()?completed:addDays(started,56);
-  for(let week=1;week<=8;week++){
-   const target=addDays(started,Number(rules.constructionFollowDays||7)*week);
-   if(target>endLimit)break;
-   const title='工程進度追蹤（第'+week+'週）';
-   if(!task(lead,title)){lead.scheduleTasks.push(blank(lead,'工程裝潢',title));changed=true}
-   changed=scheduleIfBlank(lead,title,target,'根據開工日期每7天安排工程追蹤')||changed;
-  }
- }
- if(opened&&opened<=localToday()){
-  const current=task(lead,'每月定期輔導日期');
-  if(current&&current.status==='未安排'&&!current.note){current.note='開幕後每月待安排到店日期；不會推定實際拜訪日';current.updatedAt=new Date().toISOString();changed=true}
-  if(rules.coachingMonthly!==false){
-   // Generate a rolling 12-month planning horizon. The month is a label, NOT a confirmed appointment.
-   const startMonth=opened.slice(0,7);
-   const currentMonth=localToday().slice(0,7);
-   const baseMonth=startMonth>currentMonth?startMonth:currentMonth;
-   const [y,m]=baseMonth.split('-').map(Number);
-   const knownTitles=new Set(allTasks(lead).map(t=>t.title));
-   for(let i=0;i<12;i++){
-    const month=new Date(Date.UTC(y,m-1+i,1)).toISOString().slice(0,7);
-    const title='每月營運輔導（'+month+'）';
-    if(knownTitles.has(title))continue;
-    const coaching=blank(lead,'營運輔導',title);
-    coaching.note='待安排：'+month+' 到店輔導（尚未確認日期）';
-    lead.scheduleTasks.push(coaching);changed=true;
-   }
-  }
- }
- return changed
-}
+function seed(lead,rules=defaults()){return window.ComebuyScheduleV2?window.ComebuyScheduleV2.seed(lead,PHASES,rules):false}
+
 function all(leads){return leads.flatMap(l=>allTasks(l).map(t=>({lead:l,task:t})))}
 function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,initialLeadId=''){
  let view=initialLeadId?'timeline':'list',filterLead=initialLeadId,filterPhase='',filterState='',filterType='',filterOwner='',dateFrom='',dateTo='',month=localToday().slice(0,7);
  const leads=getLeads();let touched=false;for(const lead of leads)touched=seed(lead)||touched;if(touched&&!saveFranchise())throw Error('時程初始化儲存失敗');
  const overlay=document.createElement('div');overlay.className='cb-schedule-overlay';
- overlay.innerHTML='<section role="dialog" aria-modal="true" class="cb-schedule-modal"><header class="cb-schedule-header"><strong>加盟時程中心</strong><button type="button" class="cb-schedule-close" aria-label="關閉">×</button></header><div class="cb-schedule-body"></div></section>';
+ overlay.innerHTML='<section role="dialog" aria-modal="true" class="cb-schedule-modal"><header class="cb-schedule-header"><strong>加盟時程中心</strong><div class="cb-schedule-head-actions"><button type="button" class="cb-schedule-template" aria-label="流程模板設定" title="流程模板設定">⚙</button><button type="button" class="cb-schedule-close" aria-label="關閉">×</button></div></header><div class="cb-schedule-body"></div></section>';
  document.body.appendChild(overlay);
  const body=overlay.querySelector('.cb-schedule-body');
  const close=()=>{document.removeEventListener('keydown',key);overlay.remove()};
  const key=e=>{if(e.key==='Escape')close()};
  document.addEventListener('keydown',key);overlay.querySelector('.cb-schedule-close').onclick=close;
+ overlay.querySelector('.cb-schedule-template').onclick=()=>templateSettings();
  overlay.onclick=e=>{if(e.target===overlay)close()};
  const button=(label,fn,cls='')=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.className=cls;b.onclick=fn;return b};
  const elem=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
@@ -220,23 +174,34 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
   const mask=popup(t.title,root=>{
    root.append(elem('div','cb-schedule-note',lead.name+'｜'+t.phase+'｜'+(linkedVacancyAddress(lead)||lead.storeAddress||'無綁定空舖')));
    const form=elem('form','cb-schedule-form');
-   const defs=[['plannedStart','預定開始日期','date'],['plannedEnd','預定完成日期','date'],['deadline','最後期限','date'],['completedAt','實際完成日期','date'],['remindAt','提醒日期','date'],['owner','負責人','text'],['status','執行狀態','select'],['note','備註','textarea'],['reason','改期原因','text']];
+   const defs=[['suggestedDate','建議日期（系統產生，不等於確認）','date'],['confirmedDate','正式確認日期','date'],['plannedStart','預定開始日期','date'],['plannedEnd','預定完成日期','date'],['deadline','最後期限','date'],['completedAt','實際完成日期','date'],['remindAt','提醒日期','date'],['owner','負責人','text'],['status','執行狀態','select'],['note','備註','textarea'],['reason','改期原因','text']];
    const controls={};
    for(const [key,label,type] of defs){const wrap=elem('label','',label);let input;
     if(type==='textarea'){input=elem('textarea');input.rows=3}
     else if(type==='select'){input=elem('select');opts(input,STATUS.map(x=>[x,x]))}
     else{input=elem('input');input.type=type}
     input.name=key;input.value=key==='reason'?'':t[key]||'';wrap.append(input);form.append(wrap);controls[key]=input}
+   const lockWrap=elem('label','cb-schedule-check','鎖定日期（阻止自動變動）'),lock=elem('input');lock.type='checkbox';lock.checked=!!t.dateLocked;lockWrap.append(lock);form.append(lockWrap);
+   const vendorWrap=elem('label','cb-schedule-check','外部廠商已確認日期'),vendor=elem('input');vendor.type='checkbox';vendor.checked=!!t.vendorConfirmed;vendorWrap.append(vendor);form.append(vendorWrap);
+   const noMoveWrap=elem('label','cb-schedule-check','禁止自動改期'),noMove=elem('input');noMove.type='checkbox';noMove.checked=!!t.userNoMove;noMoveWrap.append(noMove);form.append(noMoveWrap);
+   const trigger=elem('p','cb-schedule-trigger-note','觸發來源：'+(t.triggerSource||'手動／尚未觸發')+'　觸發日期：'+(t.triggerDate||'未設定'));form.append(trigger);
+   if(t.title==='完訓考核日期'){const wrap=elem('label','','考核結果'),sel=elem('select');sel.name='examResult';opts(sel,[['','待評估'],['通過','通過'],['未通過','未通過']]);sel.value=t.examResult||'';wrap.append(sel);form.append(wrap);controls.examResult=sel}
    const history=elem('details','cb-schedule-history');history.append(elem('summary','','修改紀錄（'+(t.changes||[]).length+'）'));
    for(const h of t.changes||[])history.append(elem('p','',new Date(h.at).toLocaleString('zh-TW')+'｜'+h.reason+'｜'+JSON.stringify(h.changes)));
    if(t.phase==='營運輔導'){const issueWrap=elem('label','','發現問題與改善事項'),issueInput=elem('textarea');issueInput.name='issues';issueInput.rows=3;issueInput.value=t.issues||'';issueWrap.append(issueInput);form.append(issueWrap);controls.issues=issueInput}
    const actions=elem('div','cb-schedule-edit-actions');const submit=button('儲存時程',()=>{});submit.type='submit';actions.append(submit);
    form.append(actions,history);
+   if(t.title==='裝潢工程完成日期'&&window.ComebuyScheduleV2){
+    const notice=elem('p','cb-schedule-note','修改完工日期時，系統會提出後續任務建議；已確認或鎖定日期不會自動覆蓋。');form.append(notice)
+   }
    form.onsubmit=e=>{e.preventDefault();const next={};for(const [key] of defs)if(key!=='reason')next[key]=controls[key].value.trim();
     if(t.phase==='營運輔導')next.issues=controls.issues.value.trim();
-    if(['plannedStart','plannedEnd','deadline','completedAt','remindAt'].some(k=>next[k]&&(!dateRe.test(next[k])||!Number.isFinite(dayUTC(next[k]))))){alert('日期格式不正確');return}
+    next.dateLocked=lock.checked;next.vendorConfirmed=vendor.checked;next.userNoMove=noMove.checked;
+    if(controls.examResult)next.examResult=controls.examResult.value;
+    if(next.status==='已完成'&&!next.completedAt)next.completedAt=today();
+    if(['suggestedDate','confirmedDate','plannedStart','plannedEnd','deadline','completedAt','remindAt'].some(k=>next[k]&&(!dateRe.test(next[k])||!Number.isFinite(dayUTC(next[k]))))){alert('日期格式不正確');return}
     if(next.plannedStart&&next.plannedEnd&&next.plannedEnd<next.plannedStart){alert('預定完成日期不得早於開始日期');return}
-    const dateChanged=['plannedStart','plannedEnd','deadline'].some(k=>next[k]!==String(t[k]||''));
+    const dateChanged=['plannedStart','plannedEnd','deadline','suggestedDate','confirmedDate'].some(k=>next[k]!==String(t[k]||''));
     if(dateChanged&&!controls.reason.value.trim()){alert('修改預定日期須填寫原因');return}
     const impacted=t.phase==='工程裝潢'&&dateChanged?['設備進場日期','試營業日期','預計正式開幕日期'].map(title=>task(lead,title)).filter(x=>x&&due(x)):[];
     if(impacted.length&&form.dataset.delayConfirmed!=='yes'){
@@ -251,6 +216,9 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     }
     const snapshot=JSON.parse(JSON.stringify(lead.scheduleTasks));
     changeTask(t,next,controls.reason.value.trim()||'編輯時程');
+    if(window.ComebuyScheduleV2&&dateChanged){
+     window.ComebuyScheduleV2.audit(t,{confirmedDate:{from:snapshot.find(x=>x.id===t.id)?.confirmedDate||'',to:next.confirmedDate},suggestedDate:{from:snapshot.find(x=>x.id===t.id)?.suggestedDate||'',to:next.suggestedDate}},controls.reason.value.trim()||'日期調整');
+    }
     if(next.status==='已完成'&&!next.completedAt)t.completedAt=today();
 
     seed(lead);
