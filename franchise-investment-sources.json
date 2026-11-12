@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-12",
+  "scope": "SipSpot brands currently shown by COMEBUY MAPS (30 or more stores)",
+  "policy": "Missing fee or total investment must remain null; do not infer from store count, franchise deposit or third-party estimates.",
+  "amountsUnit": "TWD",
+  "brands": {
+    "COMEBUY": {
+      "franchiseFee": {
+        "amount": 380000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "third_party_brand_listing",
+        "referenceDate": "2026-11-12",
+        "sourceName": "YES加盟｜COMEBUY 現萃茶飲 2026年加盟招募",
+        "sourceUrl": "https://yesally.com.tw/list_in.php?ID=1414",
+        "note": "第三方招商平台所列，非正式報價；未含教育訓練、裝修、設備及其他開辦支出"
+      },
+      "openingTotal": null
+    }
+  }
+}
