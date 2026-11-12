@@ -139,6 +139,17 @@ function seed(lead,phasesIgnored,rulesIgnored){
  }
  return changed;
 }
+function shiftDate(s,n){
+ if(!valid(s)||!Number.isInteger(n))return '';
+ const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);
+}
+function markWithdrawn(lead,sourceTitle){
+ const t=find(lead,sourceTitle);if(!t)return 0;let n=0;
+ for(const x of allTasks(lead))if(x.triggerSource===sourceTitle&&!x.reviewRequired&&!['已完成','已取消'].includes(x.status)){
+  x.reviewRequired=true;audit(x,{reviewRequired:{from:false,to:true}},'觸發事件已撤回，需人工檢查');n++
+ }
+ return n;
+}
 function previewDelay(lead,sourceTitle,newDate,template=getTemplate(registry(),lead.scheduleTemplateId)){
  const original=find(lead,sourceTitle);
  if(!original||!valid(newDate))return [];
@@ -146,14 +157,15 @@ function previewDelay(lead,sourceTitle,newDate,template=getTemplate(registry(),l
  if(!valid(oldDate))return [];
  const diff=Math.round((Date.parse(newDate+'T00:00:00Z')-Date.parse(oldDate+'T00:00:00Z'))/86400000);
  if(!diff)return [];
+ const extra=template.phases.flatMap(p=>p.tasks.filter(x=>x.dependsOn).map(x=>({source:x.dependsOn,target:x.title,offset:1})));
  const downstream=new Set(),queue=[sourceTitle];
- while(queue.length){const current=queue.shift();for(const dep of template.dependencies){
+ while(queue.length){const current=queue.shift();for(const dep of [...template.dependencies,...extra]){
   if(dep.source!==current||downstream.has(dep.target))continue;
   downstream.add(dep.target);queue.push(dep.target)
  }}
  return [...downstream].map(title=>{const t=find(lead,title);if(!t)return null;
   const current=t.confirmedDate||t.plannedEnd||t.plannedStart||t.suggestedDate||t.deadline;
-  return {title,id:t.id,current:current||'',proposed:valid(current)?addDays(current,Math.max(0,diff)):addDays(newDate,1),delta:diff,locked:!!(t.dateLocked||t.vendorConfirmed||t.status==='已完成'||t.userNoMove||t.confirmedDate),reason:t.dateLocked?'日期已鎖定':t.vendorConfirmed?'廠商已確認':t.confirmedDate?'已確認日期':t.status==='已完成'?'已完成':''}
+  return {title,id:t.id,current:current||'',proposed:valid(current)?shiftDate(current,diff):addDays(newDate,1),delta:diff,locked:!!(t.dateLocked||t.vendorConfirmed||t.status==='已完成'||t.userNoMove||t.confirmedDate),reason:t.dateLocked?'日期已鎖定':t.vendorConfirmed?'廠商已確認':t.confirmedDate?'已確認日期':t.status==='已完成'?'已完成':''}
  }).filter(Boolean);
 }
 function applyDelay(lead,items,reason){
@@ -166,5 +178,5 @@ function applyDelay(lead,items,reason){
  }return n;
 }
 function createCustomTemplate(name){const cfg=registry(),t=clone(defaultTemplate());t.id='custom-'+Date.now().toString(36);t.name=String(name||'自訂流程').slice(0,50);t.locked=false;cfg.templates.push(t);cfg.activeId=t.id;saveRegistry(cfg);return t}
-window.ComebuyScheduleV2={KEY,PHASES,defaultTemplate,registry,saveRegistry,getTemplate,createCustomTemplate,seed,addDays,valid,find,dateOf,ensure,audit,previewDelay,applyDelay};
+window.ComebuyScheduleV2={KEY,PHASES,defaultTemplate,registry,saveRegistry,getTemplate,createCustomTemplate,seed,addDays,valid,find,dateOf,ensure,audit,previewDelay,applyDelay,markWithdrawn};
 })();
