@@ -105,7 +105,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
   records.sort((a,b)=>(due(a.task)||'9999').localeCompare(due(b.task)||'9999'));
   if(!records.length)container.append(elem('p','cb-schedule-note','此範圍尚無已安排的時程，請先為案件設定日期。'));
   for(const x of records){const t=x.task,box=elem('button','cb-schedule-row'+(displayedStatus(t)==='已逾期'?' overdue':''));box.type='button';
-   const line=elem('div','cb-schedule-rowline');line.append(elem('strong','',x.lead.name||'未命名加盟主'),elem('span','',due(t)||'未安排'));box.append(line,elem('div','',t.phase+'｜'+t.title+'｜'+displayedStatus(t)+(reminderText(t)?'｜'+reminderText(t):'')));box.onclick=()=>editTask(x.lead,t);container.append(box)}
+   const line=elem('div','cb-schedule-rowline');line.append(elem('strong','',x.lead.name||'未命名加盟主'),elem('span','',due(t)||'未安排'));box.append(line,elem('div','',t.phase+'｜'+t.title+'｜'+displayedStatus(t)+(t.reviewRequired?'｜⚠需檢查觸發來源':'')+(reminderText(t)?'｜'+reminderText(t):'')));box.onclick=()=>editTask(x.lead,t);container.append(box)}
  }
  function chooseLead(){
   const box=popup('選擇案件',e=>{
@@ -323,12 +323,15 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
      return;
     }
     const snapshot=JSON.parse(JSON.stringify(lead.scheduleTasks));
+    const eventWithdrawn=(!!t.confirmedDate&&!next.confirmedDate)||(t.status==='已完成'&&next.status!=='已完成'&&!next.confirmedDate);
+
     changeTask(t,next,controls.reason.value.trim()||'編輯時程');
     if(window.ComebuyScheduleV2&&dateChanged){
      window.ComebuyScheduleV2.audit(t,{confirmedDate:{from:snapshot.find(x=>x.id===t.id)?.confirmedDate||'',to:next.confirmedDate},suggestedDate:{from:snapshot.find(x=>x.id===t.id)?.suggestedDate||'',to:next.suggestedDate}},controls.reason.value.trim()||'日期調整');
     }
     if(next.status==='已完成'&&!next.completedAt)t.completedAt=today();
 
+    if(eventWithdrawn&&window.ComebuyScheduleV2)window.ComebuyScheduleV2.markWithdrawn(lead,t.title);
     seed(lead);
     if(form._delayProposal?.length&&window.ComebuyScheduleV2){
      window.ComebuyScheduleV2.applyDelay(lead,form._delayProposal,controls.reason.value.trim()||'工程改期');
