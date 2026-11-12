@@ -1,4 +1,5 @@
 const sources=require('./intelligence-sources.json');
+const investmentRegistry=require('./franchise-investment-sources.json');
 const http=require('node:http');
 const PORT=Number(process.env.PORT||10000);
 const ORIGIN=process.env.ALLOWED_ORIGIN||'https://comebuy-store-map.onrender.com';
@@ -34,7 +35,10 @@ http.createServer(async(req,res)=>{
  if(req.url==='/health')return json(res,200,{ok:true,provider:'Google News public RSS + official page reachability checks',ai:false});
  if(req.url==='/sources'&&req.method==='GET')return json(res,200,{sources});
  if(req.url==='/sipspot-brands'&&req.method==='GET'){
-  try{const html=await fetchWithTimeout(SIPSPOT_URL);const items=parseSipspot(html);sipspotCache={items,fetchedAt:new Date().toISOString(),source:'SipSpot',sourceUrl:SIPSPOT_URL};return json(res,200,{...sipspotCache,stale:false})}
+  try{const html=await fetchWithTimeout(SIPSPOT_URL);const items=parseSipspot(html).map(row=>{
+    const record=investmentRegistry.brands[row.name]||{};
+    return {...row,franchiseFee:record.franchiseFee||null,openingTotal:record.openingTotal||null};
+   });sipspotCache={items,fetchedAt:new Date().toISOString(),investmentDataUpdatedAt:investmentRegistry.updatedAt,investmentSource:'已查證來源表；無資料顯示未公開／待查證',source:'SipSpot',sourceUrl:SIPSPOT_URL};return json(res,200,{...sipspotCache,stale:false})}
   catch(e){if(sipspotCache)return json(res,200,{...sipspotCache,stale:true,error:'來源暫時無法讀取，顯示上次成功資料'});return json(res,503,{items:[],stale:true,error:'目前無法取得資料'})}
  }
  if(req.url!=='/search'||req.method!=='POST')return json(res,404,{error:'not found'});
