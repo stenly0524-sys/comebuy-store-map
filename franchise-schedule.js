@@ -50,11 +50,12 @@ function scheduleIfBlank(lead,title,date,reason){
 function seed(lead,rules=defaults()){return window.ComebuyScheduleV2?window.ComebuyScheduleV2.seed(lead,PHASES,rules):false}
 
 function all(leads){return leads.flatMap(l=>allTasks(l).map(t=>({lead:l,task:t})))}
-function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,initialLeadId=''){
- let view=initialLeadId?'timeline':'list',filterLead=initialLeadId,filterPhase='',filterState='',filterType='',filterOwner='',dateFrom='',dateTo='',month=localToday().slice(0,7);
+function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,initialLeadId='',initialPhase=''){
+ const phaseOnly=Boolean(initialLeadId&&initialPhase&&PHASES.some(p=>p[0]===initialPhase));
+ let view=phaseOnly?'phase':initialLeadId?'timeline':'list',filterLead=initialLeadId,filterPhase=phaseOnly?initialPhase:'',filterState='',filterType='',filterOwner='',dateFrom='',dateTo='',month=localToday().slice(0,7);
  const leads=getLeads();let touched=false;for(const lead of leads)touched=seed(lead)||touched;if(touched&&!saveFranchise())throw Error('時程初始化儲存失敗');
  const overlay=document.createElement('div');overlay.className='cb-schedule-overlay';
- overlay.innerHTML='<section role="dialog" aria-modal="true" class="cb-schedule-modal"><header class="cb-schedule-header"><strong>加盟時程中心</strong><div class="cb-schedule-head-actions"><button type="button" class="cb-schedule-template" aria-label="流程模板設定" title="流程模板設定">⚙</button><button type="button" class="cb-schedule-close" aria-label="關閉">×</button></div></header><div class="cb-schedule-body"></div></section>';
+ overlay.innerHTML='<section role="dialog" aria-modal="true" class="cb-schedule-modal"><header class="cb-schedule-header"><strong>'+(phaseOnly?initialPhase:'加盟時程中心')+'</strong><div class="cb-schedule-head-actions"><button type="button" class="cb-schedule-template" aria-label="流程模板設定" title="流程模板設定">⚙</button><button type="button" class="cb-schedule-close" aria-label="關閉">×</button></div></header><div class="cb-schedule-body"></div></section>';
  document.body.appendChild(overlay);
  const body=overlay.querySelector('.cb-schedule-body');
  const close=()=>{document.removeEventListener('keydown',key);overlay.remove()};
@@ -74,6 +75,19 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
   const actionable=allRecords.filter(({task:t})=>!isDone(t)&&t.status!=='暫停'&&due(t));
   const planned=(title)=>allRecords.filter(({task:t})=>t.title===title&&due(t)?.startsWith(ym)&&!isDone(t)).length;
   body.replaceChildren();
+  if(phaseOnly){
+   const main=elem('div','cb-schedule-content cb-v4-phase-detail');
+   body.append(elem('div','cb-schedule-note',(getLeads().find(l=>String(l.id)===String(initialLeadId))?.name||'加盟主')+'｜'+initialPhase));
+   body.append(main);
+   const rows=records.filter(x=>x.task.phase===initialPhase);
+   for(const x of rows){
+    const line=button(x.task.title+'｜'+(due(x.task)||'未安排')+'｜'+displayedStatus(x.task),()=>editTask(x.lead,x.task));
+    line.className='cb-schedule-stage-item'+(displayedStatus(x.task)==='已逾期'?' overdue':'');
+    main.append(line);
+   }
+   if(!rows.length)main.append(elem('p','cb-schedule-note','此分類尚無工作項目'));
+   return;
+  }
   const kpis=elem('div','cb-schedule-kpis');
   [['今日待辦',actionable.filter(x=>due(x.task)===now).length],['未來7天待辦',actionable.filter(x=>due(x.task)>now&&due(x.task)<=in7).length],['已逾期',actionable.filter(x=>due(x.task)<now).length],['本月預計簽約',planned('預定簽約日期')],['本月預計開幕',planned('預計正式開幕日期')],['本月待執行輔導',allRecords.filter(({task:t})=>t.phase==='營運輔導'&&!isDone(t)&&(due(t).startsWith(ym)||t.title.includes('（'+ym+'）'))).length]].forEach(([name,count])=>kpis.append(card(name,count)));
   body.append(kpis);
@@ -342,7 +356,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
      window.ComebuyScheduleV2.applyDelay(lead,form._delayProposal,controls.reason.value.trim()||'工程改期');
     }
     if(!saveFranchise()){lead.scheduleTasks=snapshot;lead.stage=previousStage;alert('儲存失敗，原資料未變動');return}
-    mask.remove();render();
+    mask.remove();render();document.dispatchEvent(new CustomEvent('cb:franchise-schedule-saved',{detail:{leadId:String(lead.id)}}));
    };
    form.addEventListener('input',()=>{form.dataset.delayConfirmed='';const warning=form.querySelector('.cb-schedule-delay-warning');if(warning)warning.remove()});
    root.append(form);
