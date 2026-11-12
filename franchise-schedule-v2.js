@@ -23,7 +23,7 @@ const DEFAULT_TRIGGERS=[
  ['租約簽訂日期','工程報價確認日期',7,'工程裝潢'],
  ['確認正式開幕日期','開幕後7天追蹤日期',7,'正式開幕'],
  ['確認正式開幕日期','開幕後30天追蹤日期',30,'正式開幕']
-].map(([source,target,offset,phase],i)=>({id:'rule-'+i,source,target,offset,phase,enabled:true,dayMode:'calendar',reminders:[3,1,0],dependency:source}));
+].map(([source,target,offset,phase],i)=>({id:'rule-'+i,source,target,offset,phase,enabled:true,dayMode:'calendar',reminders:target==='首次追蹤日期'?[2,1,0]:[3,1,0],dependency:source}));
 const DEFAULT_DEPENDENCIES=[
  ['裝潢工程完成日期','工程驗收日期',1],['工程驗收日期','設備測試日期',2],
  ['設備測試日期','原物料進場日期',1],['原物料進場日期','開幕前驗收日期',1],
@@ -31,7 +31,7 @@ const DEFAULT_DEPENDENCIES=[
 ].map(([source,target,offset])=>({source,target,offset,mode:'calendar'}));
 const clone=v=>JSON.parse(JSON.stringify(v));
 const now=()=>new Date().toISOString();
-const valid=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
+const valid=s=>{if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===s};
 function addDays(date,count,mode='calendar'){
  if(!valid(date)||!Number.isInteger(count)||count<0||count>3660)return '';
  let d=new Date(date+'T00:00:00Z'),n=0;
@@ -130,7 +130,8 @@ function seed(lead,phasesIgnored,rulesIgnored){
  const opened=find(lead,'確認正式開幕日期');
  const openedDate=dateOf(opened);
  if(valid(openedDate)&&opened?.status==='已完成'&&template.monthlyCoaching!==false){
-  const [y,m]=openedDate.slice(0,7).split('-').map(Number);
+  const baseMonth=openedDate.slice(0,7)>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).format(new Date())?openedDate.slice(0,7):new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit'}).format(new Date());
+  const [y,m]=baseMonth.split('-').map(Number);
   for(let i=0;i<12;i++){
    const month=new Date(Date.UTC(y,m-1+i,1)).toISOString().slice(0,7);
    const title='每月營運輔導（'+month+'）';const [t,added]=ensure(lead,'營運輔導',title,template.id);changed=changed||added;
