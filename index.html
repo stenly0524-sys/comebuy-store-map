@@ -576,6 +576,20 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-official-link>span:last-child{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:340px){.cb-official-links-grid{gap:5px}.cb-official-link{font-size:11px;padding:9px 2px}}
 </style>
+<style id="cb-sipspot-style">
+.cb-sipspot-overlay{position:fixed;inset:0;z-index:2147483100;background:rgba(0,0,0,.58);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);box-sizing:border-box}
+.cb-sipspot-dialog{display:flex;flex-direction:column;background:#fff;border-radius:16px;width:min(100%,620px);max-height:100%;overflow:hidden;min-width:0}
+.cb-sipspot-header{background:linear-gradient(90deg,#c7000b,#f05862);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 15px;font-size:19px;flex:none}
+.cb-sipspot-close{border:0;border-radius:50%;width:42px;height:42px;flex:none;background:#fff;color:#b90011;font-size:30px;line-height:1;cursor:pointer}
+.cb-sipspot-meta{padding:10px 14px;color:#555;font-size:12px;flex:none}
+.cb-sipspot-tablehead,.cb-sipspot-row{display:grid;grid-template-columns:minmax(0,1fr) 76px;gap:8px;align-items:center;padding:10px 14px;box-sizing:border-box}
+.cb-sipspot-tablehead{background:#f1eeee;font-weight:800;flex:none;border-bottom:1px solid #ddd}
+.cb-sipspot-tablehead span:last-child,.cb-sipspot-row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.cb-sipspot-list{overflow-y:auto;overscroll-behavior:contain;min-height:0;flex:1}
+.cb-sipspot-row{border-bottom:1px solid #eee;font-size:14px;min-width:0}
+.cb-sipspot-row span:first-child{overflow-wrap:anywhere}
+.cb-sipspot-comebuy{background:#ffeded;color:#a90012;font-weight:800}
+</style>
 </head>
 <body>
 
@@ -2518,6 +2532,33 @@ function showCaseManagement(){
  const d=new Date(),today=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),due=vacancies.filter(v=>v.followUpDate&&v.followUpDate<=today&&!['已開幕','放棄開發'].includes(v.developmentStage)),active=vacancies.filter(v=>!['已開幕','放棄開發'].includes(vacancyStage(v)));const cards=document.createElement('div');cards.className='dashboard-grid';[['開發中空舖',active.length],['加盟主名單',franchiseLeads.length],['未簽約',franchiseLeads.filter(v=>!['已簽約','受訓中'].includes(v.stage)).length],['已簽約',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)).length],['已簽約未付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&!v.depositReceived).length],['已簽約已付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&v.depositReceived).length],['今日及逾期待追蹤',due.length],['已簽約案件',vacancies.filter(v=>v.developmentStage==='已簽約').length]].forEach(([name,num])=>{const el=document.createElement('div');el.className='dashboard-card';el.innerHTML='<span>'+esc(name)+'</span><strong>'+num+'</strong>';cards.appendChild(el)});drawerBody.appendChild(cards);
  const h=document.createElement('h3');h.textContent='今日及逾期追蹤（'+due.length+'）';drawerBody.appendChild(h);due.sort((a,b)=>a.followUpDate.localeCompare(b.followUpDate)).forEach(v=>{const el=document.createElement('button');el.className='dashboard-follow';el.innerHTML='<strong>'+esc(v.address)+'</strong><span>'+esc(v.followUpDate)+'｜'+esc(vacancyStage(v))+'</span>';el.onclick=()=>{vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';showVacancies()};drawerBody.appendChild(el)})
 }
+async function openSipspotBrands(){
+ const overlay=document.createElement('div');overlay.className='cb-sipspot-overlay';overlay.setAttribute('role','presentation');
+ const dialog=document.createElement('section');dialog.className='cb-sipspot-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','飲料品牌店數');
+ const header=document.createElement('header');header.className='cb-sipspot-header';const title=document.createElement('strong');title.textContent='飲料品牌店數';
+ const close=document.createElement('button');close.type='button';close.className='cb-sipspot-close';close.textContent='×';close.setAttribute('aria-label','關閉');close.onclick=()=>overlay.remove();header.append(title,close);
+ const meta=document.createElement('div');meta.className='cb-sipspot-meta';meta.textContent='正在讀取 SipSpot…';
+ const tableHead=document.createElement('div');tableHead.className='cb-sipspot-tablehead';tableHead.innerHTML='<span>品牌名稱</span><span>門市數</span>';
+ const list=document.createElement('div');list.className='cb-sipspot-list';list.textContent='資料讀取中…';
+ dialog.append(header,meta,tableHead,list);overlay.appendChild(dialog);document.body.appendChild(overlay);
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+ const cacheKey='cb_sipspot_brands_v1';
+ const readCache=()=>{try{return JSON.parse(localStorage.getItem(cacheKey)||'null')}catch{return null}};
+ const render=(data,stale)=>{
+  const items=data.items.slice().sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'zh-Hant'));
+  const time=data.fetchedAt?new Date(data.fetchedAt).toLocaleString('zh-TW',{hour12:false}):'未知';
+  meta.textContent='來源：SipSpot｜取得時間：'+time+'｜共 '+items.length+' 個品牌'+(stale?'｜來源暫時無法讀取，顯示上次成功資料':'');
+  list.replaceChildren();
+  for(const item of items){const row=document.createElement('div');row.className='cb-sipspot-row'+(/^COMEBUY$/i.test(item.name.trim())?' cb-sipspot-comebuy':'');const name=document.createElement('span');name.textContent=item.name;const count=document.createElement('span');count.textContent=Number(item.count).toLocaleString('zh-TW');row.append(name,count);list.appendChild(row)}
+ };
+ try{
+  const response=await fetch('https://comebuy-intelligence-api.onrender.com/sipspot-brands',{cache:'no-store',signal:AbortSignal.timeout(20000)});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const data=await response.json();if(!Array.isArray(data.items)||!data.items.length)throw Error('沒有品牌資料');
+  if(!data.stale){try{localStorage.setItem(cacheKey,JSON.stringify(data))}catch{}}
+  if(overlay.isConnected)render(data,!!data.stale);
+ }catch(e){const old=readCache();if(overlay.isConnected){if(old&&Array.isArray(old.items)&&old.items.length)render(old,true);else{meta.textContent='來源：SipSpot｜目前無法取得資料';list.textContent='目前無法取得資料'}}}
+}
 function showSettings(){
  setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';requestAnimationFrame(syncActionButtons);setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
  const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);window.addComebuyIntelligenceSettingsButton?.();addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;const backupRow=document.createElement('div');backupRow.className='cb-settings-button-row';backupRow.appendChild(btn);const backupImport=addBackupImportAction();backupRow.appendChild(backupImport.button);drawerBody.append(backupRow,backupImport.input);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
@@ -2538,6 +2579,7 @@ function showSettings(){
   const label=document.createElement('span');label.textContent=item.label;a.append(icon,label);links.appendChild(a);
  });
  official.appendChild(links);drawerBody.appendChild(official);
+ const sipspotButton=document.createElement('button');sipspotButton.type='button';sipspotButton.className='dashboard-backup';sipspotButton.textContent='飲料品牌店數';sipspotButton.onclick=openSipspotBrands;drawerBody.appendChild(sipspotButton);
 }
 document.getElementById('openDashboard').onclick=showSettings;
 function showProtection(){
