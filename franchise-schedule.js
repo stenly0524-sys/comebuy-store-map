@@ -56,13 +56,29 @@ function seed(lead,rules=defaults()){
  }
  if(opened){
   const current=task(lead,'每月定期輔導日期');
-  if(current&&current.status==='未安排'){changeTask(current,{status:'未安排',note:current.note||'開幕後每月待安排到店日期；不會推定實際拜訪日'},'開幕啟用輔導');changed=true}
+  if(current&&current.status==='未安排'&&!current.note){current.note='開幕後每月待安排到店日期；不會推定實際拜訪日';current.updatedAt=new Date().toISOString();changed=true}
+  if(rules.coachingMonthly!==false){
+   // Generate a rolling 12-month planning horizon. The month is a label, NOT a confirmed appointment.
+   const startMonth=opened.slice(0,7);
+   const currentMonth=localToday().slice(0,7);
+   const baseMonth=startMonth>currentMonth?startMonth:currentMonth;
+   const [y,m]=baseMonth.split('-').map(Number);
+   const knownTitles=new Set(allTasks(lead).map(t=>t.title));
+   for(let i=0;i<12;i++){
+    const month=new Date(Date.UTC(y,m-1+i,1)).toISOString().slice(0,7);
+    const title='每月營運輔導（'+month+'）';
+    if(knownTitles.has(title))continue;
+    const coaching=blank(lead,'營運輔導',title);
+    coaching.note='待安排：'+month+' 到店輔導（尚未確認日期）';
+    lead.scheduleTasks.push(coaching);changed=true;
+   }
+  }
  }
  return changed
 }
 function all(leads){return leads.flatMap(l=>allTasks(l).map(t=>({lead:l,task:t})))}
-function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress){
- let view='list',filterLead='',filterPhase='',filterState='',month=localToday().slice(0,7),selectedLeadId='',selectedTab='all';
+function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,initialLeadId=''){
+ let view=initialLeadId?'timeline':'list',filterLead=initialLeadId,filterPhase='',filterState='',filterType='',filterOwner='',dateFrom='',dateTo='',month=localToday().slice(0,7);
  const leads=getLeads();let touched=false;for(const lead of leads)touched=seed(lead)||touched;if(touched&&!saveFranchise())throw Error('時程初始化儲存失敗');
  const overlay=document.createElement('div');overlay.className='cb-schedule-overlay';
  overlay.innerHTML='<section role="dialog" aria-modal="true" class="cb-schedule-modal"><header class="cb-schedule-header"><strong>加盟時程中心</strong><button type="button" class="cb-schedule-close" aria-label="關閉">×</button></header><div class="cb-schedule-body"></div></section>';
@@ -77,7 +93,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress){
  const opts=(select,options)=>{for(const [value,label] of options){const o=document.createElement('option');o.value=value;o.textContent=label;select.appendChild(o)}};
  const today=()=>localToday();
  const active=()=>all(getLeads());
- const visible=()=>active().filter(({lead,task:t})=>(!filterLead||lead.id===filterLead)&&(!filterPhase||t.phase===filterPhase)&&(!filterState||displayedStatus(t)===filterState));
+ const visible=()=>active().filter(({lead,task:t})=>(!filterLead||lead.id===filterLead)&&(!filterType||(filterType==='signed'?isSigned(lead):!isSigned(lead)))&&(!filterPhase||t.phase===filterPhase)&&(!filterState||displayedStatus(t)===filterState)&&(!filterOwner||t.owner===filterOwner)&&(!dateFrom||due(t)>=dateFrom)&&(!dateTo||due(t)<=dateTo));
  const card=(title,value)=>{const e=elem('div','cb-schedule-kpi');e.append(elem('span','',title),elem('strong','',String(value)));return e};
  function render(){
   const records=visible(),allRecords=active(),now=today(),in7=addDays(now,7),ym=now.slice(0,7);
@@ -95,6 +111,12 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress){
   makeSelect('案件',[['','全部案件'],...getLeads().map(l=>[l.id,l.name||l.id])],filterLead,x=>filterLead=x);
   makeSelect('階段',[['','全部階段'],...PHASES.map(x=>[x[0],x[0]])],filterPhase,x=>filterPhase=x);
   makeSelect('狀態',[['','全部狀態'],...STATUS.map(x=>[x,x])],filterState,x=>filterState=x);
+  makeSelect('案件類型',[['','全部類型'],['unsigned','加盟開發'],['signed','加盟案件']],filterType,x=>filterType=x);
+  makeSelect('負責人',[['','全部負責人'],...[...new Set(allRecords.map(x=>x.task.owner).filter(Boolean))].sort().map(x=>[x,x])],filterOwner,x=>filterOwner=x);
+  for(const [name,value,setValue] of [['開始日期',dateFrom,x=>dateFrom=x],['結束日期',dateTo,x=>dateTo=x]]){
+   const label=elem('label','',name),input=elem('input');input.type='date';input.value=value;
+   input.onchange=()=>{setValue(input.value);render()};label.append(input);filters.append(label);
+  }
   body.append(filters);
   const main=elem('div','cb-schedule-content');body.append(main);
   if(view==='calendar')calendar(main,records);
@@ -123,7 +145,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress){
   const leads=filterLead?getLeads().filter(l=>l.id===filterLead):getLeads();
   for(const lead of leads){
    const section=elem('section','cb-schedule-phase');
-   const title=elem('h3','',lead.name+'｜'+(isSigned(lead)?'加盟案件':'加盟開發'));section.append(title);
+   const title=button(lead.name+'｜'+(isSigned(lead)?'加盟案件':'加盟開發'),()=>{close();showFranchise(isSigned(lead)?'cases':'owners')});title.className='cb-schedule-lead-link';section.append(title);
    const addr=linkedVacancyAddress(lead)||lead.storeAddress||'尚未關聯空舖';section.append(elem('div','cb-schedule-note','店面：'+addr));
    for(const p of PHASES){
     const tasks=allTasks(lead).filter(t=>t.phase===p[0]),done=tasks.filter(t=>t.status==='已完成').length;
@@ -186,14 +208,16 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress){
     input.name=key;input.value=key==='reason'?'':t[key]||'';wrap.append(input);form.append(wrap);controls[key]=input}
    const history=elem('details','cb-schedule-history');history.append(elem('summary','','修改紀錄（'+(t.changes||[]).length+'）'));
    for(const h of t.changes||[])history.append(elem('p','',new Date(h.at).toLocaleString('zh-TW')+'｜'+h.reason+'｜'+JSON.stringify(h.changes)));
+   if(t.phase==='營運輔導'){const issueWrap=elem('label','','發現問題與改善事項'),issueInput=elem('textarea');issueInput.name='issues';issueInput.rows=3;issueInput.value=t.issues||'';issueWrap.append(issueInput);form.append(issueWrap);controls.issues=issueInput}
    const actions=elem('div','cb-schedule-edit-actions');const submit=button('儲存時程',()=>{});submit.type='submit';actions.append(submit);
    form.append(actions,history);
    form.onsubmit=e=>{e.preventDefault();const next={};for(const [key] of defs)if(key!=='reason')next[key]=controls[key].value.trim();
+    if(t.phase==='營運輔導')next.issues=controls.issues.value.trim();
     if(['plannedStart','plannedEnd','deadline','completedAt','remindAt'].some(k=>next[k]&&(!dateRe.test(next[k])||!Number.isFinite(dayUTC(next[k]))))){alert('日期格式不正確');return}
     if(next.plannedStart&&next.plannedEnd&&next.plannedEnd<next.plannedStart){alert('預定完成日期不得早於開始日期');return}
     const dateChanged=['plannedStart','plannedEnd','deadline'].some(k=>next[k]!==String(t[k]||''));
     if(dateChanged&&!controls.reason.value.trim()){alert('修改預定日期須填寫原因');return}
-    const before=JSON.parse(JSON.stringify(t));const snapshot=JSON.parse(JSON.stringify(lead.scheduleTasks));
+    const snapshot=JSON.parse(JSON.stringify(lead.scheduleTasks));
     changeTask(t,next,controls.reason.value.trim()||'編輯時程');
     if(next.status==='已完成'&&!next.completedAt)t.completedAt=today();
     if(t.title==='裝潢工程完成日期'&&dateChanged){const impacted=['設備進場日期','試營業日期','預計正式開幕日期'].map(title=>task(lead,title)).filter(x=>x&&due(x));if(impacted.length)alert('裝潢工期變更可能影響：'+impacted.map(x=>x.title+' '+due(x)).join('、')+'。現有日期不會自動修改，請逐項確認。')}
