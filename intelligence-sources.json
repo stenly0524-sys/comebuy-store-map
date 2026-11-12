@@ -25,15 +25,15 @@
   },
   {
     "id": 3,
-    "name": "COMEBUY Instagram 探索頁",
-    "url": "https://www.instagram.com/popular/comebuy%E7%B8%BD%E5%85%AC%E5%8F%B8/",
+    "name": "COMEBUY 官方 Instagram",
+    "url": "https://www.instagram.com/comebuy_tw/",
     "tier": "official",
     "priority": 1,
     "method": "indexed_only",
     "automated": false,
     "lastSearchedAt": null,
     "status": "not_searched",
-    "note": "僅透過公開新聞索引間接發現，不代表已直接搜尋該平台"
+    "note": "官方帳號 @comebuy_tw；僅透過公開新聞索引間接發現，不代表已直接搜尋 Instagram"
   },
   {
     "id": 4,
