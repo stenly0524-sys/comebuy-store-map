@@ -21,7 +21,7 @@ function addDays(s,n){if(!dateRe.test(s)||!Number.isFinite(dayUTC(s)))return '';
 function daysBetween(a,b){return Math.round((dayUTC(b)-dayUTC(a))/86400000)}
 const isSigned=v=>['已簽約','受訓中'].includes(v.stage);
 const isDone=t=>t.status==='已完成'||t.status==='已取消';
-const due=t=>t.deadline||t.plannedEnd||t.plannedStart||t.suggestedDate||'';
+const due=t=>t.deadline||t.plannedEnd||t.plannedStart||t.confirmedDate||t.suggestedDate||'';
 function displayedStatus(t,today=localToday()){return !isDone(t)&&t.status!=='暫停'&&due(t)&&due(t)<today?'已逾期':t.status}
 function reminderText(t,now=localToday(),rules=defaults()){
  if(isDone(t)||t.status==='暫停')return '';
@@ -225,11 +225,15 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
      const row=elem('div','cb-schedule-rule-row');
      const check=elem('input');check.type='checkbox';check.checked=r.enabled!==false;check.disabled=locked;check.onchange=()=>{r.enabled=check.checked;dirty=true};
      const caption=elem('strong','',r.source+' → '+r.target);
+     const eventSel=elem('select');const jobs=t.phases.flatMap(p=>p.tasks.map(x=>[x.title,x.title]));opts(eventSel,jobs);eventSel.value=r.source;eventSel.disabled=locked;
+     eventSel.onchange=()=>{r.source=eventSel.value;dirty=true;caption.textContent=r.source+' → '+r.target};
+     const targetSel=elem('select');opts(targetSel,jobs);targetSel.value=r.target;targetSel.disabled=locked;
+     targetSel.onchange=()=>{r.target=targetSel.value;r.phase=t.phases.find(p=>p.tasks.some(x=>x.title===r.target))?.name||r.phase;dirty=true;caption.textContent=r.source+' → '+r.target};
      const offset=elem('input');offset.type='number';offset.min='0';offset.max='365';offset.step='1';offset.value=r.offset;offset.disabled=locked;offset.onchange=()=>{const n=Number(offset.value);if(!Number.isInteger(n)||n<0||n>365){offset.value=r.offset;return}r.offset=n;dirty=true};
      const mode=elem('select');opts(mode,[['calendar','日曆天'],['workday','工作天（不計週末）']]);mode.value=r.dayMode||'calendar';mode.disabled=locked;mode.onchange=()=>{r.dayMode=mode.value;dirty=true};
      const remind=elem('input');remind.type='text';remind.value=(r.reminders||[3,1,0]).join(',');remind.placeholder='提醒 3,1,0';remind.disabled=locked;
      remind.onchange=()=>{const val=remind.value.split(',').map(x=>Number(x.trim()));if(val.some(x=>!Number.isInteger(x)||x<0||x>30)){remind.value=(r.reminders||[3,1,0]).join(',');return}r.reminders=[...new Set(val)];dirty=true};
-     row.append(check,caption,offset,mode,remind);settings.append(row)
+     row.append(check,caption,eventSel,targetSel,offset,mode,remind);settings.append(row)
     });
     if(!locked){
      const addRow=elem('div','cb-schedule-template-add'),src=elem('select'),target=elem('select'),offset=elem('input'),addRule=button('新增觸發規則',()=>{if(!src.value||!target.value||src.value===target.value){alert('請選擇不同的觸發與目標工作');return}const p=t.phases.find(p=>p.tasks.some(x=>x.title===target.value));if(t.triggers.some(r=>r.source===src.value&&r.target===target.value)){alert('已存在相同規則');return}t.triggers.push({id:'custom-rule-'+Date.now(),source:src.value,target:target.value,phase:p.name,offset:Number(offset.value)||0,dayMode:'calendar',reminders:[3,1,0],enabled:true});dirty=true;draw()});
