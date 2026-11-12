@@ -342,7 +342,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
      return;
     }
     const snapshot=JSON.parse(JSON.stringify(lead.scheduleTasks));
-    const previousStage=lead.stage;
+    const previousStage=lead.stage,previousActualOpeningDate=lead.actualOpeningDate;
     const eventWithdrawn=(!!t.confirmedDate&&!next.confirmedDate)||(t.status==='已完成'&&next.status!=='已完成'&&!next.confirmedDate);
 
     changeTask(t,next,controls.reason.value.trim()||'編輯時程');
@@ -356,7 +356,7 @@ function createApp(getLeads,saveFranchise,showFranchise,linkedVacancyAddress,ini
     if(form._delayProposal?.length&&window.ComebuyScheduleV2){
      window.ComebuyScheduleV2.applyDelay(lead,form._delayProposal,controls.reason.value.trim()||'工程改期');
     }
-    if(!saveFranchise()){lead.scheduleTasks=snapshot;lead.stage=previousStage;alert('儲存失敗，原資料未變動');return}
+    if(!saveFranchise()){lead.scheduleTasks=snapshot;lead.stage=previousStage;lead.actualOpeningDate=previousActualOpeningDate;alert('儲存失敗，原資料未變動');return}
     mask.remove();render();document.dispatchEvent(new CustomEvent('cb:franchise-schedule-saved',{detail:{leadId:String(lead.id)}}));
    };
    form.addEventListener('input',()=>{form.dataset.delayConfirmed='';const warning=form.querySelector('.cb-schedule-delay-warning');if(warning)warning.remove()});
