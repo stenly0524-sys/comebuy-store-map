@@ -40,7 +40,13 @@ http.createServer(async(req,res)=>{
     const fee=record.franchiseFee||null,opening=record.openingTotal||null;
     // Market-wide scenario for missing brand quotes, NEVER a brand-specific factual price.
     const generic=(min,max,label)=>({amount:min,maxAmount:max,currency:'TWD',qualifier:'約',status:'generic_market_model',sourceName:'2026 手搖飲加盟市場通用情境',sourceUrl:'https://suanlisuo.com/franchise',scope:label+'：通用產業區間，非此品牌實際報價或承諾'});
-    const feeEstimate=fee||generic(100000,500000,'加盟授權費');
+    let feeEstimate=fee||generic(100000,500000,'加盟授權費');
+    if(fee&&Number.isFinite(fee.amount)&&!Number.isFinite(fee.maxAmount)){
+     // Preserve actual source number in franchiseFee; only the displayed planning range is modeled.
+     const lower=fee.amount;
+     const upper=Math.ceil((fee.amount*1.25)/100000)*100000;
+     feeEstimate={...fee,amount:lower,maxAmount:upper,status:'sourced_lower_bound_model',scope:(fee.scope||'')+'；以公開報價為下限、上浮25%並進位至10萬元作資金情境；非品牌報價區間'};
+    }
     let openingEstimate=opening;
     if(!openingEstimate&&fee?.status==='official_package_quote'){
      openingEstimate={...generic(Math.max(1500000,fee.amount),Math.max(3500000,Math.ceil(fee.amount*1.5/100000)*100000),'含設備裝修等開辦費'),status:'package_based_model',sourceName:fee.sourceName,sourceUrl:fee.sourceUrl};
