@@ -171,7 +171,8 @@ html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;font-f
 .lead-unpaid-card>.lead-controls-with-deposit [data-act="training"]{position:absolute!important;top:0!important;right:0!important;width:115px!important;min-height:42px!important;margin:0!important;grid-column:auto!important;grid-row:auto!important;justify-self:stretch!important;align-self:stretch!important;color:var(--red)!important;background:#fff4f4!important;border:1px solid var(--red)!important;border-radius:9px!important}
 /* Prevent accidental double-tap page zoom on interactive controls. */
 html,body,button,select,input,textarea,a,.top,.drawer{touch-action:manipulation}
-#exitStreetView{position:fixed;right:14px;bottom:calc(108px + env(safe-area-inset-bottom,0px));z-index:2147483646;min-width:96px;min-height:44px;display:flex;align-items:center;justify-content:center;background:#fff;color:#d71920;border:2px solid #d71920;border-radius:12px;padding:9px 12px;font-size:14px;font-weight:800;box-shadow:0 4px 18px #0003;cursor:pointer;pointer-events:auto;touch-action:manipulation}
+#exitStreetView{position:fixed;right:14px;bottom:calc(108px + env(safe-area-inset-bottom,0px));z-index:2147483646;width:49px;height:49px;min-width:49px;min-height:49px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:#fff;color:#d71920;border:1px solid #e4ded9;border-radius:50%;padding:0;box-shadow:0 4px 18px #0003;cursor:pointer;pointer-events:auto;touch-action:manipulation}
+#exitStreetView svg{width:24px;height:24px;display:block;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #exitStreetView[hidden]{display:none!important}
 #gpsLocate{position:fixed;right:14px;bottom:calc(170px + env(safe-area-inset-bottom,0px));z-index:2147483645;width:49px;height:49px;border:1px solid #e4ded9;border-radius:50%;background:#fff;color:#d71920;box-shadow:0 4px 18px #0003;font-size:24px;display:grid;place-items:center;cursor:pointer}
 #gpsLocate[data-mode="following"]{background:#d71920;color:#fff}
@@ -808,7 +809,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 <div id="map"></div>
 <div id="routeDialog" hidden role="dialog" aria-modal="true" aria-label="規劃路線"><div class="route-card"><div class="route-header"><span>規劃路線</span><button type="button" class="route-close" id="routeClose" aria-label="關閉">×</button></div><div class="route-section route-destination"><div id="routeDestination"></div></div><div class="route-section route-transport"><div class="route-section-title">選擇移動方式</div><div class="route-modes"><button type="button" data-route-mode="walk">步行</button><button type="button" data-route-mode="scooter">機車</button><button type="button" data-route-mode="drive">汽車</button><button type="button" data-route-mode="bus">公車</button><button type="button" data-route-mode="metro">捷運</button></div></div><div class="route-section route-footer"><div class="route-actions"><button type="button" id="routeCancel">取消</button><button type="button" id="routeStart" disabled>開始導航</button></div></div></div></div>
 <button id="gpsLocate" type="button" data-mode="off" title="開始 GPS 即時定位" aria-label="開始 GPS 即時定位">◎</button>
-<button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖">退出街景</button>
+<button id="exitStreetView" type="button" hidden aria-label="退出街景返回地圖" title="退出街景"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/><path d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/></svg></button>
 
 <div class="top">
   <div class="card">
