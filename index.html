@@ -639,6 +639,54 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-delete-confirm-accept{border:0;background:#d71920;color:#fff}
 .cb-delete-confirm-close:focus-visible,.cb-delete-confirm-actions button:focus-visible{outline:3px solid #303030;outline-offset:2px}
 </style>
+<style id="cb-schedule-style">
+.case-schedule-entry{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;box-sizing:border-box;border-radius:12px;border:1px solid #e2d5d5;background:#fff;color:#a80d1b;padding:14px;font-size:16px;font-weight:800;cursor:pointer}
+.cb-schedule-overlay{position:fixed;inset:0;z-index:2147483300;background:rgba(0,0,0,.55);padding:calc(env(safe-area-inset-top,0px) + 9px) 9px calc(env(safe-area-inset-bottom,0px) + 9px);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.cb-schedule-modal{width:min(100%,760px);max-height:100%;min-width:0;display:flex;flex-direction:column;background:#f8f7f7;border-radius:17px;overflow:hidden}
+.cb-schedule-header{flex:none;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#bb0916,#ed505d);color:#fff;padding:11px 14px;font-size:18px;gap:8px}
+.cb-schedule-close{width:40px;height:40px;border:0;border-radius:50%;flex:none;background:#fff;color:#ae0714;font-size:29px;line-height:1;cursor:pointer}
+.cb-schedule-body{overflow:auto;min-height:0;padding:12px}
+.cb-schedule-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cb-schedule-kpi{min-width:0;background:#fff;border:1px solid #e9e1e0;border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cb-schedule-kpi span{font-size:12px;color:#555}.cb-schedule-kpi strong{color:#c91923;font-size:22px}
+.cb-schedule-toolbar{display:flex;overflow-x:auto;gap:7px;margin-top:12px;padding-bottom:5px;scrollbar-width:thin}
+.cb-schedule-toolbar button{white-space:nowrap;flex:none;border:1px solid #e0d5d5;background:#fff;border-radius:8px;padding:9px;color:#222;font-weight:750;font-size:12px}
+.cb-schedule-toolbar button.active{background:#c81824;border-color:#c81824;color:#fff}
+.cb-schedule-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.cb-schedule-filters label{min-width:0;font-size:12px;font-weight:700;color:#444}
+.cb-schedule-filters select{display:block;margin-top:4px;min-height:40px;max-width:100%;width:100%;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:13px;padding:5px}
+.cb-schedule-content{min-width:0}
+.cb-schedule-actions{display:flex;gap:8px;margin:10px 0}
+.cb-schedule-actions button{border:1px solid #dbc9c9;background:#fff;border-radius:9px;padding:11px 8px;flex:1;font-weight:750;font-size:13px;color:#aa1421}
+.cb-schedule-actions button.primary{background:#cc1522;color:#fff;border-color:#cc1522}
+.cb-schedule-row{width:100%;text-align:left;background:#fff;border:1px solid #e9e2e1;border-radius:10px;padding:11px;margin-bottom:7px;font-size:12px;line-height:1.55;color:#555;cursor:pointer;min-width:0}
+.cb-schedule-rowline{display:flex;justify-content:space-between;gap:7px;color:#222;font-size:13px}.cb-schedule-rowline span{white-space:nowrap}
+.cb-schedule-row.overdue,.cb-schedule-stage-item.overdue{border-left:4px solid #d71920;background:#fff0f1}
+.cb-schedule-phase{background:#fff;padding:11px;border-radius:11px;margin:9px 0;border:1px solid #e8e3e3}
+.cb-schedule-phase h3{font-size:15px;margin:0 0 6px;color:#bb1320}
+.cb-schedule-note{font-size:12px;color:#777;line-height:1.55;overflow-wrap:anywhere}
+.cb-schedule-stage{border-top:1px solid #eee;margin-top:7px}.cb-schedule-stage summary{padding:9px 0;font-weight:800;font-size:13px}
+.cb-schedule-stage-item{display:block;width:100%;padding:8px;text-align:left;border:1px solid #eee;border-radius:7px;margin:3px 0;background:#fff;font-size:12px;color:#333}
+.cb-schedule-month{display:flex;align-items:center;justify-content:center;gap:20px;margin:12px 0}.cb-schedule-month button{border:1px solid #ddd;background:#fff;border-radius:9px;padding:6px 14px}
+.cb-schedule-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;margin:8px 0}
+.cb-schedule-calendar b{text-align:center;font-size:12px;padding:6px 0}.cb-schedule-calendar button{min-width:0;min-height:49px;background:#fff;border:1px solid #e6dcdc;border-radius:5px;padding:4px 1px;font-size:11px;color:#222;overflow-wrap:anywhere}.cb-schedule-calendar button.today{border-color:#bd1420;color:#be1321;font-weight:800}
+.cb-schedule-gantt{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #ddd;border-radius:9px;background:#fff}.cb-schedule-gantt-sheet{position:relative;min-width:700px;padding:0 0 8px}
+.cb-schedule-gantt-days{display:flex;height:33px;align-items:center;border-bottom:1px solid #ddd}
+.cb-schedule-gantt-days span{width:24px;flex:none;font-size:9px;text-align:center;border-right:1px solid #eee}
+.cb-schedule-gantt-row{position:relative;height:35px;background:repeating-linear-gradient(90deg,#fff,#fff 23px,#eee 24px)}
+.cb-schedule-gantt-bar{position:absolute;top:5px;min-height:25px;max-width:100%;border:0;border-radius:5px;background:#c81924;color:#fff;font-size:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.cb-schedule-gantt-bar.overdue{background:#a20b17}
+.cb-schedule-popup{position:fixed;inset:0;z-index:2147483450;padding:calc(env(safe-area-inset-top,0px) + 10px) 10px calc(env(safe-area-inset-bottom,0px) + 10px);display:flex;align-items:center;justify-content:center;background:#0009;box-sizing:border-box}
+.cb-schedule-pop-body{display:flex;flex-direction:column;min-width:0;max-height:100%;width:min(100%,570px);border-radius:16px;background:#fff;overflow:hidden}
+.cb-schedule-pop-content{padding:13px;overflow:auto;min-height:0}
+.cb-schedule-pop-content>button{display:block;width:100%;margin:6px 0;padding:10px;border:1px solid #ddd;background:#fff;border-radius:8px;text-align:left}
+.cb-schedule-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.cb-schedule-form label{font-size:12px;font-weight:750;min-width:0}
+.cb-schedule-form input,.cb-schedule-form select,.cb-schedule-form textarea{width:100%;min-width:0;min-height:40px;display:block;box-sizing:border-box;font-size:15px;padding:7px;border:1px solid #ddd;border-radius:8px;margin-top:4px;background:#fff;color:#222}
+.cb-schedule-edit-actions,.cb-schedule-history{grid-column:1/-1}.cb-schedule-edit-actions button,.cb-schedule-form>button{padding:12px;border:0;border-radius:9px;background:#d71920;color:#fff;font-weight:800}
+.cb-schedule-history{font-size:11px;overflow-wrap:anywhere}
+@media(max-width:380px){.cb-schedule-form{grid-template-columns:minmax(0,1fr)}}
+</style>
 </head>
 <body>
 
@@ -2393,11 +2441,12 @@ function showFranchise(section=activeFranchiseSection){
  rows.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';item.classList.toggle('lead-unpaid-card',((v.stage==='已簽約'&&!v.depositReceived)||(v.stage==='受訓中'&&v.trainingPending)));
   const linked=linkedVacancyAddress(v);
-  item.innerHTML='<div class="lead-info"><div class="lead-summary-row"><span class="lead-summary-name">'+esc(v.name)+'</span><span class="lead-summary-region">'+esc(leadLocation(v))+'</span><span class="lead-summary-phone">'+(String(v.phone||'').replace(/[^0-9+]/g,'')?'<a class="lead-phone-link" href="tel:'+esc(String(v.phone).replace(/[^0-9+]/g,''))+'">'+esc(v.phone)+'</a>':esc(v.phone||'未填電話'))+'</span></div>'+(v.messenger?'<div class="vacancy-note">通訊：'+esc(v.messenger)+'</div>':'')+(linked||v.storeAddress?'<div class="vacancy-note lead-detail-line"><span class="lead-detail-label">展店地址：</span><button type="button" class="lead-address-link" data-act="locate-address">'+esc(linked||v.storeAddress)+'</button></div>':'')+(v.note?'<div class="vacancy-note">'+esc(v.note)+'</div>':'')+(v.stage==='受訓中'&&!v.trainingPending&&v.trainingStart&&v.trainingEnd?'<div class="vacancy-note lead-detail-line"><span class="lead-detail-label">受訓：</span><span>'+esc(v.trainingStart)+' ～ '+esc(v.trainingEnd)+'</span></div>':'')+'</div><div class="lead-controls lead-controls-three '+((v.stage==='已簽約'&&!v.depositReceived)||(v.stage==='受訓中'&&v.trainingPending)?'lead-controls-with-deposit':'')+'"><select aria-label="更新洽談進度">'+franchiseStageOptions(v.franchiseType||'新加盟主',v.stage).map(x=>'<option value="'+x+'" '+(v.stage===x?'selected':'')+'>'+(x==='已簽約'&&v.depositReceived?'已簽約（已收訂金）':x)+'</option>').join('')+'</select>'+(v.stage==='已簽約'&&!v.depositReceived?'<button type="button" data-act="deposit">未收訂金</button>':v.stage==='受訓中'&&v.trainingPending?'<button type="button" data-act="training">受訓待訂</button>':'')+'<button type="button" data-act="edit">編輯</button><button type="button" data-act="delete">刪除</button></div>'+(v.stage==='已簽約'&&v.depositReceived?'<div class="vacancy-note lead-deposit-received">已收訂金：NT$ '+Number(v.depositAmount||0).toLocaleString('zh-TW')+'</div>':'');
+  item.innerHTML='<div class="lead-info"><div class="lead-summary-row"><span class="lead-summary-name">'+esc(v.name)+'</span><span class="lead-summary-region">'+esc(leadLocation(v))+'</span><span class="lead-summary-phone">'+(String(v.phone||'').replace(/[^0-9+]/g,'')?'<a class="lead-phone-link" href="tel:'+esc(String(v.phone).replace(/[^0-9+]/g,''))+'">'+esc(v.phone)+'</a>':esc(v.phone||'未填電話'))+'</span></div>'+(v.messenger?'<div class="vacancy-note">通訊：'+esc(v.messenger)+'</div>':'')+(linked||v.storeAddress?'<div class="vacancy-note lead-detail-line"><span class="lead-detail-label">展店地址：</span><button type="button" class="lead-address-link" data-act="locate-address">'+esc(linked||v.storeAddress)+'</button></div>':'')+(v.note?'<div class="vacancy-note">'+esc(v.note)+'</div>':'')+(v.stage==='受訓中'&&!v.trainingPending&&v.trainingStart&&v.trainingEnd?'<div class="vacancy-note lead-detail-line"><span class="lead-detail-label">受訓：</span><span>'+esc(v.trainingStart)+' ～ '+esc(v.trainingEnd)+'</span></div>':'')+'</div><div class="lead-controls lead-controls-three '+((v.stage==='已簽約'&&!v.depositReceived)||(v.stage==='受訓中'&&v.trainingPending)?'lead-controls-with-deposit':'')+'"><select aria-label="更新洽談進度">'+franchiseStageOptions(v.franchiseType||'新加盟主',v.stage).map(x=>'<option value="'+x+'" '+(v.stage===x?'selected':'')+'>'+(x==='已簽約'&&v.depositReceived?'已簽約（已收訂金）':x)+'</option>').join('')+'</select>'+(v.stage==='已簽約'&&!v.depositReceived?'<button type="button" data-act="deposit">未收訂金</button>':v.stage==='受訓中'&&v.trainingPending?'<button type="button" data-act="training">受訓待訂</button>':'')+'<button type="button" data-act="schedule">時程</button><button type="button" data-act="edit">編輯</button><button type="button" data-act="delete">刪除</button></div>'+(v.stage==='已簽約'&&v.depositReceived?'<div class="vacancy-note lead-deposit-received">已收訂金：NT$ '+Number(v.depositAmount||0).toLocaleString('zh-TW')+'</div>':'');
   item.querySelector('select').onchange=async e=>{const previous={stage:v.stage,depositReceived:v.depositReceived,depositAmount:v.depositAmount,trainingPending:v.trainingPending,trainingStart:v.trainingStart,trainingEnd:v.trainingEnd};const next=e.target.value;if(next==='已簽約'&&v.stage!=='已簽約'){const ok=await askFranchiseDeposit(v);if(!ok){e.target.value=v.stage;return}}if(next==='受訓中'&&v.stage!=='受訓中'){const ok=await askFranchiseTraining(v);if(!ok){Object.assign(v,previous);e.target.value=v.stage;return}}v.stage=next;if(!saveFranchise()){Object.assign(v,previous);e.target.value=v.stage;return}showFranchise(section)};
   const depositBtn=item.querySelector('[data-act="deposit"]');if(depositBtn)depositBtn.onclick=async()=>{const previous={depositReceived:v.depositReceived,depositAmount:v.depositAmount};const ok=await askFranchiseDeposit(v);if(!ok)return;if(!saveFranchise()){Object.assign(v,previous);return}showFranchise(section)};
   const trainingBtn=item.querySelector('[data-act="training"]');if(trainingBtn)trainingBtn.onclick=async()=>{const previous={trainingPending:v.trainingPending,trainingStart:v.trainingStart,trainingEnd:v.trainingEnd};if(!await askFranchiseTraining(v))return;if(!saveFranchise()){Object.assign(v,previous);return}showFranchise(section)};
   const addressButton=item.querySelector('[data-act="locate-address"]');if(addressButton)addressButton.onclick=()=>locateFranchiseAddress(v,(linked||v.storeAddress).split('；')[0].trim());
+  item.querySelector('[data-act="schedule"]').onclick=()=>{if(!window.ComebuySchedule){alert('時程中心尚未載入');return}window.ComebuySchedule.open(()=>franchiseLeads,saveFranchise,showFranchise,linkedVacancyAddress)};
   item.querySelector('[data-act="edit"]').onclick=()=>{franchiseEditId=franchiseEditId===v.id?null:v.id;showFranchise(section)};
   item.querySelector('[data-act="delete"]').onclick=()=>{if(!confirm('刪除此加盟主資料？'))return;const old=[...franchiseLeads];franchiseLeads=franchiseLeads.filter(x=>x.id!==v.id);if(saveFranchise())showFranchise(section);else franchiseLeads=old};
   if(franchiseEditId===v.id)item.appendChild(leadEditorForm(v));
@@ -2607,6 +2656,9 @@ function showCaseManagement(){
  drawerBody.appendChild(choices);
  choices.querySelector('#caseListEntry').onclick=()=>{franchisePanelMode='list';franchiseStageFilter='';showFranchise('cases')};
  choices.querySelector('#ownerListEntry').onclick=()=>{franchisePanelMode='existing';franchiseStageFilter='';showFranchise('owners')};
+ const timelineEntry=document.createElement('button');timelineEntry.type='button';timelineEntry.id='scheduleCenterEntry';timelineEntry.className='case-schedule-entry';timelineEntry.innerHTML='<span aria-hidden="true">▦</span> 時程中心 <span>›</span>';
+ choices.appendChild(timelineEntry);
+ timelineEntry.onclick=()=>{if(!window.ComebuySchedule){alert('時程中心尚未載入，請重新整理頁面');return}window.ComebuySchedule.open(()=>franchiseLeads,saveFranchise,showFranchise,linkedVacancyAddress)};
  const heading=document.createElement('h3');heading.textContent='開發概況';drawerBody.appendChild(heading);
  const d=new Date(),today=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),due=vacancies.filter(v=>v.followUpDate&&v.followUpDate<=today&&!['已開幕','放棄開發'].includes(v.developmentStage)),active=vacancies.filter(v=>!['已開幕','放棄開發'].includes(vacancyStage(v)));const cards=document.createElement('div');cards.className='dashboard-grid';[['開發中空舖',active.length],['加盟主名單',franchiseLeads.length],['未簽約',franchiseLeads.filter(v=>!['已簽約','受訓中'].includes(v.stage)).length],['已簽約',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)).length],['已簽約未付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&!v.depositReceived).length],['已簽約已付訂金',franchiseLeads.filter(v=>['已簽約','受訓中'].includes(v.stage)&&v.depositReceived).length],['今日及逾期待追蹤',due.length],['已簽約案件',vacancies.filter(v=>v.developmentStage==='已簽約').length]].forEach(([name,num])=>{const el=document.createElement('div');el.className='dashboard-card';el.innerHTML='<span>'+esc(name)+'</span><strong>'+num+'</strong>';cards.appendChild(el)});drawerBody.appendChild(cards);
  const h=document.createElement('h3');h.textContent='今日及逾期追蹤（'+due.length+'）';drawerBody.appendChild(h);due.sort((a,b)=>a.followUpDate.localeCompare(b.followUpDate)).forEach(v=>{const el=document.createElement('button');el.className='dashboard-follow';el.innerHTML='<strong>'+esc(v.address)+'</strong><span>'+esc(v.followUpDate)+'｜'+esc(vacancyStage(v))+'</span>';el.onclick=()=>{vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';showVacancies()};drawerBody.appendChild(el)})
@@ -2804,5 +2856,5 @@ window.addComebuyIntelligenceSettingsButton=function(){
  const b=el('button','dashboard-backup','▤ 最新訊息');b.id='openIntelligence';b.onclick=window.showComebuyIntelligence;target.prepend(b);
 };
 })();
-</script><script src="profit-calculator.js?v=1" defer></script></body>
+</script><script src="profit-calculator.js?v=1" defer></script><script src="franchise-schedule.js?v=1" defer></script></body>
 </html>
