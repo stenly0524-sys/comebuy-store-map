@@ -692,6 +692,37 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .lead-controls-with-deposit{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 .cb-schedule-delay-warning{grid-column:1/-1;border:1px solid #d71920;background:#fff1f2;border-radius:9px;padding:10px;color:#a41220;font-size:12px;line-height:1.6}
 .cb-schedule-delay-warning p{margin:0 0 8px}.cb-schedule-delay-warning button{width:100%;min-height:42px;background:#c81924;color:white;border:0;border-radius:8px;font-weight:800}
+
+.cb-schedule-head-actions{display:flex;align-items:center;gap:9px}
+.cb-schedule-template{width:40px;height:40px;border:1px solid #fff6;border-radius:50%;background:#fff;color:#c10e1b;font-size:22px;cursor:pointer;flex:none}
+.cb-schedule-template-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-bottom:10px}
+.cb-schedule-template-bar select,.cb-schedule-template-add input,.cb-schedule-template-add select{min-width:0;width:100%;box-sizing:border-box;font-size:13px;min-height:38px;border:1px solid #ddd;border-radius:8px;padding:7px;background:#fff;color:#222}
+.cb-schedule-template-bar button,.cb-schedule-template-controls button,.cb-schedule-template-add button{border:1px solid #d71920;border-radius:9px;background:#fff;color:#b70b19;padding:8px;font-size:12px;font-weight:800}
+.cb-schedule-template-controls{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.cb-schedule-template-controls .cb-schedule-primary,.cb-schedule-template-add .cb-schedule-primary{background:#d71920;color:#fff}
+.cb-schedule-template-stage{border:1px solid #e4dada;background:#fff;border-radius:10px;padding:9px;margin:8px 0}
+.cb-schedule-template-stage summary{font-weight:800;font-size:13px;color:#b30e1c}
+.cb-schedule-template-task{display:grid;grid-template-columns:minmax(0,1fr) 24px 27px 27px;gap:4px;padding:6px 0;border-bottom:1px solid #eee}
+.cb-schedule-template-task input[type=text]{min-width:0;width:100%;box-sizing:border-box;font-size:12px;padding:5px;border:1px solid #ddd;border-radius:6px}
+.cb-schedule-template-task input[type=checkbox]{width:18px;height:18px;align-self:center}
+.cb-schedule-template-task button{border:1px solid #ddd;background:#fff;border-radius:5px;font-size:14px}
+.cb-schedule-template-task select{grid-column:1/-1;min-width:0;padding:5px;border-radius:5px;border:1px solid #eee;background:#fff;font-size:11px}
+.cb-schedule-template-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;margin-top:8px}
+.cb-schedule-template-rules{border-top:1px solid #ddd;margin-top:14px;padding:10px 0}
+.cb-schedule-template-rules h3{font-size:14px}
+.cb-schedule-rule-row{display:grid;grid-template-columns:23px minmax(0,1fr) 58px;gap:5px;align-items:center;padding:7px 0;border-bottom:1px solid #eee}
+.cb-schedule-rule-row strong{font-size:11px;overflow-wrap:anywhere}
+.cb-schedule-rule-row input[type=number]{width:100%;min-width:0;box-sizing:border-box}
+.cb-schedule-rule-row select,.cb-schedule-rule-row input[type=text]{grid-column:2/-1;min-width:0;width:100%;min-height:35px;box-sizing:border-box}
+.cb-schedule-template-apply{display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #eee;font-size:13px}
+.cb-schedule-template-apply input{flex:none}
+.cb-schedule-check{display:flex!important;align-items:center;gap:8px;grid-column:1/-1}
+.cb-schedule-check input{width:18px!important;height:18px!important;min-height:0!important;margin:0!important}
+.cb-schedule-trigger-note{font-size:11px;color:#777;grid-column:1/-1}
+.cb-schedule-delay-item{display:grid;grid-template-columns:20px minmax(0,1fr);gap:7px;padding:7px 0;border-top:1px solid #eed}
+.cb-schedule-delay-item span{min-width:0;overflow-wrap:anywhere}
+.cb-schedule-delay-item input[type=date]{grid-column:2;width:100%;min-width:0}
+@media(max-width:380px){.cb-schedule-template-bar{grid-template-columns:minmax(0,1fr)}.cb-schedule-template-add{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -2462,7 +2493,7 @@ function showFranchise(section=activeFranchiseSection){
 const leadAddressStyle=document.createElement('style');leadAddressStyle.textContent='.lead-address-link{border:0;background:none;padding:0;color:#c8202d;text-decoration:underline;font:inherit;font-weight:700;text-align:left;cursor:pointer;overflow-wrap:anywhere}';document.head.appendChild(leadAddressStyle);
 const leadPhoneStyle=document.createElement('style');leadPhoneStyle.textContent='.lead-phone-link{color:#c8202d!important;text-decoration:underline!important;font-weight:700;display:inline-block;min-height:24px}';document.head.appendChild(leadPhoneStyle);
 document.getElementById('openFranchise').onclick=showCaseManagement;
-function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits,scheduleRules:(()=>{try{return JSON.parse(localStorage.getItem('cb_schedule_rules_v1')||'null')}catch{return null}})()},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportBackup(){const data={format:'comebuy-map-backup',version:1,exportedAt:new Date().toISOString(),vacancies,franchiseLeads,storeOpeningDates,storeEdits,scheduleRules:(()=>{try{return JSON.parse(localStorage.getItem('cb_schedule_rules_v1')||'null')}catch{return null}})(),scheduleTemplates:(()=>{try{return window.ComebuyScheduleV2?.registry()||JSON.parse(localStorage.getItem('cb_schedule_templates_v2')||'null')}catch{return null}})()},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='COMEBUY-MAP-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
 async function importBackupJson(file){
  if(!file)return;
@@ -2472,7 +2503,7 @@ async function importBackupJson(file){
   if(!data||data.format!=='comebuy-map-backup'||data.version!==1||!Array.isArray(data.vacancies)||!Array.isArray(data.franchiseLeads)||!data.storeOpeningDates||typeof data.storeOpeningDates!=='object'||Array.isArray(data.storeOpeningDates)||!data.storeEdits||typeof data.storeEdits!=='object'||Array.isArray(data.storeEdits))throw Error('JSON 格式不符合 COMEBUY MAP 備份 V1');
   if(data.vacancies.some(v=>!v||typeof v.id!=='string'||typeof v.address!=='string')||data.franchiseLeads.some(v=>!v||typeof v!=='object'||Array.isArray(v)))throw Error('備份內含不合法的空舖或加盟資料');
   if(!await confirmBackupImportStyled())return;
-  const changes=[[VACANCY_KEY,data.vacancies],[FRANCHISE_KEY,data.franchiseLeads],[STORE_OPENING_KEY,data.storeOpeningDates],[STORE_EDITS_KEY,data.storeEdits]];if(data.scheduleRules&&typeof data.scheduleRules==='object'&&!Array.isArray(data.scheduleRules))changes.push(['cb_schedule_rules_v1',data.scheduleRules]);
+  const changes=[[VACANCY_KEY,data.vacancies],[FRANCHISE_KEY,data.franchiseLeads],[STORE_OPENING_KEY,data.storeOpeningDates],[STORE_EDITS_KEY,data.storeEdits]];if(data.scheduleRules&&typeof data.scheduleRules==='object'&&!Array.isArray(data.scheduleRules))changes.push(['cb_schedule_rules_v1',data.scheduleRules]);if(data.scheduleTemplates&&Array.isArray(data.scheduleTemplates.templates)&&data.scheduleTemplates.templates.every(x=>x&&typeof x.id==='string'&&Array.isArray(x.phases)&&Array.isArray(x.triggers)))changes.push(['cb_schedule_templates_v2',data.scheduleTemplates]);
   const old=changes.map(([key])=>[key,localStorage.getItem(key)]);
   try{changes.forEach(([key,value])=>localStorage.setItem(key,JSON.stringify(value)))}catch(e){old.forEach(([key,value])=>{try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}catch(_) {}});throw Error('儲存空間不足或無法寫入，已嘗試還原原資料')}
   await showBackupImportSuccessStyled();
@@ -2862,5 +2893,5 @@ window.addComebuyIntelligenceSettingsButton=function(){
  const b=el('button','dashboard-backup','▤ 最新訊息');b.id='openIntelligence';b.onclick=window.showComebuyIntelligence;target.prepend(b);
 };
 })();
-</script><script src="profit-calculator.js?v=1" defer></script><script src="franchise-schedule.js?v=20261112-schedule-v1" defer></script></body>
+</script><script src="profit-calculator.js?v=1" defer></script><script src="franchise-schedule-v2.js?v=20261112-rules-v2" defer></script><script src="franchise-schedule.js?v=20261112-rules-v2" defer></script></body>
 </html>
