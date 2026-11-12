@@ -2,19 +2,252 @@
   "schemaVersion": 1,
   "updatedAt": "2026-11-12",
   "scope": "SipSpot brands currently shown by COMEBUY MAPS (30 or more stores)",
-  "policy": "Missing fee or total investment must remain null; do not infer from store count, franchise deposit or third-party estimates.",
+  "policy": "加盟授權金、加盟方案包與開辦準備金必須分開標示；第三方估算不等於正式報價。沒有證據填 null，不能依店數臆測。",
   "amountsUnit": "TWD",
   "brands": {
     "COMEBUY": {
       "franchiseFee": {
         "amount": 380000,
         "currency": "TWD",
-        "qualifier": "起",
+        "qualifier": "",
         "status": "third_party_brand_listing",
         "referenceDate": "2026-11-12",
-        "sourceName": "YES加盟｜COMEBUY 現萃茶飲 2026年加盟招募",
-        "sourceUrl": "https://yesally.com.tw/list_in.php?ID=1414",
-        "note": "第三方招商平台所列，非正式報價；未含教育訓練、裝修、設備及其他開辦支出"
+        "sourceName": "YES加盟 COMEBUY 2026年末招商活動",
+        "sourceUrl": "https://www.yesally.com.tw/list.php?county=1&gomap=&money=200&page=1&res_sort_min=&res_title=&style=",
+        "note": "2026年末招商頁刊載加盟金38萬，教育訓練費10萬另計，其他契約、裝修設備費另計"
+      },
+      "openingTotal": {
+        "amount": 2300000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考區間；非正式完整開辦報價",
+        "maxAmount": 2500000
+      }
+    },
+    "麻古": {
+      "openingTotal": {
+        "amount": 3000000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "清心": {
+      "openingTotal": {
+        "amount": 2500000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "迷客夏": {
+      "openingTotal": {
+        "amount": 3000000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "大苑子": {
+      "openingTotal": {
+        "amount": 2500000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "茶魔": {
+      "openingTotal": {
+        "amount": 3000000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考區間；非正式完整開辦報價",
+        "maxAmount": 4000000
+      }
+    },
+    "珍煮丹": {
+      "openingTotal": {
+        "amount": 3280000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "得正": {
+      "openingTotal": {
+        "amount": 1500000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "拾汣茶屋": {
+      "openingTotal": {
+        "amount": 2000000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "PRO360 飲料店加盟準備金整理",
+        "sourceUrl": "https://www.pro360.com.tw/price/bubble_tea_shop_decoration",
+        "scope": "10坪以內店面第三方準備金估算"
+      }
+    },
+    "老賴茶棧": {
+      "openingTotal": {
+        "amount": 2380000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "UpToGo 飲料加盟準備金整理",
+        "sourceUrl": "https://uptogo.com.tw/%E5%95%86%E6%A5%AD/%E9%A3%B2%E6%96%99%E5%BA%97%E8%A3%9D%E6%BD%A2%E8%B2%BB%E7%94%A8%EF%BC%9F/",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "龜記": {
+      "openingTotal": {
+        "amount": 2500000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "UpToGo 飲料加盟準備金整理",
+        "sourceUrl": "https://uptogo.com.tw/%E5%95%86%E6%A5%AD/%E9%A3%B2%E6%96%99%E5%BA%97%E8%A3%9D%E6%BD%A2%E8%B2%BB%E7%94%A8%EF%BC%9F/",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "五桐號": {
+      "openingTotal": {
+        "amount": 3000000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "UpToGo 飲料加盟準備金整理",
+        "sourceUrl": "https://uptogo.com.tw/%E5%95%86%E6%A5%AD/%E9%A3%B2%E6%96%99%E5%BA%97%E8%A3%9D%E6%BD%A2%E8%B2%BB%E7%94%A8%EF%BC%9F/",
+        "scope": "第三方加盟準備金參考，可能非完整開辦總金額"
+      }
+    },
+    "八曜和茶": {
+      "openingTotal": {
+        "amount": 6000000,
+        "currency": "TWD",
+        "qualifier": "約",
+        "status": "third_party_preparation_estimate",
+        "referenceDate": "2026-11-12",
+        "sourceName": "日常有解 加盟投資參考",
+        "sourceUrl": "https://tyaward.com.tw/%E5%95%86%E6%A5%AD/%E9%96%8B%E4%B8%80%E9%96%93%E5%BE%B7%E6%AD%A3%E8%A6%81%E5%A4%9A%E5%B0%91%E9%8C%A2/",
+        "scope": "第三方投資規模估算，非官方報價"
+      }
+    },
+    "鮮茶道": {
+      "franchiseFee": {
+        "amount": 2000000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "third_party_package_quote",
+        "referenceDate": "2026-11-12",
+        "sourceName": "YES加盟 鮮茶道 2026年加盟方案",
+        "sourceUrl": "https://mail.yesally.com.tw/list_in.php?ID=1387",
+        "scope": "包含廣告行銷、設備、裝潢、加盟金與教育訓練；不是純加盟授權金"
+      },
+      "openingTotal": null
+    },
+    "鶴茶樓": {
+      "franchiseFee": {
+        "amount": 2480000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "third_party_package_quote",
+        "referenceDate": "2026-11-12",
+        "sourceName": "YES加盟 鶴茶樓2026加盟方案",
+        "sourceUrl": "https://yesally.com.tw/list_in.php?ID=1991",
+        "scope": "含設備裝潢加盟費訓練，不是純授權費"
+      },
+      "openingTotal": null
+    },
+    "茶聚": {
+      "franchiseFee": {
+        "amount": 1980000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "third_party_package_quote",
+        "referenceDate": "2026-11-12",
+        "sourceName": "YES加盟 茶聚加盟方案",
+        "sourceUrl": "https://yesally.com.tw/list_in.php?ID=1536",
+        "scope": "加盟方案金額，非純授權費；官方網站表示加盟資金可控制在200萬以內"
+      },
+      "openingTotal": null
+    },
+    "手作功夫茶": {
+      "franchiseFee": {
+        "amount": 2000000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "third_party_package_quote",
+        "referenceDate": "2026-11-12",
+        "sourceName": "YES加盟 手作功夫茶方案",
+        "sourceUrl": "https://yesally.com.tw/list_in.php?ID=1536",
+        "scope": "平台標為加盟金；是否含設備裝潢待官方確認"
+      },
+      "openingTotal": null
+    },
+    "紅茶巴士": {
+      "franchiseFee": {
+        "amount": 1498000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "third_party_package_quote",
+        "referenceDate": "2026-11-12",
+        "sourceName": "YES加盟 紅茶巴士招商",
+        "sourceUrl": "https://www.yesally.com.tw/list.php?page=1&res_title=%E7%B4%85%E8%8C%B6",
+        "scope": "招商平台標示加盟金，項目未逐項揭露"
+      },
+      "openingTotal": null
+    },
+    "喫茶小舖": {
+      "franchiseFee": {
+        "amount": 2500000,
+        "currency": "TWD",
+        "qualifier": "起",
+        "status": "official_package_quote",
+        "referenceDate": "2026-11-12",
+        "sourceName": "喫茶小舖官方加盟Q&A",
+        "sourceUrl": "https://www.teashop168.com.tw/affiliate/index.php?index_id=35",
+        "scope": "10–12坪方案，含教育訓練、裝修及全店設備，不是純品牌授權費"
       },
       "openingTotal": null
     }
