@@ -756,6 +756,18 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-schedule-delay-item input[type=date]{grid-column:2;width:100%;min-width:0}
 @media(max-width:380px){.cb-schedule-template-bar{grid-template-columns:minmax(0,1fr)}.cb-schedule-template-add{grid-template-columns:minmax(0,1fr)}}
 </style>
+<style id="cb-vacancy-focus-flash-style">
+/* Inset box-shadow animates without changing size, background, padding, or layout. */
+@keyframes cb-vacancy-focus-border{
+  0%,49.9%{box-shadow:inset 0 0 0 2px #d71920}
+  50%,100%{box-shadow:inset 0 0 0 0 transparent}
+}
+.vacancy-item.cb-vacancy-focus-flash{
+  animation:cb-vacancy-focus-border 500ms step-end 3;
+  border-radius:inherit;
+  scroll-margin-block:12px;
+}
+</style>
 </head>
 <body>
 
@@ -2205,13 +2217,59 @@ function vacancyPhotosModal(v){
 }
 const vacancyModalStyle=document.createElement('style');vacancyModalStyle.textContent='.vacancy-modal-overlay{position:fixed;inset:0;background:#0009;z-index:100001;display:flex;align-items:center;justify-content:center;padding:15px}.vacancy-modal{width:min(96vw,520px);max-height:88dvh;display:flex;flex-direction:column;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px #0005}.vacancy-modal header{background:#c8202d;color:#fff;padding:12px 15px;display:flex;align-items:center;justify-content:space-between}.vacancy-modal-close{width:32px;height:32px;border:0;border-radius:50%;background:#fff;color:#c8202d;font-size:22px}.vacancy-modal-body{padding:15px;overflow:auto}.vacancy-modal-actions{margin-top:12px;display:flex;justify-content:flex-end}.vacancy-modal-actions button{background:#c8202d;color:#fff;border:0;border-radius:9px;padding:11px 16px;font-weight:800}.vacancy-photo-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.vacancy-photo-cell{position:relative}.vacancy-photo-cell img{width:100%;height:140px;object-fit:cover;border-radius:9px}.vacancy-photo-cell button{position:absolute;right:5px;top:5px;border:0;border-radius:6px;background:#fff;color:#c8202d;padding:5px 8px}';document.head.appendChild(vacancyModalStyle);
 let vacancyListFocusId=null;
+let vacancyFocusSequence=0;
 function openVacancyInList(id){
  const target=vacancies.find(v=>String(v.id)===String(id)&&!v.archived);
- if(!target)return;
- vacancyListFocusId=target.id;vacancyPanelMode='list';
+ if(!target){alert('找不到指定空舖，可能已刪除或封存。');return}
+ const sequence=++vacancyFocusSequence;
+ vacancyListFocusId=String(target.id);vacancyPanelMode='list';
+ // A map deep-link takes precedence over any previous list filters.
  vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';
- vacancyDetailOpenId=null;infoWindow.close();showVacancies();
- requestAnimationFrame(()=>{const el=drawerBody.querySelector('[data-vacancy-record-id]');if(el)el.scrollIntoView({block:'start',behavior:'instant'})});
+ vacancyRentMin='';vacancyRentMax='';
+ vacancyDetailOpenId=null;
+ if(infoWindow)infoWindow.close();
+ showVacancies();
+ const getCard=()=>Array.from(drawerBody.querySelectorAll('[data-vacancy-record-id]'))
+  .find(el=>el.dataset.vacancyRecordId===String(id));
+ const isCurrent=()=>sequence===vacancyFocusSequence&&nav.level==='vacancies'&&drawer.classList.contains('open');
+ const raf=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+ // Await layout/paint and then let the smooth scroll complete before highlighting.
+ (async()=>{
+  await raf();await raf();
+  if(!isCurrent())return;
+  const card=getCard();
+  if(!card){alert('指定空舖未出現在清單中，請確認資料是否仍存在。');return}
+  const scroller=drawerBody;
+  const position=()=>{
+   const rect=card.getBoundingClientRect(),view=scroller.getBoundingClientRect();
+   const pad=12;
+   if(rect.height+pad*2<=view.height){
+    return rect.top>=view.top+pad-2&&rect.bottom<=view.bottom-pad+2;
+   }
+   return rect.top>=view.top+pad-3&&rect.top<=view.top+pad+8;
+  };
+  // Center if the whole card fits, otherwise top-align the card.
+  const view=scroller.getBoundingClientRect(),rect=card.getBoundingClientRect();
+  card.scrollIntoView({behavior:'smooth',block:rect.height+24<=view.height?'center':'start',inline:'nearest'});
+  const beginning=performance.now();
+  let stable=0,lastTop=NaN;
+  while(isCurrent()&&card.isConnected){
+   await raf();
+   const currentTop=card.getBoundingClientRect().top;
+   stable=Math.abs(currentTop-lastTop)<1?stable+1:0;lastTop=currentTop;
+   if(position()&&stable>=3)break;
+   // If native scrolling cannot align completely, still wait for it to settle.
+   if(performance.now()-beginning>3200)break;
+  }
+  if(!isCurrent()||!card.isConnected)return;
+  // A fresh animation instance is created for every click, even for the same ID.
+  card.classList.remove('cb-vacancy-focus-flash');
+  void card.offsetWidth;
+  card.classList.add('cb-vacancy-focus-flash');
+  const remove=()=>card.classList.remove('cb-vacancy-focus-flash');
+  card.addEventListener('animationend',remove,{once:true});
+  setTimeout(remove,1650);
+ })();
 }
 function confirmDeleteArchivedVacancyStyled(address){
  return new Promise(resolve=>{
@@ -2325,7 +2383,7 @@ function showVacancies(){
  };
  rentMinInput.onchange=applyRentFilter;rentMaxInput.onchange=applyRentFilter;
  const filteredVacancies=visibleVacancies.filter(v=>(!vacancyFilterCity||vacancyCity(v)===vacancyFilterCity)&&(!vacancyFilterDistrict||vacancyDistrict(v)===vacancyFilterDistrict)&&(!vacancyFilterStage||(vacancyStage(v))===vacancyFilterStage)&&(vacancyRentMin===''||v.rent!==''&&v.rent!=null&&Number(v.rent)>=Number(vacancyRentMin))&&(vacancyRentMax===''||v.rent!==''&&v.rent!=null&&Number(v.rent)<=Number(vacancyRentMax)));
- if(vacancyListFocusId)filteredVacancies.sort((a,b)=>Number(String(b.id)===String(vacancyListFocusId))-Number(String(a.id)===String(vacancyListFocusId)));
+ // Keep the original list order; map focus uses the unique ID and scrolls to its real row.
  const resultCount=document.createElement('div');resultCount.className='vacancy-note';resultCount.textContent='符合篩選：'+filteredVacancies.length+' 筆／總計 '+visibleVacancies.length+' 筆';drawerBody.appendChild(resultCount);
  if(!visibleVacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent=isArchive?'尚無封存店鋪。':'尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
  filteredVacancies.forEach(v=>{
