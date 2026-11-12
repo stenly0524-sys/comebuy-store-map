@@ -55,10 +55,15 @@ function open(v,saveVacancies){
  $('.cb-profit-address').textContent=v.address||'未命名空舖';
  const fields={};
  FIELDS.forEach(([key,label,def,min,max,step],i)=>{
-  const wrap=document.createElement('label');wrap.className='cb-profit-field';
-  const caption=document.createElement('span');caption.textContent=label;
-  const input=document.createElement('input');input.type='number';input.inputMode=step===1?'numeric':'decimal';input.min=String(min);input.max=String(max);input.step=String(step);input.value=String(values[key]);input.dataset.field=key;input.setAttribute('aria-label',label);
-  wrap.append(caption,input);$(i<7?'[data-section="fixed"] .cb-profit-inputs':'[data-section="revenue"] .cb-profit-inputs').appendChild(wrap);
+  const input=document.createElement('input');input.type=key==='cups'?'hidden':'number';input.inputMode=step===1?'numeric':'decimal';input.min=String(min);input.max=String(max);input.step=String(step);input.value=String(values[key]);input.dataset.field=key;input.setAttribute('aria-label',label);
+  if(key==='cups'){
+   // Keep the saved daily cup value and the quick-selector calculation without a B-section input.
+   $('.cb-profit-quick').appendChild(input);
+  }else{
+   const wrap=document.createElement('label');wrap.className='cb-profit-field';
+   const caption=document.createElement('span');caption.textContent=label;
+   wrap.append(caption,input);$(i<7?'[data-section="fixed"] .cb-profit-inputs':'[data-section="revenue"] .cb-profit-inputs').appendChild(wrap);
+  }
   fields[key]=input;
  });
  const quick=$('.cb-profit-quick');
