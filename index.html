@@ -630,6 +630,7 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 </style>
 <style id="cb-profit-styles">
 .cb-profit-entry{display:block;width:100%;margin:12px 0 0;min-height:45px;border:1px solid #ca1b26;border-radius:10px;color:#bc1520;background:#fff;font-weight:800;font-size:15px}
+.cb-rating-placeholder-entry + .cb-profit-entry{margin-top:7px}
 .cb-profit-overlay{position:fixed;inset:0;z-index:2147483540;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.56);padding:calc(env(safe-area-inset-top,0px) + 9px) 9px calc(env(safe-area-inset-bottom,0px) + 9px);box-sizing:border-box}
 .cb-profit-modal{display:flex;flex-direction:column;min-width:0;width:min(100%,660px);max-height:100%;overflow:hidden;background:#f8f7f7;border-radius:15px;box-shadow:0 10px 36px #0003}
 .cb-profit-header{flex:none;display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(90deg,#bd101c,#e8515c);color:white;padding:10px 14px;font-size:18px}
@@ -2305,6 +2306,10 @@ function vacancyStoreModal(v){
   const actions=document.createElement('div');actions.className='vacancy-modal-actions';const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
   const render=view=>{view.replaceChildren(vacancyViewRow('城市',v.region?.city||''),vacancyViewRow('區域',vacancyDistrict(v)),...fields.map(([key,label])=>vacancyViewRow(label,key==='rent'&&v[key]!==''&&v[key]!=null?'NT$ '+Number(v[key]).toLocaleString('zh-TW'):v[key],key==='phone')))};
   vacancyEditToggle(body,form,render);
+  const ratingButton=document.createElement('button');
+  ratingButton.type='button';ratingButton.className='cb-profit-entry cb-rating-placeholder-entry';ratingButton.textContent='評分分析';
+  ratingButton.onclick=()=>alert('開發中');
+  body.appendChild(ratingButton);
   const calcButton=document.createElement('button');
   calcButton.type='button';calcButton.className='cb-profit-entry';calcButton.textContent='損益試算';
   calcButton.onclick=()=>{if(!window.ComebuyProfitCalculator){alert('損益試算元件尚未載入，請重新整理頁面');return}window.ComebuyProfitCalculator.open(v,saveVacancies)};
