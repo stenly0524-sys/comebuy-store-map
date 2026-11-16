@@ -1128,7 +1128,7 @@ function cbHeadquartersIcon(){
 }
 function cbHeadquartersPopup(){
  const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(CB_HQ_ADDRESS);
- return '<div style="min-width:200px;max-width:270px;padding:3px 2px"><strong style="font-size:16px;color:#b80e1b">COMEBUY 總公司</strong><div style="font-size:13px;margin-top:7px;line-height:1.5">'+esc(CB_HQ_ADDRESS)+'</div><a href="'+url+'" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:9px;color:#b80e1b;font-size:13px;font-weight:700">Google Maps 導航</a></div>';
+ return '<div data-cb-headquarters-popup="true" style="min-width:200px;max-width:270px;padding:3px 2px"><strong style="font-size:16px;color:#b80e1b">COMEBUY 總公司</strong><div style="font-size:13px;margin-top:7px;line-height:1.5">'+esc(CB_HQ_ADDRESS)+'</div><a href="'+url+'" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:9px;color:#b80e1b;font-size:13px;font-weight:700">Google Maps 導航</a></div>';
 }
 function cbEnsureHeadquartersMarker(position){
  if(!map||!position)return;
@@ -1236,6 +1236,20 @@ window.initMap=function(){
   window.__cbGooglePoiOpen=false;
   window.__cbPendingGooglePoi=null;
   map.addListener('click',e=>{
+   // The HQ building and the underlying native Google POI are never vacancy candidates.
+   const point=e?.latLng;
+   if(cbHqPosition&&point){
+    const lat=typeof point.lat==='function'?point.lat():point.lat;
+    const lng=typeof point.lng==='function'?point.lng():point.lng;
+    const delta=Math.hypot((lat-cbHqPosition.lat)*111000,(lng-cbHqPosition.lng)*111000*Math.cos(cbHqPosition.lat*Math.PI/180));
+    if(delta<22){
+     if(typeof e.stop==='function')e.stop();
+     window.__cbGooglePoiOpen=false;window.__cbPendingGooglePoi=null;
+     if(!infoWindow)infoWindow=new google.maps.InfoWindow();
+     infoWindow.close();infoWindow.setContent(cbHeadquartersPopup());infoWindow.open({map,anchor:cbHqMarker});
+     return;
+    }
+   }
    const placeId=e?.placeId||'';
    window.__cbGooglePoiOpen=Boolean(placeId);
    if(!placeId){window.__cbPendingGooglePoi=null;return}
@@ -2034,7 +2048,9 @@ function installNativePoiVacancyAction(){
   const next=findCard();
   if(!next){card=null;action.style.display='none';return}
   // COMEBUY-owned store and vacancy cards must never offer a duplicate add-vacancy action.
-  const ownPopup=Boolean(next.querySelector('.store-popup-details,[data-vacancy-detail],#cbPoiAddVacancy'));
+  const cardCopy=String(next.innerText||next.textContent||'').replace(/\s+/g,'');
+  const isHeadquartersPopup=Boolean(next.querySelector('[data-cb-headquarters-popup]'))||cardCopy.includes('COMEBUY總公司')||cardCopy.includes('台北市中正區博愛路53號');
+  const ownPopup=isHeadquartersPopup||Boolean(next.querySelector('.store-popup-details,[data-vacancy-detail],#cbPoiAddVacancy'));
   if(ownPopup){card=null;action.style.display='none';return}
   card=next;
   const rect=card.getBoundingClientRect();
