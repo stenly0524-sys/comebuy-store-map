@@ -849,6 +849,11 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 .cb-v4-phase-detail .cb-schedule-stage-item{display:block;width:100%;text-align:left;margin:5px 0;padding:10px;overflow-wrap:anywhere}
 @media(orientation:landscape) and (max-height:500px){.cb-v4-calendar{gap:2px}.cb-v4-day{min-height:30px}}
 </style>
+<style id="cb-headquarters-settings-style">
+.cb-headquarters-settings-button{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:44px}
+.cb-headquarters-settings-button svg{width:21px;height:21px;flex:none}
+.cb-headquarters-settings-button:disabled{opacity:.6}
+</style>
 </head>
 <body>
 
@@ -1113,6 +1118,67 @@ gpsButton.addEventListener('click',()=>{
   if(gpsPosition)gpsCenter(gpsPosition);
  }
 });
+// Headquarters is a dedicated map landmark, not a store or vacancy record.
+const CB_HQ_ADDRESS='台北市中正區博愛路53號';
+const CB_HQ_CACHE_KEY='cb_maps_headquarters_coordinate_v1';
+let cbHqMarker=null,cbHqPosition=null,cbHqGeocodePromise=null;
+function cbHeadquartersIcon(){
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="54" height="64" viewBox="0 0 54 64"><path d="M27 2C13 2 2 13 2 27c0 17 25 35 25 35s25-18 25-35C52 13 41 2 27 2Z" fill="#b80e1b" stroke="#fff" stroke-width="3"/><path d="M16 20h22v25H16z" fill="#fff" rx="1"/><path d="M21 16h12v4H21z" fill="#fff"/><path d="M22 25h3v4h-3zm7 0h3v4h-3zm-7 7h3v4h-3zm7 0h3v4h-3z" fill="#b80e1b"/><path d="M25 38h4v7h-4z" fill="#b80e1b"/></svg>';
+ return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(43,51),anchor:new google.maps.Point(21.5,51)};
+}
+function cbHeadquartersPopup(){
+ const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(CB_HQ_ADDRESS);
+ return '<div style="min-width:200px;max-width:270px;padding:3px 2px"><strong style="font-size:16px;color:#b80e1b">COMEBUY 總公司</strong><div style="font-size:13px;margin-top:7px;line-height:1.5">'+esc(CB_HQ_ADDRESS)+'</div><a href="'+url+'" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:9px;color:#b80e1b;font-size:13px;font-weight:700">Google Maps 導航</a></div>';
+}
+function cbEnsureHeadquartersMarker(position){
+ if(!map||!position)return;
+ cbHqPosition=position;
+ if(!cbHqMarker){
+  cbHqMarker=new google.maps.Marker({map,position,title:'COMEBUY 總公司｜'+CB_HQ_ADDRESS,icon:cbHeadquartersIcon(),zIndex:900});
+  cbHqMarker.addListener('click',()=>{
+   if(!infoWindow)infoWindow=new google.maps.InfoWindow();
+   infoWindow.close();infoWindow.setContent(cbHeadquartersPopup());infoWindow.open({map,anchor:cbHqMarker});
+  });
+ }else{cbHqMarker.setPosition(position);cbHqMarker.setMap(map)}
+}
+function cbResolveHeadquarters(){
+ if(!map||!geocoder)return Promise.reject(Error('地圖尚未載入'));
+ if(cbHqPosition){cbEnsureHeadquartersMarker(cbHqPosition);return Promise.resolve(cbHqPosition)}
+ if(cbHqGeocodePromise)return cbHqGeocodePromise;
+ try{
+  const value=JSON.parse(localStorage.getItem(CB_HQ_CACHE_KEY)||'null');
+  if(value?.address===CB_HQ_ADDRESS&&Number.isFinite(value.lat)&&Number.isFinite(value.lng)){
+   cbEnsureHeadquartersMarker({lat:value.lat,lng:value.lng});
+   return Promise.resolve(cbHqPosition);
+  }
+ }catch(_){}
+ cbHqGeocodePromise=new Promise((resolve,reject)=>{
+  geocoder.geocode({address:CB_HQ_ADDRESS,region:'TW',componentRestrictions:{country:'TW'}},(results,status)=>{
+   if(status==='OK'&&results?.[0]?.geometry?.location){
+    const loc=results[0].geometry.location,position={lat:loc.lat(),lng:loc.lng()};
+    cbEnsureHeadquartersMarker(position);
+    try{localStorage.setItem(CB_HQ_CACHE_KEY,JSON.stringify({address:CB_HQ_ADDRESS,...position}))}catch(_){}
+    resolve(position);
+   }else reject(Error('總部地址定位失敗：'+status));
+  });
+ }).finally(()=>{cbHqGeocodePromise=null});
+ return cbHqGeocodePromise;
+}
+async function cbLocateHeadquarters(button){
+ if(button){button.disabled=true}
+ try{
+  const position=await cbResolveHeadquarters();
+  if(!map)throw Error('地圖尚未載入');
+  map.getStreetView()?.setVisible(false);
+  drawer.classList.remove('open');
+  infoWindow?.close();
+  map.setZoom(18);map.panTo(position);
+  if(!infoWindow)infoWindow=new google.maps.InfoWindow();
+  infoWindow.setContent(cbHeadquartersPopup());
+  infoWindow.open({map,anchor:cbHqMarker});
+ }catch(e){alert('無法定位 COMEBUY 總公司，請確認地圖連線後重試。')}
+ finally{if(button)button.disabled=false}
+}
 window.initMap=function(){
   window.__cbSplash?.set(38);
   map=new google.maps.Map(document.getElementById('map'),{
@@ -1271,6 +1337,7 @@ window.initMap=function(){
     installNativePoiVacancyAction();
   installVacancyLongPress();
   infoWindow=new google.maps.InfoWindow();
+  cbResolveHeadquarters().catch(error=>console.warn('總部標記暫時無法定位',error));
   // Google Maps uses "close" for both the X button and programmatic dismissal.
   const clearArchivedLocateMarker=()=>{if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}};
   infoWindow.addListener('close',clearArchivedLocateMarker);
@@ -3069,6 +3136,7 @@ function showSettings(){
   const label=document.createElement('span');label.textContent=item.label;a.append(icon,label);links.appendChild(a);
  });
  official.appendChild(links);drawerBody.appendChild(official);
+ const hqButton=document.createElement('button');hqButton.type='button';hqButton.className='dashboard-backup cb-headquarters-settings-button';hqButton.setAttribute('aria-label','定位總部 COMEBUY 總公司');hqButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V6l8-4 8 4v15M3 21h18M9 9h2m3 0h2M9 13h2m3 0h2M10 21v-4h4v4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>定位總部</span>';hqButton.onclick=()=>cbLocateHeadquarters(hqButton);drawerBody.appendChild(hqButton);
  const sipspotButton=document.createElement('button');sipspotButton.type='button';sipspotButton.className='dashboard-backup';sipspotButton.textContent='各品牌加盟資訊';sipspotButton.onclick=openSipspotBrands;drawerBody.appendChild(sipspotButton);
 }
 document.getElementById('openDashboard').onclick=showSettings;
