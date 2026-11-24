@@ -145,7 +145,8 @@ async function begin(api,force=false){
  // Resume only unfinished coordinates. Never replace existing manual positions.
  const targets=entries.filter(e=>{
   const item=api.getVacancies().find(v=>v.importBatchId===KEY&&v.importSourceId===e.id);
-  return item&&!validPosition(item.position);
+  // Never overwrite a user's later address or coordinate correction.
+  return item&&!validPosition(item.position)&&!(Array.isArray(item.locationEditHistory)&&item.locationEditHistory.length);
  });
  for(const e of targets){
   if(!api.mapReady())break;
