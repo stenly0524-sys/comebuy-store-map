@@ -2406,8 +2406,21 @@ function vacancyStoreModal(v){
   fillDistrict(currentDistrict);city.onchange=()=>fillDistrict();
   const fields=[['address','地址','text'],['rent','租金','number'],['size','坪數','number'],['front','面寬','number'],['contact','聯絡人','text'],['phone','聯絡電話','tel']];
   fields.forEach(([key,label,type])=>{const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.name=key;input.type=type;input.value=v[key]??'';if(type==='number'){input.min='0';input.step='any'}wrap.appendChild(input);form.appendChild(wrap)});
+  // Only imported evaluation points expose coordinate correction; other vacancy forms stay unchanged.
+  const batchLocation=v.importBatchId==='COMEBUY-EVAL-20261124';
+  if(batchLocation){
+   for(const [key,label,value] of [['geoLatitude','定位緯度（可修正）',v.position?.lat],['geoLongitude','定位經度（可修正）',v.position?.lng]]){
+    const wrap=document.createElement('label');wrap.textContent=label;
+    const input=document.createElement('input');input.name=key;input.type='number';input.step='any';input.inputMode='decimal';input.value=value??'';
+    wrap.append(input);form.append(wrap);
+   }
+   const caption=document.createElement('p');caption.className='vacancy-note';caption.textContent='暫時定位可修改實際地址或座標；地標座標不代表真正的空舖門牌。';form.append(caption);
+  }
   const actions=document.createElement('div');actions.className='vacancy-modal-actions';const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
-  const render=view=>{view.replaceChildren(vacancyViewRow('城市',v.region?.city||''),vacancyViewRow('區域',vacancyDistrict(v)),...fields.map(([key,label])=>vacancyViewRow(label,key==='rent'&&v[key]!==''&&v[key]!=null?'NT$ '+Number(v[key]).toLocaleString('zh-TW'):v[key],key==='phone')))};
+  const render=view=>{
+   view.replaceChildren(vacancyViewRow('城市',v.region?.city||''),vacancyViewRow('區域',vacancyDistrict(v)),...fields.map(([key,label])=>vacancyViewRow(label,key==='rent'&&v[key]!==''&&v[key]!=null?'NT$ '+Number(v[key]).toLocaleString('zh-TW'):v[key],key==='phone')));
+   if(batchLocation){view.append(vacancyViewRow('定位類型',v.geoAccuracy||'待定位'),vacancyViewRow('定位座標',v.position?Number(v.position.lat).toFixed(6)+'，'+Number(v.position.lng).toFixed(6):'待定位'))}
+  };
   vacancyEditToggle(body,form,render);
   const ratingButton=document.createElement('button');
   ratingButton.type='button';ratingButton.className='cb-profit-entry cb-rating-placeholder-entry';ratingButton.textContent='評分分析';
@@ -2425,14 +2438,32 @@ function vacancyStoreModal(v){
    if(!address||!address.includes(district.value)){alert('地址須包含所選城市與區域');return}
    if(vacancies.some(other=>other.id!==v.id&&normalizedStoreAddress(other.address)===normalizedStoreAddress(address))){alert('此地址已建檔');return}
    const previous={...v,region:v.region?{...v.region}:null,position:v.position?{...v.position}:null};
+   let manualPoint=null,manualChanged=false,manualCleared=false;
+   if(batchLocation){
+    const latText=form.elements.namedItem('geoLatitude').value.trim(),lngText=form.elements.namedItem('geoLongitude').value.trim();
+    if(Boolean(latText)!==Boolean(lngText)){alert('定位緯度、經度必須同時填寫或同時留空');return}
+    if(latText){
+     const lat=Number(latText),lng=Number(lngText);
+     if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<21.5||lat>26.5||lng<118||lng>123.5){alert('請輸入有效的台灣地圖座標');return}
+     manualPoint={lat,lng};manualChanged=!previous.position||Math.abs(lat-previous.position.lat)>0.0000001||Math.abs(lng-previous.position.lng)>0.0000001;
+    }else if(previous.position){manualCleared=true}
+   }
    fields.forEach(([key])=>v[key]=form.elements.namedItem(key).value.trim());
    v.address=address;v.region={...(v.region||{}),city:city.value,district:district.value,neighborhood:''};
    const rent=Number(v.rent);
    if((v.rent===''&&!v.importBatchId)||(v.rent!==''&&(!Number.isFinite(rent)||rent<0))){Object.assign(v,previous);alert('請輸入有效租金');return}
    v.rent=v.rent===''?'':rent;
-   if(v.address!==previous.address){
+   if(v.address!==previous.address&&!manualChanged&&!manualCleared){
     const ok=await geocodeVacancy(v);
     if(!ok){Object.assign(v,previous);alert('地址無法定位，請檢查地址');return}
+   }
+   if(batchLocation&&(manualChanged||manualCleared)){
+    v.position=manualPoint;
+    v.geoAccuracy=manualPoint?'人工修正定位':'待定位';
+    v.geocodedAt=manualPoint?new Date().toISOString():'';
+   }
+   if(batchLocation&&(v.address!==previous.address||manualChanged||manualCleared)){
+    v.locationEditHistory=[...(Array.isArray(previous.locationEditHistory)?previous.locationEditHistory:[]),{at:new Date().toISOString(),before:{address:previous.address,position:previous.position},after:{address:v.address,position:v.position},actor:'local-user'}];
    }
    v.region={...(v.region||{}),city:city.value,district:district.value,neighborhood:''};
    if(!saveVacancies()){Object.assign(v,previous);return}
@@ -3173,6 +3204,7 @@ function showSettings(){
  });
  official.appendChild(links);drawerBody.appendChild(official);
  const hqButton=document.createElement('button');hqButton.type='button';hqButton.className='dashboard-backup cb-headquarters-settings-button';hqButton.setAttribute('aria-label','定位總部 COMEBUY 總公司');hqButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V6l8-4 8 4v15M3 21h18M9 9h2m3 0h2M9 13h2m3 0h2M10 21v-4h4v4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>定位總部</span>';hqButton.onclick=()=>cbLocateHeadquarters(hqButton);drawerBody.appendChild(hqButton);
+ const evalRetryButton=document.createElement('button');evalRetryButton.type='button';evalRetryButton.className='dashboard-backup';evalRetryButton.textContent='重新核對 43 筆評估地點與待定位座標';evalRetryButton.onclick=async()=>{evalRetryButton.disabled=true;evalRetryButton.textContent='正在核對與定位…';try{await window.__cbImportEvalBatch?.()}finally{if(document.contains(evalRetryButton)){evalRetryButton.disabled=false;evalRetryButton.textContent='重新核對 43 筆評估地點與待定位座標'}}};drawerBody.appendChild(evalRetryButton);
  const evalBackupButton=document.createElement('button');evalBackupButton.type='button';evalBackupButton.className='dashboard-backup';evalBackupButton.textContent='下載 43 筆評估名單匯入前備份';evalBackupButton.onclick=()=>window.ComebuyEvalBatch?.downloadBackup();drawerBody.appendChild(evalBackupButton);
  const evalReport=document.createElement('p');evalReport.className='vacancy-note';evalReport.setAttribute('aria-live','polite');
  const updateEvalReport=()=>{
