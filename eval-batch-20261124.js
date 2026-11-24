@@ -128,6 +128,10 @@ async function begin(api,force=false){
  const data=await response.json(),entries=data.entries;
  if(data.batchId!==KEY||!Array.isArray(entries)||entries.length!==43||new Set(entries.map(e=>e.id)).size!==43)throw Error('43筆來源清單驗證失敗');
  const existing=api.getVacancies();
+ const rawMaster=JSON.parse(localStorage.getItem(VACANCIES)||'[]');
+ if(!Array.isArray(rawMaster)||rawMaster.length!==existing.length||rawMaster.some((v,i)=>String(v?.id||'')!==String(existing[i]?.id||''))){
+  throw Error('原始空舖主檔含無法安全辨識的資料，為避免遺失，已停止匯入');
+ }
  // A fully reversible local snapshot MUST succeed before the first write.
  backup();
  const created=[];
