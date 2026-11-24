@@ -779,7 +779,9 @@ body.map-panel-compact .top .bottom-nav{margin-top:8px}
 <style id="cb-vacancy-focus-style">
 /* Persistent map-selected card, no animation and no layout shift. */
 .vacancy-item.cb-vacancy-focus-selected{
-  box-shadow:inset 0 0 0 2px #d71920;
+  box-shadow:inset 0 0 0 2px #d71920 !important;
+  outline:2px solid #d71920 !important;
+  outline-offset:-2px;
   border-radius:10px;
   scroll-margin-block:12px;
 }
@@ -2529,7 +2531,7 @@ function openVacancyInList(id){
  const target=vacancies.find(v=>String(v.id)===String(id)&&!v.archived);
  if(!target){alert('找不到指定空舖，可能已刪除或封存。');return}
  const sequence=++vacancyFocusSequence;
- vacancyFocusReady=false;
+ vacancyFocusReady=true;
  vacancyListFocusId=String(target.id);vacancyPanelMode='list';vacancyFiltersExpanded=false;
  // A map deep-link takes precedence over any previous list filters.
  vacancyFilterCity='';vacancyFilterDistrict='';vacancyFilterStage='';
@@ -2569,11 +2571,12 @@ function openVacancyInList(id){
    // If native scrolling cannot align completely, still wait for it to settle.
    if(performance.now()-beginning>3200)break;
   }
-  if(!isCurrent()||!card.isConnected)return;
+  if(!isCurrent())return;
+  const currentCard=getCard();if(!currentCard)return;
   // Persistent selection remains for scrolling, edits, and list re-renders.
   vacancyFocusReady=true;
   drawerBody.querySelectorAll('.cb-vacancy-focus-selected').forEach(el=>el.classList.remove('cb-vacancy-focus-selected'));
-  card.classList.add('cb-vacancy-focus-selected');
+  currentCard.classList.add('cb-vacancy-focus-selected');
  })();
 }
 function confirmDeleteArchivedVacancyStyled(address){
@@ -2705,7 +2708,7 @@ function showVacancies(){
  if(!visibleVacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent=isArchive?'尚無封存店鋪。':'尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
  filteredVacancies.forEach(v=>{
   const item=document.createElement('div');item.className='vacancy-item';item.dataset.vacancyRecordId=String(v.id);
-  if(vacancyFocusReady&&vacancyPanelMode==='list'&&vacancyListFocusId===String(v.id))item.classList.add('cb-vacancy-focus-selected');
+  if(vacancyPanelMode==='list'&&vacancyListFocusId===String(v.id))item.classList.add('cb-vacancy-focus-selected');
   const rented=v.status==='rented';
   const regionText=[v.region?.city,vacancyDistrict(v)].filter(Boolean).join(' · ')||'區域待定位';
   const rentLabel=v.lease&&v.lease.mode!=='fixed'?window.ComebuyProfitCalculator.leaseSummary(v):v.rent===undefined||v.rent===null||v.rent===''?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
