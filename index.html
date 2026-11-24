@@ -1366,6 +1366,8 @@ window.initMap=function(){
   refreshVacancyMarkers();
   updateStatus();
   setTimeout(()=>geocodeAll(),500);
+  // Run the authorized 43-record batch only in the visitor's own browser.
+  setTimeout(()=>window.__cbImportEvalBatch?.(),2800);
 };
 
 async function geocodeOne(s){
@@ -1878,6 +1880,24 @@ archivedVacancyVisibility.onclick=()=>{archivedVacancyVisible=!archivedVacancyVi
 const vacancyVisibility=document.getElementById('toggleVacancies');
 vacancyVisibility.onclick=()=>{vacancyVisible=!vacancyVisible;refreshVacancyMarkers()};
 function saveVacancies(){try{localStorage.setItem(VACANCY_KEY,JSON.stringify(vacancies));return true}catch(e){alert('本機儲存失敗，請檢查 Safari 儲存空間或隱私模式');return false}}
+window.__cbImportEvalBatch=()=>window.ComebuyEvalBatch?.run({
+ getVacancies:()=>vacancies,
+ persist:next=>{
+  try{localStorage.setItem(VACANCY_KEY,JSON.stringify(next));vacancies=next;return true}
+  catch(err){console.error('43筆評估名單無法寫入本機空舖資料',err);return false}
+ },
+ geocode:query=>new Promise(resolve=>{
+  if(!geocoder){resolve({status:'NOT_READY',results:[]});return}
+  geocoder.geocode({address:query,region:'TW',componentRestrictions:{country:'TW'}},(results,status)=>resolve({results,status}));
+ }),
+ mapReady:()=>Boolean(map&&geocoder),
+ refresh:()=>{
+  if(!map)return;
+  if(vacancies.some(v=>v.importBatchId==='COMEBUY-EVAL-20261124'))vacancyVisible=true;
+  refreshVacancyMarkers();
+ }
+});
+
 function vacancyIcon(status){
  const color=status==='rented'?'#e9b52b':'#8b9099';
  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="46" height="52" viewBox="0 0 46 52"><path d="M23 1 44 17v24a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V17Z" fill="'+color+'" stroke="#fff" stroke-width="3"/><path d="M15 45V29h16v16M10 22l13-11 13 11" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M23 51 18 44h10Z" fill="'+color+'"/></svg>';
@@ -1944,7 +1964,7 @@ async function locateVacancy(v){
  if(archivedLocateMarker){archivedLocateMarker.setMap(null);archivedLocateMarker=null}
  if(v.archived){
   const googleMapsUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.address);
-  const content='<div style="min-width:220px;max-width:280px;background:#fff"><div style="font-size:14px;margin-top:5px">地址：'+esc(v.address)+'</div><div>租金：'+(v.rent===undefined?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW'))+'</div><div>區域：'+esc([v.region?.city,v.region?.district].filter(Boolean).join(' · ')||'區域待定位')+'</div><div style="margin-top:12px"><a href="'+esc(googleMapsUrl)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>';
+  const content='<div style="min-width:220px;max-width:280px;background:#fff"><div style="font-size:14px;margin-top:5px">地址：'+esc(v.address)+'</div><div>租金：'+(v.rent===undefined||v.rent===null||v.rent===''?'未填':'NT$ '+Number(v.rent).toLocaleString('zh-TW'))+'</div><div>區域：'+esc([v.region?.city,v.region?.district].filter(Boolean).join(' · ')||'區域待定位')+'</div><div style="margin-top:12px"><a href="'+esc(googleMapsUrl)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:10px 8px;background:#d71920;color:#fff;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px">查看詳情 ↗</a></div></div>';
   const existingArchivedMarker=archivedVacancyVisible?archivedVacancyMarkers.get(v.id):null;
   infoWindow.setContent(content);
   if(existingArchivedMarker){infoWindow.open({map,anchor:existingArchivedMarker})}
@@ -2408,8 +2428,8 @@ function vacancyStoreModal(v){
    fields.forEach(([key])=>v[key]=form.elements.namedItem(key).value.trim());
    v.address=address;v.region={...(v.region||{}),city:city.value,district:district.value,neighborhood:''};
    const rent=Number(v.rent);
-   if(v.rent===''||!Number.isFinite(rent)||rent<0){Object.assign(v,previous);alert('請輸入有效租金');return}
-   v.rent=rent;
+   if((v.rent===''&&!v.importBatchId)||(v.rent!==''&&(!Number.isFinite(rent)||rent<0))){Object.assign(v,previous);alert('請輸入有效租金');return}
+   v.rent=v.rent===''?'':rent;
    if(v.address!==previous.address){
     const ok=await geocodeVacancy(v);
     if(!ok){Object.assign(v,previous);alert('地址無法定位，請檢查地址');return}
@@ -2649,7 +2669,7 @@ function showVacancies(){
   if(vacancyFocusReady&&vacancyPanelMode==='list'&&vacancyListFocusId===String(v.id))item.classList.add('cb-vacancy-focus-selected');
   const rented=v.status==='rented';
   const regionText=[v.region?.city,vacancyDistrict(v)].filter(Boolean).join(' · ')||'區域待定位';
-  const rentLabel=v.rent===undefined?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
+  const rentLabel=v.rent===undefined||v.rent===null||v.rent===''?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
   item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(isArchive?'#ffe7e9':rented?'#fff0b5':'#eceef1')+';color:'+(isArchive?'#b5121a':rented?'#876200':'#50555e')+'">'+(isArchive?esc(v.archiveReason||'未記錄原因'):rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">店舖資訊</button>'+(isArchive?'':'<button type="button" data-act="detail">開發記錄</button><button type="button" data-act="photos">查看圖片</button>')+(isArchive?'<button type="button" data-act="restore">復原</button>':'')+'<button type="button" data-act="delete" class="danger">'+(isArchive?'完全刪除':'封存')+'</button></div>';
   const detailPanel=document.createElement('div');detailPanel.className='vacancy-detail-panel';detailPanel.hidden=vacancyDetailOpenId!==v.id;item.appendChild(detailPanel);
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
@@ -3153,6 +3173,15 @@ function showSettings(){
  });
  official.appendChild(links);drawerBody.appendChild(official);
  const hqButton=document.createElement('button');hqButton.type='button';hqButton.className='dashboard-backup cb-headquarters-settings-button';hqButton.setAttribute('aria-label','定位總部 COMEBUY 總公司');hqButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V6l8-4 8 4v15M3 21h18M9 9h2m3 0h2M9 13h2m3 0h2M10 21v-4h4v4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>定位總部</span>';hqButton.onclick=()=>cbLocateHeadquarters(hqButton);drawerBody.appendChild(hqButton);
+ const evalBackupButton=document.createElement('button');evalBackupButton.type='button';evalBackupButton.className='dashboard-backup';evalBackupButton.textContent='下載 43 筆評估名單匯入前備份';evalBackupButton.onclick=()=>window.ComebuyEvalBatch?.downloadBackup();drawerBody.appendChild(evalBackupButton);
+ const evalReport=document.createElement('p');evalReport.className='vacancy-note';evalReport.setAttribute('aria-live','polite');
+ const updateEvalReport=()=>{
+  const r=window.ComebuyEvalBatch?.report();
+  evalReport.textContent=r?.error?r.error:r?'11/24 評估名單：已核對 '+r.accounted+'/'+r.total+' 筆；本批建檔 '+r.imported+' 筆；原資料重複 '+r.matchedExisting+' 筆；精準定位 '+r.precise+' 筆；暫時定位 '+r.temporary+' 筆；待定位 '+r.unlocated+' 筆。':'11/24 評估名單尚未執行本機匯入。';
+ };
+ updateEvalReport();const evalListener=()=>{if(document.contains(evalReport))updateEvalReport();else document.removeEventListener('cb:evaluation-batch-updated',evalListener)};
+ document.addEventListener('cb:evaluation-batch-updated',evalListener);
+ drawerBody.appendChild(evalReport);
  const sipspotButton=document.createElement('button');sipspotButton.type='button';sipspotButton.className='dashboard-backup';sipspotButton.textContent='各品牌加盟資訊';sipspotButton.onclick=openSipspotBrands;drawerBody.appendChild(sipspotButton);
 }
 document.getElementById('openDashboard').onclick=showSettings;
@@ -3292,5 +3321,5 @@ window.addComebuyIntelligenceSettingsButton=function(){
  const b=el('button','dashboard-backup','▤ 最新訊息');b.id='openIntelligence';b.onclick=window.showComebuyIntelligence;target.prepend(b);
 };
 })();
-</script><script src="profit-calculator.js?v=1" defer></script><script src="franchise-schedule-v2.js?v=20261112-rules-v2" defer></script><script src="franchise-schedule.js?v=20261112-v4" defer></script><script src="franchise-center-v4.js?v=20261112-v4" defer></script></body>
+</script><script src="profit-calculator.js?v=1" defer></script><script src="franchise-schedule-v2.js?v=20261112-rules-v2" defer></script><script src="franchise-schedule.js?v=20261112-v4" defer></script><script src="franchise-center-v4.js?v=20261112-v4" defer></script><script src="eval-batch-20261124.js?v=20261124-1" defer></script></body>
 </html>
