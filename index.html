@@ -1883,8 +1883,12 @@ function saveVacancies(){try{localStorage.setItem(VACANCY_KEY,JSON.stringify(vac
 window.__cbImportEvalBatch=()=>window.ComebuyEvalBatch?.run({
  getVacancies:()=>vacancies,
  persist:next=>{
-  try{localStorage.setItem(VACANCY_KEY,JSON.stringify(next));vacancies=next;return true}
-  catch(err){console.error('43筆評估名單無法寫入本機空舖資料',err);return false}
+  try{
+   // Do not overwrite concurrent writes from another browser tab.
+   const currentRaw=JSON.parse(localStorage.getItem(VACANCY_KEY)||'[]');
+   if(JSON.stringify(currentRaw)!==JSON.stringify(vacancies)){console.warn('空舖資料已在其他分頁變動，停止本次寫入以保護較新資料');return false}
+   localStorage.setItem(VACANCY_KEY,JSON.stringify(next));vacancies=next;return true
+  }catch(err){console.error('43筆評估名單無法寫入本機空舖資料',err);return false}
  },
  geocode:query=>new Promise(resolve=>{
   if(!geocoder){resolve({status:'NOT_READY',results:[]});return}
