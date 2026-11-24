@@ -3233,8 +3233,6 @@ function showSettings(){
  });
  official.appendChild(links);drawerBody.appendChild(official);
  const hqButton=document.createElement('button');hqButton.type='button';hqButton.className='dashboard-backup cb-headquarters-settings-button';hqButton.setAttribute('aria-label','定位總部 COMEBUY 總公司');hqButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V6l8-4 8 4v15M3 21h18M9 9h2m3 0h2M9 13h2m3 0h2M10 21v-4h4v4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>定位總部</span>';hqButton.onclick=()=>cbLocateHeadquarters(hqButton);drawerBody.appendChild(hqButton);
- const evalRetryButton=document.createElement('button');evalRetryButton.type='button';evalRetryButton.className='dashboard-backup';evalRetryButton.textContent='重新核對 43 筆評估地點與待定位座標';evalRetryButton.onclick=async()=>{evalRetryButton.disabled=true;evalRetryButton.textContent='正在核對與定位…';try{await window.__cbImportEvalBatch?.()}finally{if(document.contains(evalRetryButton)){evalRetryButton.disabled=false;evalRetryButton.textContent='重新核對 43 筆評估地點與待定位座標'}}};drawerBody.appendChild(evalRetryButton);
- const evalBackupButton=document.createElement('button');evalBackupButton.type='button';evalBackupButton.className='dashboard-backup';evalBackupButton.textContent='下載 43 筆評估名單匯入前備份';evalBackupButton.onclick=()=>window.ComebuyEvalBatch?.downloadBackup();drawerBody.appendChild(evalBackupButton);
  const evalReport=document.createElement('p');evalReport.className='vacancy-note';evalReport.setAttribute('aria-live','polite');
  const updateEvalReport=()=>{
   const r=window.ComebuyEvalBatch?.report();
