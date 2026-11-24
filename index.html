@@ -2457,10 +2457,10 @@ function vacancyStoreModal(v){
      manualPoint={lat,lng};manualChanged=!previous.position||Math.abs(lat-previous.position.lat)>0.0000001||Math.abs(lng-previous.position.lng)>0.0000001;
     }else if(previous.position){manualCleared=true}
    }
-   const terms=leaseEditor.read(),issue=window.ComebuyProfitCalculator.leaseIssue(terms);if(issue){alert(issue);return}
+   const terms=leaseEditor.read(),issue=terms.mode==='fixed'&&terms.fixed===''&&v.importBatchId&&!v.rent?window.ComebuyProfitCalculator.leaseIssue({...terms,fixed:0}):window.ComebuyProfitCalculator.leaseIssue(terms);if(issue){alert(issue);return}
    fields.forEach(([key])=>v[key]=form.elements.namedItem(key).value.trim());
    v.address=address;v.region={...(v.region||{}),city:city.value,district:district.value,neighborhood:''};
-   v.lease=terms;if(terms.mode==='fixed')v.rent=Number(terms.fixed);
+   v.lease=terms;if(terms.mode==='fixed')v.rent=terms.fixed===''?'':Number(terms.fixed);
    if(v.address!==previous.address&&!manualChanged&&!manualCleared){
     const ok=await geocodeVacancy(v);
     if(!ok){if(!previous.lease)delete v.lease;Object.assign(v,previous);alert('地址無法定位，請檢查地址');return}
@@ -2688,7 +2688,7 @@ function showVacancies(){
  districtSelect.onchange=()=>{vacancyFilterDistrict=districtSelect.value;showVacancies()};
  const sf=document.createElement('div');sf.className='vacancy-stage-filter';sf.innerHTML='<label>進度 <select><option value="">全部進度</option>'+DEVELOPMENT_STAGES.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></label>';filter.appendChild(sf);sf.querySelector('select').value=vacancyFilterStage;sf.querySelector('select').onchange=e=>{vacancyFilterStage=e.target.value;showVacancies()};
  const rentFilter=document.createElement('div');rentFilter.className='vacancy-stage-filter';
- rentFilter.innerHTML='<div style="font-weight:600;margin-bottom:7px">租金範圍（元／月）</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center"><input type="number" inputmode="numeric" min="0" step="1" placeholder="最低租金" aria-label="最低月租金" data-rent="min" style="width:100%;min-width:0;box-sizing:border-box"><span>～</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="最高租金" aria-label="最高月租金" data-rent="max" style="width:100%;min-width:0;box-sizing:border-box"></div>';
+ rentFilter.innerHTML='<div style="font-weight:600;margin-bottom:7px">固定租金範圍（元／月）</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center"><input type="number" inputmode="numeric" min="0" step="1" placeholder="最低租金" aria-label="最低月租金" data-rent="min" style="width:100%;min-width:0;box-sizing:border-box"><span>～</span><input type="number" inputmode="numeric" min="0" step="1" placeholder="最高租金" aria-label="最高月租金" data-rent="max" style="width:100%;min-width:0;box-sizing:border-box"></div>';
  filter.appendChild(rentFilter);
  const rentMinInput=rentFilter.querySelector('[data-rent="min"]'),rentMaxInput=rentFilter.querySelector('[data-rent="max"]');
  rentMinInput.value=vacancyRentMin;rentMaxInput.value=vacancyRentMax;
@@ -2699,7 +2699,7 @@ function showVacancies(){
   vacancyRentMin=min;vacancyRentMax=max;showVacancies();
  };
  rentMinInput.onchange=applyRentFilter;rentMaxInput.onchange=applyRentFilter;
- const filteredVacancies=visibleVacancies.filter(v=>(!vacancyFilterCity||vacancyCity(v)===vacancyFilterCity)&&(!vacancyFilterDistrict||vacancyDistrict(v)===vacancyFilterDistrict)&&(!vacancyFilterStage||(vacancyStage(v))===vacancyFilterStage)&&(vacancyRentMin===''||v.rent!==''&&v.rent!=null&&Number(v.rent)>=Number(vacancyRentMin))&&(vacancyRentMax===''||v.rent!==''&&v.rent!=null&&Number(v.rent)<=Number(vacancyRentMax)));
+ const filteredVacancies=visibleVacancies.filter(v=>(!vacancyFilterCity||vacancyCity(v)===vacancyFilterCity)&&(!vacancyFilterDistrict||vacancyDistrict(v)===vacancyFilterDistrict)&&(!vacancyFilterStage||(vacancyStage(v))===vacancyFilterStage)&&(vacancyRentMin===''||(!v.lease||v.lease.mode==='fixed')&&v.rent!==''&&v.rent!=null&&Number(v.rent)>=Number(vacancyRentMin))&&(vacancyRentMax===''||(!v.lease||v.lease.mode==='fixed')&&v.rent!==''&&v.rent!=null&&Number(v.rent)<=Number(vacancyRentMax)));
  // Keep the original list order; map focus uses the unique ID and scrolls to its real row.
  const resultCount=document.createElement('div');resultCount.className='vacancy-note';resultCount.textContent='符合篩選：'+filteredVacancies.length+' 筆／總計 '+visibleVacancies.length+' 筆';drawerBody.appendChild(resultCount);
  if(!visibleVacancies.length){const empty=document.createElement('div');empty.className='vacancy-note';empty.style.padding='14px';empty.textContent=isArchive?'尚無封存店鋪。':'尚無空舖紀錄，請先輸入地址新增。';drawerBody.appendChild(empty)}
@@ -2708,7 +2708,7 @@ function showVacancies(){
   if(vacancyFocusReady&&vacancyPanelMode==='list'&&vacancyListFocusId===String(v.id))item.classList.add('cb-vacancy-focus-selected');
   const rented=v.status==='rented';
   const regionText=[v.region?.city,vacancyDistrict(v)].filter(Boolean).join(' · ')||'區域待定位';
-  const rentLabel=v.rent===undefined||v.rent===null||v.rent===''?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
+  const rentLabel=v.lease&&v.lease.mode!=='fixed'?window.ComebuyProfitCalculator.leaseSummary(v):v.rent===undefined||v.rent===null||v.rent===''?'租金未填':'月租 NT$ '+Number(v.rent).toLocaleString('zh-TW');
   item.innerHTML='<div class="vacancy-item-head"><span class="vacancy-house">🏠</span><span class="vacancy-item-address">'+esc(v.address)+'</span><span class="vacancy-status" style="background:'+(isArchive?'#ffe7e9':rented?'#fff0b5':'#eceef1')+';color:'+(isArchive?'#b5121a':rented?'#876200':'#50555e')+'">'+(isArchive?esc(v.archiveReason||'未記錄原因'):rented?'已租':'空舖')+'</span></div><div class="vacancy-note" style="margin:7px 0 0 29px">'+esc(rentLabel)+'｜'+esc(regionText)+'｜商圈屬性：'+esc(vacancyAreaNames(v).join('、')||'待調查')+'</div><div class="vacancy-item-actions"><button type="button" data-act="locate">地圖定位</button><button type="button" data-act="status">店舖資訊</button>'+(isArchive?'':'<button type="button" data-act="detail">開發記錄</button><button type="button" data-act="photos">查看圖片</button>')+(isArchive?'<button type="button" data-act="restore">復原</button>':'')+'<button type="button" data-act="delete" class="danger">'+(isArchive?'完全刪除':'封存')+'</button></div>';
   const detailPanel=document.createElement('div');detailPanel.className='vacancy-detail-panel';detailPanel.hidden=vacancyDetailOpenId!==v.id;item.appendChild(detailPanel);
   const editor=document.createElement('div');editor.className='vacancy-area-editor';
