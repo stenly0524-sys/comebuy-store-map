@@ -1,0 +1,437 @@
+{
+  "batchId": "COMEBUY-EVAL-20261124",
+  "sourceDate": "2026-11-24",
+  "sourceNote": "2026/11/24 COMEBUY 實際展店評估名單",
+  "entries": [
+    {
+      "id": "CB-EVAL-20261124-01",
+      "city": "台北市",
+      "district": "士林區",
+      "label": "大南路320號",
+      "query": "台北市士林區大南路320號",
+      "exact": true,
+      "originalDistrict": "士林區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-02",
+      "city": "台北市",
+      "district": "士林區",
+      "label": "德行東路（SOGO旁）",
+      "query": "台北市士林區遠東SOGO天母店",
+      "exact": false,
+      "originalDistrict": "士林區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-03",
+      "city": "台北市",
+      "district": "大安區",
+      "label": "崇德街",
+      "query": "台北市大安區崇德街",
+      "exact": false,
+      "originalDistrict": "大安區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-04",
+      "city": "台北市",
+      "district": "中正區",
+      "label": "公館快樂檸檬",
+      "query": "台北市中正區羅斯福路四段24巷14號快樂檸檬",
+      "exact": false,
+      "originalDistrict": "大安區",
+      "correction": "原始行政區為大安區，地標位於中正區；定位地標不是實際空舖"
+    },
+    {
+      "id": "CB-EVAL-20261124-05",
+      "city": "台北市",
+      "district": "大安區",
+      "label": "新生南路三段／台大",
+      "query": "台北市大安區新生南路三段 台灣大學",
+      "exact": false,
+      "originalDistrict": "大安區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-06",
+      "city": "台北市",
+      "district": "中山區",
+      "label": "赤峰街／南西商圈",
+      "query": "台北市中山區赤峰街南西商圈",
+      "exact": false,
+      "originalDistrict": "中山區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-07",
+      "city": "台北市",
+      "district": "中山區",
+      "label": "馬偕／中山北路／民生西路",
+      "query": "台北市中山區馬偕紀念醫院台北院區",
+      "exact": false,
+      "originalDistrict": "中山區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-08",
+      "city": "台北市",
+      "district": "中山區",
+      "label": "晴光商圈",
+      "query": "台北市中山區晴光市場",
+      "exact": false,
+      "originalDistrict": "中山區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-09",
+      "city": "台北市",
+      "district": "中正區",
+      "label": "八德路一段82巷12號",
+      "query": "台北市中正區八德路一段82巷12號",
+      "exact": true,
+      "originalDistrict": "中正區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-10",
+      "city": "台北市",
+      "district": "大同區",
+      "label": "民權西路37號",
+      "query": "台北市大同區民權西路37號",
+      "exact": true,
+      "originalDistrict": "大同區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-11",
+      "city": "台北市",
+      "district": "中正區",
+      "label": "同安街／南昌路／羅斯福路",
+      "query": "台北市中正區同安街羅斯福路",
+      "exact": false,
+      "originalDistrict": "中正區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-12",
+      "city": "台北市",
+      "district": "中正區",
+      "label": "南門市場",
+      "query": "台北市中正區南門市場",
+      "exact": false,
+      "originalDistrict": "中正區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-13",
+      "city": "台北市",
+      "district": "中正區",
+      "label": "重慶南路",
+      "query": "台北市中正區重慶南路",
+      "exact": false,
+      "originalDistrict": "中正區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-14",
+      "city": "台北市",
+      "district": "內湖區",
+      "label": "江南街130號",
+      "query": "台北市內湖區江南街130號",
+      "exact": true,
+      "originalDistrict": "內湖區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-15",
+      "city": "台北市",
+      "district": "內湖區",
+      "label": "康寧路一段",
+      "query": "台北市內湖區康寧路一段",
+      "exact": false,
+      "originalDistrict": "內湖區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-16",
+      "city": "台北市",
+      "district": "松山區",
+      "label": "慶城街甘蔗媽媽",
+      "query": "台北市松山區慶城街甘蔗媽媽",
+      "exact": false,
+      "originalDistrict": "松山區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-17",
+      "city": "台北市",
+      "district": "信義區",
+      "label": "忠孝東路五段／松山路口",
+      "query": "台北市信義區忠孝東路五段松山路交叉口",
+      "exact": false,
+      "originalDistrict": "信義區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-18",
+      "city": "台北市",
+      "district": "信義區",
+      "label": "虎林街",
+      "query": "台北市信義區虎林街",
+      "exact": false,
+      "originalDistrict": "信義區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-19",
+      "city": "台北市",
+      "district": "南港區",
+      "label": "興華街／南港路",
+      "query": "台北市南港區興華街南港路交叉口",
+      "exact": false,
+      "originalDistrict": "南港區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-20",
+      "city": "台北市",
+      "district": "萬華區",
+      "label": "成都路／西寧南路口",
+      "query": "台北市萬華區成都路西寧南路交叉口",
+      "exact": false,
+      "originalDistrict": "萬華區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-21",
+      "city": "新北市",
+      "district": "淡水區",
+      "label": "中正路",
+      "query": "新北市淡水區中正路",
+      "exact": false,
+      "originalDistrict": "淡水區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-22",
+      "city": "新北市",
+      "district": "三峽區",
+      "label": "三峽老街",
+      "query": "新北市三峽區三峽老街",
+      "exact": false,
+      "originalDistrict": "三峽區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-23",
+      "city": "新北市",
+      "district": "樹林區",
+      "label": "大雅路家樂福",
+      "query": "新北市樹林區大雅路家樂福",
+      "exact": false,
+      "originalDistrict": "樹林區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-24",
+      "city": "新北市",
+      "district": "土城區",
+      "label": "延和街",
+      "query": "新北市土城區延和街",
+      "exact": false,
+      "originalDistrict": "土城區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-25",
+      "city": "新北市",
+      "district": "中和區",
+      "label": "南勢角",
+      "query": "新北市中和區南勢角捷運站",
+      "exact": false,
+      "originalDistrict": "中和區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-26",
+      "city": "新北市",
+      "district": "中和區",
+      "label": "連城路／建一路",
+      "query": "新北市中和區連城路建一路交叉口",
+      "exact": false,
+      "originalDistrict": "中和區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-27",
+      "city": "新北市",
+      "district": "汐止區",
+      "label": "新台五路",
+      "query": "新北市汐止區新台五路",
+      "exact": false,
+      "originalDistrict": "汐止區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-28",
+      "city": "新北市",
+      "district": "林口區",
+      "label": "文化二路／華亞科技園區",
+      "query": "新北市林口區文化二路一段",
+      "exact": false,
+      "originalDistrict": "林口區",
+      "correction": "華亞科技園區所在區域須另核對，暫以林口區文化二路定位"
+    },
+    {
+      "id": "CB-EVAL-20261124-29",
+      "city": "新北市",
+      "district": "林口區",
+      "label": "林口家樂福",
+      "query": "新北市林口區家樂福林口店",
+      "exact": false,
+      "originalDistrict": "林口區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-30",
+      "city": "新北市",
+      "district": "新店區",
+      "label": "新店佳瑪建國路",
+      "query": "新北市新店區建國路佳瑪",
+      "exact": false,
+      "originalDistrict": "新店區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-31",
+      "city": "新北市",
+      "district": "新莊區",
+      "label": "新莊中平路",
+      "query": "新北市新莊區中平路",
+      "exact": false,
+      "originalDistrict": "新莊區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-32",
+      "city": "新北市",
+      "district": "新莊區",
+      "label": "新莊文園",
+      "query": "新北市新莊區文園",
+      "exact": false,
+      "originalDistrict": "新莊區",
+      "correction": "地標名稱有歧義，待確認"
+    },
+    {
+      "id": "CB-EVAL-20261124-33",
+      "city": "新北市",
+      "district": "樹林區",
+      "label": "樹林博愛一街／站前",
+      "query": "新北市樹林區博愛一街樹林車站",
+      "exact": false,
+      "originalDistrict": "樹林區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-34",
+      "city": "基隆市",
+      "district": "安樂區",
+      "label": "安樂路二段（基隆長庚）",
+      "query": "基隆市安樂區基隆長庚紀念醫院",
+      "exact": false,
+      "originalDistrict": "安樂區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-35",
+      "city": "宜蘭縣",
+      "district": "羅東鎮",
+      "label": "興東路（羅東夜市）",
+      "query": "宜蘭縣羅東鎮羅東夜市興東路",
+      "exact": false,
+      "originalDistrict": "羅東鎮",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-36",
+      "city": "台中市",
+      "district": "南區",
+      "label": "中興大學",
+      "query": "台中市南區興大路145號國立中興大學",
+      "exact": false,
+      "originalDistrict": "大里區",
+      "correction": "原始行政區為大里區，校正為南區；校園門牌僅作暫時定位"
+    },
+    {
+      "id": "CB-EVAL-20261124-37",
+      "city": "台中市",
+      "district": "豐原區",
+      "label": "廟東商圈",
+      "query": "台中市豐原區廟東夜市",
+      "exact": false,
+      "originalDistrict": "豐原區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-38",
+      "city": "台中市",
+      "district": "北區",
+      "label": "一中街",
+      "query": "台中市北區一中街",
+      "exact": false,
+      "originalDistrict": "北區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-39",
+      "city": "台中市",
+      "district": "西區",
+      "label": "勤美綠園道",
+      "query": "台中市西區勤美誠品綠園道",
+      "exact": false,
+      "originalDistrict": "西區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-40",
+      "city": "台中市",
+      "district": "沙鹿區",
+      "label": "英才路／靜宜大學",
+      "query": "台中市沙鹿區英才路靜宜大學",
+      "exact": false,
+      "originalDistrict": "沙鹿區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-41",
+      "city": "台中市",
+      "district": "龍井區",
+      "label": "東海大學",
+      "query": "台中市龍井區東海大學",
+      "exact": false,
+      "originalDistrict": "龍井區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-42",
+      "city": "台中市",
+      "district": "大甲區",
+      "label": "大甲鎮南宮周邊／順天路",
+      "query": "台中市大甲區鎮瀾宮順天路",
+      "exact": false,
+      "originalDistrict": "大甲區",
+      "correction": ""
+    },
+    {
+      "id": "CB-EVAL-20261124-43",
+      "city": "台中市",
+      "district": "梧棲區",
+      "label": "台中三井",
+      "query": "台中市梧棲區台灣大道十段168號三井OUTLET",
+      "exact": false,
+      "originalDistrict": "梧棲區",
+      "correction": "使用三井OUTLET官方門牌作為地標座標，非實際空舖地址"
+    }
+  ]
+}
