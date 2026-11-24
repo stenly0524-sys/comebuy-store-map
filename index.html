@@ -3214,7 +3214,7 @@ async function openSipspotBrands(){
 }
 function showSettings(){
  setDrawerLayout('compact');nav={level:'settings',city:null,district:null};drawer.classList.add('open');drawerTitle.textContent='設定';requestAnimationFrame(syncActionButtons);setGradientHeading('settings');backBtn.style.visibility='hidden';drawerBody.innerHTML='';
- const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);window.addComebuyIntelligenceSettingsButton?.();addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;const backupRow=document.createElement('div');backupRow.className='cb-settings-button-row';backupRow.appendChild(btn);const backupImport=addBackupImportAction();backupRow.appendChild(backupImport.button);drawerBody.append(backupRow,backupImport.input);const note=document.createElement('p');note.className='vacancy-note';note.textContent='備份包含聯絡電話及照片，請妥善保管。資料目前僅存在本機。';drawerBody.appendChild(note);
+ const refreshBtn=document.createElement('button');refreshBtn.className='dashboard-backup';refreshBtn.textContent='↻ 頁面更新';refreshBtn.onclick=async()=>{refreshBtn.disabled=true;refreshBtn.textContent='檢查新版中…';try{const response=await fetch('/index.html?check='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const html=await response.text();if(!html.includes('function showCaseManagement()'))throw Error('頁面內容不完整');const url=new URL(location.href);url.searchParams.set('refresh',String(Date.now()));location.replace(url.toString())}catch(e){refreshBtn.disabled=false;refreshBtn.textContent='↻ 頁面更新';alert('更新失敗，請確認網路連線後重試')}};drawerBody.appendChild(refreshBtn);window.addComebuyIntelligenceSettingsButton?.();addVacancyDocActions();const btn=document.createElement('button');btn.className='dashboard-backup';btn.textContent='匯出備份（JSON）';btn.onclick=exportBackup;const backupRow=document.createElement('div');backupRow.className='cb-settings-button-row';backupRow.appendChild(btn);const backupImport=addBackupImportAction();backupRow.appendChild(backupImport.button);drawerBody.append(backupRow,backupImport.input);
  const official=document.createElement('section');official.className='cb-official-links';official.setAttribute('aria-label','官方連結');
  const heading=document.createElement('h3');heading.textContent='官方連結';official.appendChild(heading);
  const links=document.createElement('div');links.className='cb-official-links-grid';
@@ -3233,14 +3233,7 @@ function showSettings(){
  });
  official.appendChild(links);drawerBody.appendChild(official);
  const hqButton=document.createElement('button');hqButton.type='button';hqButton.className='dashboard-backup cb-headquarters-settings-button';hqButton.setAttribute('aria-label','定位總部 COMEBUY 總公司');hqButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V6l8-4 8 4v15M3 21h18M9 9h2m3 0h2M9 13h2m3 0h2M10 21v-4h4v4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>定位總部</span>';hqButton.onclick=()=>cbLocateHeadquarters(hqButton);drawerBody.appendChild(hqButton);
- const evalReport=document.createElement('p');evalReport.className='vacancy-note';evalReport.setAttribute('aria-live','polite');
- const updateEvalReport=()=>{
-  const r=window.ComebuyEvalBatch?.report();
-  evalReport.textContent=r?.error?r.error:r?'11/24 評估名單：已核對 '+r.accounted+'/'+r.total+' 筆；本批建檔 '+r.imported+' 筆；原資料重複 '+r.matchedExisting+' 筆；精準定位 '+r.precise+' 筆；暫時定位 '+r.temporary+' 筆；待定位 '+r.unlocated+' 筆。':'11/24 評估名單尚未執行本機匯入。';
- };
- updateEvalReport();const evalListener=()=>{if(document.contains(evalReport))updateEvalReport();else document.removeEventListener('cb:evaluation-batch-updated',evalListener)};
- document.addEventListener('cb:evaluation-batch-updated',evalListener);
- drawerBody.appendChild(evalReport);
+
  const sipspotButton=document.createElement('button');sipspotButton.type='button';sipspotButton.className='dashboard-backup';sipspotButton.textContent='各品牌加盟資訊';sipspotButton.onclick=openSipspotBrands;drawerBody.appendChild(sipspotButton);
 }
 document.getElementById('openDashboard').onclick=showSettings;
