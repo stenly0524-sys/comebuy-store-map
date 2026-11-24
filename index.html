@@ -1897,6 +1897,9 @@ window.__cbImportEvalBatch=()=>window.ComebuyEvalBatch?.run({
   refreshVacancyMarkers();
  }
 });
+// Import the user's authorized data even before Google Maps is fully initialized.
+// The map callback resumes verified geocoding when available.
+window.addEventListener('load',()=>setTimeout(()=>window.__cbImportEvalBatch?.(),1200),{once:true});
 
 function vacancyIcon(status){
  const color=status==='rented'?'#e9b52b':'#8b9099';
