@@ -2411,8 +2411,9 @@ function vacancyStoreModal(v){
    district.disabled=!city.value;district.value=selected;
   };
   fillDistrict(currentDistrict);city.onchange=()=>fillDistrict();
-  const fields=[['address','地址','text'],['rent','租金','number'],['size','坪數','number'],['front','面寬','number'],['contact','聯絡人','text'],['phone','聯絡電話','tel']];
+  const fields=[['address','地址','text'],['size','坪數','number'],['front','面寬','number'],['contact','聯絡人','text'],['phone','聯絡電話','tel']];
   fields.forEach(([key,label,type])=>{const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.name=key;input.type=type;input.value=v[key]??'';if(type==='number'){input.min='0';input.step='any'}wrap.appendChild(input);form.appendChild(wrap)});
+  const leaseEditor=window.ComebuyProfitCalculator.leaseForm(v);form.append(leaseEditor.box);
   // Only imported evaluation points expose coordinate correction; other vacancy forms stay unchanged.
   const batchLocation=v.importBatchId==='COMEBUY-EVAL-20261124';
   if(batchLocation){
@@ -2426,6 +2427,7 @@ function vacancyStoreModal(v){
   const actions=document.createElement('div');actions.className='vacancy-modal-actions';const save=document.createElement('button');save.type='submit';save.textContent='儲存店鋪資料';actions.appendChild(save);form.appendChild(actions);
   const render=view=>{
    view.replaceChildren(vacancyViewRow('城市',v.region?.city||''),vacancyViewRow('區域',vacancyDistrict(v)),...fields.map(([key,label])=>vacancyViewRow(label,key==='rent'&&v[key]!==''&&v[key]!=null?'NT$ '+Number(v[key]).toLocaleString('zh-TW'):v[key],key==='phone')));
+   view.append(vacancyViewRow('租賃條件',window.ComebuyProfitCalculator.leaseSummary(v)));
    if(batchLocation){view.append(vacancyViewRow('定位類型',v.geoAccuracy||'待定位'),vacancyViewRow('定位座標',v.position?Number(v.position.lat).toFixed(6)+'，'+Number(v.position.lng).toFixed(6):'待定位'))}
   };
   vacancyEditToggle(body,form,render);
@@ -2455,14 +2457,13 @@ function vacancyStoreModal(v){
      manualPoint={lat,lng};manualChanged=!previous.position||Math.abs(lat-previous.position.lat)>0.0000001||Math.abs(lng-previous.position.lng)>0.0000001;
     }else if(previous.position){manualCleared=true}
    }
+   const terms=leaseEditor.read(),issue=window.ComebuyProfitCalculator.leaseIssue(terms);if(issue){alert(issue);return}
    fields.forEach(([key])=>v[key]=form.elements.namedItem(key).value.trim());
    v.address=address;v.region={...(v.region||{}),city:city.value,district:district.value,neighborhood:''};
-   const rent=Number(v.rent);
-   if((v.rent===''&&!v.importBatchId)||(v.rent!==''&&(!Number.isFinite(rent)||rent<0))){Object.assign(v,previous);alert('請輸入有效租金');return}
-   v.rent=v.rent===''?'':rent;
+   v.lease=terms;if(terms.mode==='fixed')v.rent=Number(terms.fixed);
    if(v.address!==previous.address&&!manualChanged&&!manualCleared){
     const ok=await geocodeVacancy(v);
-    if(!ok){Object.assign(v,previous);alert('地址無法定位，請檢查地址');return}
+    if(!ok){if(!previous.lease)delete v.lease;Object.assign(v,previous);alert('地址無法定位，請檢查地址');return}
    }
    if(batchLocation&&(manualChanged||manualCleared)){
     v.position=manualPoint;
@@ -2473,7 +2474,7 @@ function vacancyStoreModal(v){
     v.locationEditHistory=[...(Array.isArray(previous.locationEditHistory)?previous.locationEditHistory:[]),{at:new Date().toISOString(),before:{address:previous.address,position:previous.position},after:{address:v.address,position:v.position},actor:'local-user'}];
    }
    v.region={...(v.region||{}),city:city.value,district:district.value,neighborhood:''};
-   if(!saveVacancies()){Object.assign(v,previous);return}
+   if(!saveVacancies()){if(!previous.lease)delete v.lease;Object.assign(v,previous);return}
    syncFranchiseVacancyLinks();refreshVacancyMarkers();close();showVacancies();
   };
  });
@@ -3360,5 +3361,5 @@ window.addComebuyIntelligenceSettingsButton=function(){
  const b=el('button','dashboard-backup','▤ 最新訊息');b.id='openIntelligence';b.onclick=window.showComebuyIntelligence;target.prepend(b);
 };
 })();
-</script><script src="profit-calculator.js?v=1" defer></script><script src="franchise-schedule-v2.js?v=20261112-rules-v2" defer></script><script src="franchise-schedule.js?v=20261112-v4" defer></script><script src="franchise-center-v4.js?v=20261112-v4" defer></script><script src="eval-batch-20261124.js?v=20261124-1" defer></script></body>
+</script><script src="profit-calculator.js?v=20261124-lease1" defer></script><script src="franchise-schedule-v2.js?v=20261112-rules-v2" defer></script><script src="franchise-schedule.js?v=20261112-v4" defer></script><script src="franchise-center-v4.js?v=20261112-v4" defer></script><script src="eval-batch-20261124.js?v=20261124-1" defer></script></body>
 </html>

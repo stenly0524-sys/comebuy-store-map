@@ -1,0 +1,3 @@
+/* Run with node tests/lease.test.js */
+const assert=require('node:assert/strict');global.window={};require('../profit-calculator.js');const p=window.ComebuyProfitCalculator;const v={...p.defaults,price:100,cups:200,days:30};for(const [mode,expected] of [['fixed',80000],['share',90000],['max',90000],['plus',140000]]){const lease={...p.lease({rent:80000}),mode,base:50000,rate:15,fee:10000};const r=p.calculate({...v,lease});assert.equal(r.rent,expected);assert.equal(r.site,expected+10000);const be=p.calculate({...v,lease,cups:r.grossBreakEven/v.price/v.days});assert.ok(Math.abs(be.operatingProfit)<1e-6);}
+console.log('lease tests passed');
