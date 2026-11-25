@@ -222,18 +222,30 @@ function weeklySection(){const a=weeklyRead(),week=weeklyStart(pickedDay),head=e
  for(const t of a){const row=el('div','cb-v4-job');row.style.cssText='display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:6px;padding:4px 8px;margin:2px 0;min-height:30px;height:auto;box-sizing:border-box';const check=el('input');check.type='checkbox';check.style.cssText='flex:0 0 16px;width:16px;height:16px;margin:0';check.checked=!!t.completed?.[week];check.setAttribute('aria-label','完成 '+t.title);check.onchange=()=>{const next=weeklyRead(),v=next.find(x=>x.id===t.id);if(!v)return;v.completed={...v.completed,[week]:check.checked};if(weeklySave(next))render();else check.checked=!check.checked};const title=el('strong','',t.title+'（每週）'+(t.day?'｜週'+'一二三四五六日'[t.day-1]:''));title.style.cssText='flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;line-height:20px';title.title=t.title;if(check.checked)title.style.textDecoration='line-through';const edit=btn('編輯',()=>weeklyEdit(t),'cb-v4-secondary');edit.style.cssText='flex:0 0 auto;width:auto;min-width:0;min-height:24px;padding:2px 6px;margin:0;font-size:12px;line-height:18px';row.append(check,title,edit);context.body.append(row)}
 }
 
+
+const DAILY_KEY='comebuy_daily_tasks_v1';
+function dailyRead(){try{const a=JSON.parse(localStorage.getItem(DAILY_KEY)||'[]');return Array.isArray(a)?a:[]}catch{return []}}
+function dailySave(a){try{localStorage.setItem(DAILY_KEY,JSON.stringify(a));return true}catch{alert('儲存失敗');return false}}
+function dailyEdit(date,task){popup(task?'編輯任務':'新增任務',(body,close)=>{
+ const form=el('form','cb-v4-form'),fields=[['title','任務名稱','text',task?.title||''],['date','日期','date',date],['time','時間（選填）','time',task?.time||''],['note','備註','textarea',task?.note||'']];
+ for(const [key,label,type,value] of fields){const l=el('label','',label),i=el(type==='textarea'?'textarea':'input');if(type!=='textarea')i.type=type;i.name=key;i.value=value;i.required=key==='title'||key==='date';l.append(i);form.append(l)}
+ const b=btn('儲存任務',()=>{},'cb-v4-primary');b.type='submit';form.append(b);form.onsubmit=e=>{e.preventDefault();const v=Object.fromEntries(new FormData(form));v.title=v.title.trim();if(!v.title||!iso(v.date))return;const a=dailyRead(),item={...task,...v,id:task?.id||String(Date.now())+'-'+Math.random().toString(36).slice(2)};const i=a.findIndex(x=>x.id===item.id);if(i<0)a.push(item);else a[i]=item;if(dailySave(a)){pickedDay=v.date;month=v.date.slice(0,7);close();render()}};
+ if(task)form.append(btn('刪除任務',()=>{if(confirm('確定刪除任務？')&&dailySave(dailyRead().filter(x=>x.id!==task.id))){close();render()}},'cb-v4-secondary'));body.append(form)
+})}
+function dailyRow(t){const row=el('div','cb-v4-job');row.style.cssText='display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;min-height:30px';const c=el('input');c.type='checkbox';c.checked=!!t.done;c.style.cssText='width:16px;height:16px;flex:0 0 16px';c.onchange=()=>{const a=dailyRead(),v=a.find(x=>x.id===t.id);if(v){v.done=c.checked;if(dailySave(a))render();else c.checked=!c.checked}};const title=el('strong','',(t.time?t.time+' ':'')+t.title);title.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px'+(t.done?';text-decoration:line-through':'');row.append(c,title,btn('編輯',()=>dailyEdit(t.date,t),'cb-v4-secondary'));return row}
+
 function calendar(){
- const jobs=work(),todayStr=today();const year=Number(month.slice(0,4)),mon=Number(month.slice(5,7));
+ const personal=dailyRead(),jobs=work(),todayStr=today();const year=Number(month.slice(0,4)),mon=Number(month.slice(5,7));
  const heading=el('div','cb-v4-month');heading.append(btn('‹',()=>{month=new Date(Date.UTC(year,mon-2,1)).toISOString().slice(0,7);calendarRefresh()},'cb-v4-month-arrow'),el('strong','',month),btn('›',()=>{month=new Date(Date.UTC(year,mon,1)).toISOString().slice(0,7);calendarRefresh()},'cb-v4-month-arrow'));context.body.append(heading);
  const grid=el('div','cb-v4-calendar');for(const day of ['日','一','二','三','四','五','六'])grid.append(el('span','cb-v4-week',day));
  const first=new Date(Date.UTC(year,mon-1,1)),offset=first.getUTCDay(),last=new Date(Date.UTC(year,mon,0)).getUTCDate();
  for(let i=0;i<offset;i++)grid.append(el('span','cb-v4-empty',''));
  for(let n=1;n<=last;n++){
-  const d=month+'-'+String(n).padStart(2,'0'),count=jobs.filter(x=>x.date===d).length;
-  const day=btn(String(n),()=>{pickedDay=d;render()},'cb-v4-day'+(d===todayStr?' today':'')+(d===pickedDay?' selected':''));
+  const d=month+'-'+String(n).padStart(2,'0'),count=jobs.filter(x=>x.date===d).length+personal.filter(x=>x.date===d&&!x.done).length;
+  const day=btn(String(n),()=>{pickedDay=d;render();dailyEdit(d)},'cb-v4-day'+(d===todayStr?' today':'')+(d===pickedDay?' selected':''));
   if(count)day.append(el('span','cb-v4-dot','●'));
   grid.append(day)
- }context.body.append(grid);
+ }context.body.append(grid);context.body.append(btn('＋ 新增任務（'+pickedDay+'）',()=>dailyEdit(pickedDay),'cb-v4-secondary'));
  weeklySection();
  const sections=[
   ['當日待辦',jobs.filter(x=>x.date===pickedDay)],
@@ -241,8 +253,8 @@ function calendar(){
   ['已逾期',jobs.filter(x=>x.date<todayStr).sort((a,b)=>a.date.localeCompare(b.date))]
  ];
  for(const [label,items] of sections){
-  context.body.append(el('h3','cb-v4-section-title',label+'（'+items.length+'）'));
-  if(!items.length)context.body.append(el('p','cb-v4-empty','無待辦項目'));
+  const extra=personal.filter(t=>label==='當日待辦'?t.date===pickedDay:!t.done&&(label==='已逾期'?t.date<todayStr:t.date>todayStr&&t.date<=addDays(todayStr,7)));context.body.append(el('h3','cb-v4-section-title',label+'（'+(items.length+extra.length)+'）'));for(const t of extra)context.body.append(dailyRow(t));
+  if(!items.length&&!extra.length)context.body.append(el('p','cb-v4-empty','無待辦項目'));
   for(const x of items.slice(0,40)){
    const button=btn('',()=>openPhase(x.lead,x.task.phase,x.task.id),'cb-v4-job');
    button.append(el('strong','',x.lead.name+'｜'+x.task.title),el('span','',x.date+'｜'+x.task.phase+'｜'+fullAddress(x.lead)));
