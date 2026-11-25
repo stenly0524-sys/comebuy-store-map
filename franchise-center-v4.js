@@ -206,6 +206,22 @@ function signLead(l){
   };body.append(form)
  })
 }
+
+const WEEKLY_KEY='comebuy_weekly_tasks_v1';
+function weeklyRead(){try{const a=JSON.parse(localStorage.getItem(WEEKLY_KEY)||'[]');return Array.isArray(a)?a:[]}catch{return []}}
+function weeklySave(a){try{localStorage.setItem(WEEKLY_KEY,JSON.stringify(a));return true}catch{alert('儲存失敗，請檢查本機空間');return false}}
+function weeklyStart(d){return addDays(d,-((new Date(d+'T00:00:00Z').getUTCDay()+6)%7))}
+function weeklyEdit(task){popup(task?'編輯每週任務':'新增每週任務',(body,close)=>{
+ const form=el('form','cb-v4-form'),label=el('label','','任務名稱'),input=el('input');input.required=true;input.maxLength=120;input.value=task?.title||'';input.placeholder='智能升級專案會議';label.append(input);form.append(label);
+ const dayLabel=el('label','','固定星期（選填）'),day=el('select');['不限星期','週一','週二','週三','週四','週五','週六','週日'].forEach((n,i)=>{const o=el('option','',n);o.value=String(i);day.append(o)});day.value=String(task?.day||0);dayLabel.append(day);form.append(dayLabel);
+ const save=btn('儲存任務',()=>{},'cb-v4-primary');save.type='submit';form.append(save);form.onsubmit=e=>{e.preventDefault();const title=input.value.trim();if(!title)return;const a=weeklyRead(),v={...task,id:task?.id||String(Date.now())+'-'+Math.random().toString(36).slice(2),title,day:Number(day.value)};const i=a.findIndex(x=>x.id===v.id);if(i<0)a.push(v);else a[i]=v;if(weeklySave(a)){close();render()}};
+ if(task)form.append(btn('刪除任務',()=>{if(confirm('確定刪除此每週任務？')&&weeklySave(weeklyRead().filter(x=>x.id!==task.id))){close();render()}},'cb-v4-secondary'));body.append(form)
+})}
+function weeklySection(){const a=weeklyRead(),week=weeklyStart(pickedDay),head=el('div');head.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';head.append(el('h3','cb-v4-section-title','每週任務（'+a.length+'）'),btn('＋ 新增任務',()=>weeklyEdit(null),'cb-v4-secondary'));context.body.append(head);context.body.append(el('small','','週期：'+week+' ～ '+addDays(week,6)));
+ if(!a.length)context.body.append(el('p','cb-v4-empty','尚無每週任務'));
+ for(const t of a){const row=el('div','cb-v4-job');row.style.cssText='display:flex;align-items:center;gap:8px';const check=el('input');check.type='checkbox';check.checked=!!t.completed?.[week];check.setAttribute('aria-label','完成 '+t.title);check.onchange=()=>{const next=weeklyRead(),v=next.find(x=>x.id===t.id);if(!v)return;v.completed={...v.completed,[week]:check.checked};if(weeklySave(next))render();else check.checked=!check.checked};const title=el('strong','',t.title+'（每週）'+(t.day?'｜週'+'一二三四五六日'[t.day-1]:''));title.style.flex='1';if(check.checked)title.style.textDecoration='line-through';row.append(check,title,btn('編輯',()=>weeklyEdit(t),'cb-v4-secondary'));context.body.append(row)}
+}
+
 function calendar(){
  const jobs=work(),todayStr=today();const year=Number(month.slice(0,4)),mon=Number(month.slice(5,7));
  const heading=el('div','cb-v4-month');heading.append(btn('‹',()=>{month=new Date(Date.UTC(year,mon-2,1)).toISOString().slice(0,7);calendarRefresh()},'cb-v4-month-arrow'),el('strong','',month),btn('›',()=>{month=new Date(Date.UTC(year,mon,1)).toISOString().slice(0,7);calendarRefresh()},'cb-v4-month-arrow'));context.body.append(heading);
@@ -218,6 +234,7 @@ function calendar(){
   if(count)day.append(el('span','cb-v4-dot','●'));
   grid.append(day)
  }context.body.append(grid);
+ weeklySection();
  const sections=[
   ['當日待辦',jobs.filter(x=>x.date===pickedDay)],
   ['即將到期（7天）',jobs.filter(x=>x.date>todayStr&&x.date<=addDays(todayStr,7)).sort((a,b)=>a.date.localeCompare(b.date))],
