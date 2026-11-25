@@ -56,12 +56,12 @@ function page(){
  context.body.replaceChildren();
  const tabs=el('div','cb-v4-tabs');tabs.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
  for(const [id,name] of [['calendar','時程中心'],['work','工作任務'],['history','歷史任務'],['develop','加盟開發']]){
-  const b=btn(name,()=>{if(id==='history'){openTaskHistory();return}tab=id;folderId=null;render()},'cb-v4-tab'+(tab===id?' active':''));b.style.cssText='min-width:0;white-space:nowrap;padding-left:2px;padding-right:2px;font-size:clamp(11px,3.2vw,14px)';
+  const b=btn(name,()=>{tab=id;folderId=null;render()},'cb-v4-tab'+(tab===id?' active':''));b.style.cssText='min-width:0;white-space:nowrap;padding-left:2px;padding-right:2px;font-size:clamp(11px,3.2vw,14px)';
   b.setAttribute('aria-selected',String(tab===id));tabs.append(b)
  }
  context.body.append(tabs);
  if(folderId&&tab!=='calendar'){folder();return}
- if(tab==='calendar')calendar();else if(tab==='work')workPage();else list();
+ if(tab==='calendar')calendar();else if(tab==='work')workPage();else if(tab==='history')taskHistory(context.body.appendChild(el('div','cb-v4-history-page')));else list();
 }
 function render(){page()}
 function addHeader(label,action,fn){const row=el('div','cb-v4-bar');row.append(el('strong','',label));if(action)row.append(btn(action,fn,'cb-v4-button'));context.body.append(row)}
