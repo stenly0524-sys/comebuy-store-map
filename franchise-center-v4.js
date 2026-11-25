@@ -98,6 +98,7 @@ function folder(){
  const opts=el('div','cb-v4-project-actions');
  opts.append(btn('店舖／聯絡資訊',()=>editLead(l),'cb-v4-button'));
  if(!signed(l))opts.append(btn('正式簽約',()=>signLead(l),'cb-v4-button primary'));
+ const remove=btn('刪除加盟主',()=>deleteLead(l),'cb-v4-button');remove.style.color='#d71920';opts.append(remove);
  context.body.append(opts);
  for(const phase of PHASES){
   const rows=tasks(l).filter(t=>t.phase===phase);
@@ -110,6 +111,15 @@ function folder(){
  const history=el('details','cb-v4-history');history.append(el('summary','','案件修改紀錄（'+(l.projectHistory||[]).length+'）'));
  for(const h of l.projectHistory||[])history.append(el('p','',new Date(h.at).toLocaleString('zh-TW')+'｜'+h.type+'｜'+JSON.stringify(h.changes)));
  context.body.append(history);
+}
+function deleteLead(l){
+ const related=matchingVacancy(l);
+ popup('刪除加盟主確認',(body,close)=>{
+  body.append(el('p','cb-v4-help','確定刪除「'+(l.name||'未命名加盟主')+'」？案件資料及其時程將一併移除，空舖資料不會刪除。此操作無法直接復原。'));
+  if(related.length){body.append(el('p','cb-v4-help','此案件仍有 '+related.length+' 筆關聯空舖，請先解除關聯後再刪除，以避免留下無效關聯。'));body.append(btn('返回',close,'cb-v4-button'));return}
+  const actions=el('div','cb-v4-project-actions');
+  const confirm=btn('確認刪除',()=>{const leads=all(),i=leads.findIndex(x=>String(x.id)===String(l.id));if(i<0)return;const removed=leads.splice(i,1)[0];try{if(!context.save())throw Error('儲存失敗')}catch(e){leads.splice(i,0,removed);alert('刪除失敗，原資料已保留');return}close();folderId=null;render()},'cb-v4-button primary');confirm.style.background='#d71920';confirm.style.color='#fff';actions.append(btn('取消',close,'cb-v4-button'),confirm);body.append(actions)
+ })
 }
 function openPhase(lead,phase,taskId=''){
  if(!window.ComebuySchedule){alert('流程模組尚未載入');return}
