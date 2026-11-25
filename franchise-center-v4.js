@@ -10,7 +10,7 @@ const done=t=>t.status==='已完成'||t.status==='已取消';
 const iso=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
 const btn=(text,fn,cls)=>{const b=el('button',cls,text);b.type='button';b.onclick=fn;return b};
-let context=null,tab='develop',folderId=null,month=today().slice(0,7),pickedDay=today(),active=false;
+let context=null,tab='calendar',folderId=null,month=today().slice(0,7),pickedDay=today(),active=false;
 function signed(l){return SIGNED.includes(l.stage)||!!l.signedAt}
 function tasks(l){return (Array.isArray(l.scheduleTasks)?l.scheduleTasks:[]).filter(t=>t&&String(t.leadId)===String(l.id))}
 function all(){return context.getLeads()}
@@ -55,21 +55,21 @@ function page(){
  context.setHeading();context.title.textContent='項目中心';
  context.body.replaceChildren();
  const tabs=el('div','cb-v4-tabs');
- for(const [id,name] of [['develop','加盟開發'],['signed','加盟案件'],['calendar','時程中心']]){
+ for(const [id,name] of [['calendar','時程中心'],['work','工作任務'],['develop','加盟開發']]){
   const b=btn(name,()=>{tab=id;folderId=null;render()},'cb-v4-tab'+(tab===id?' active':''));
   b.setAttribute('aria-selected',String(tab===id));tabs.append(b)
  }
  context.body.append(tabs);
  if(folderId&&tab!=='calendar'){folder();return}
- if(tab==='calendar')calendar();else list();
+ if(tab==='calendar')calendar();else if(tab==='work')workPage();else list();
 }
 function render(){page()}
 function addHeader(label,action,fn){const row=el('div','cb-v4-bar');row.append(el('strong','',label));if(action)row.append(btn(action,fn,'cb-v4-button'));context.body.append(row)}
 function list(){
- const signedMode=tab==='signed';const leads=all().filter(l=>signed(l)===signedMode);
- addHeader(signedMode?'已簽約案件（'+leads.length+'）':'未簽約開發（'+leads.length+'）',signedMode?'':'＋ 新增加盟開發',signedMode?null:openAdd);
+ const leads=all();addHeader('加盟開發（'+leads.length+'）','＋ 新增加盟開發',openAdd);
+ for(const signedMode of [false,true]){const group=leads.filter(l=>signed(l)===signedMode);context.body.append(el('h3','cb-v4-section-title',(signedMode?'已簽約案件':'未簽約開發')+'（'+group.length+'）'));
  if(!leads.length)context.body.append(el('p','cb-v4-empty','目前沒有此類加盟專案'));
- for(const l of leads){
+ for(const l of group){
   const card=btn('',()=>{folderId=String(l.id);render()},'cb-v4-folder');
   const heading=el('div','cb-v4-folder-title');heading.append(el('strong','',l.name||'未命名加盟主'),el('span','','›'));card.append(heading);
   const lines=signedMode?[
@@ -88,7 +88,7 @@ function list(){
   if(late)card.append(el('span','cb-v4-alert','⚠ '+late+' 項逾期'));
   const id=el('div','cb-v4-caseid','案件 ID：'+l.id);card.append(id);
   context.body.append(card)
- }
+ }}
 }
 function folder(){
  const l=get(folderId);if(!l){folderId=null;render();return}
@@ -202,7 +202,7 @@ function signLead(l){
    l.stage='已簽約';l.signedAt=date.value;
    record(l,'正式簽約',{stage:{from:previous.stage,to:'已簽約'},signedAt:{from:previous.signedAt||'',to:date.value}});
    if(!context.save()){Object.keys(l).forEach(k=>delete l[k]);Object.assign(l,previous);return}
-   close();folderId=null;tab='signed';render()
+   close();folderId=null;tab='develop';render()
   };body.append(form)
  })
 }
@@ -234,6 +234,14 @@ function dailyEdit(date,task){popup(task?'編輯任務':'新增任務',(body,clo
 })}
 function dailyRow(t){const row=el('div','cb-v4-job');row.style.cssText='display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;min-height:30px';const c=el('input');c.type='checkbox';c.checked=!!t.done;c.style.cssText='width:16px;height:16px;flex:0 0 16px';c.onchange=()=>{const a=dailyRead(),v=a.find(x=>x.id===t.id);if(v){v.done=c.checked;if(dailySave(a))render();else c.checked=!c.checked}};const title=el('strong','',(t.time?t.time+' ':'')+t.title);title.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px'+(t.done?';text-decoration:line-through':'');row.append(c,title,btn('編輯',()=>dailyEdit(t.date,t),'cb-v4-secondary'));return row}
 
+
+const ROUTINE_KEY='comebuy_routine_tasks_v1';
+function routineRead(){try{const a=JSON.parse(localStorage.getItem(ROUTINE_KEY)||'[]');return Array.isArray(a)?a:[]}catch{return []}}
+function routineSave(a){try{localStorage.setItem(ROUTINE_KEY,JSON.stringify(a));return true}catch{alert('儲存失敗');return false}}
+function routineEdit(t){popup(t?'編輯待辦任務':'新增待辦任務',(body,close)=>{const f=el('form','cb-v4-form'),l=el('label','','任務名稱'),i=el('input');i.required=true;i.value=t?.title||'';l.append(i);f.append(l);const a=el('div');a.style.cssText='display:grid;gap:8px;grid-template-columns:'+(t?'2fr 1fr':'1fr');const b=btn('儲存任務',()=>{},'cb-v4-primary');b.type='submit';a.append(b);if(t)a.append(btn('刪除任務',()=>{if(confirm('確定刪除？')&&routineSave(routineRead().filter(x=>x.id!==t.id))){close();render()}},'cb-v4-secondary'));f.append(a);f.onsubmit=e=>{e.preventDefault();const title=i.value.trim();if(!title)return;const rows=routineRead(),v={...t,title,id:t?.id||String(Date.now())+'-'+Math.random().toString(36).slice(2)},idx=rows.findIndex(x=>x.id===v.id);if(idx<0)rows.push(v);else rows[idx]=v;if(routineSave(rows)){close();render()}};body.append(f)})}
+function routineSection(){const a=routineRead();addHeader('待辦任務（'+a.length+'）','＋ 新增任務',()=>routineEdit(null));if(!a.length)context.body.append(el('p','cb-v4-empty','尚無待辦任務'));for(const t of a){const row=el('div','cb-v4-job');row.style.cssText='display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;min-height:30px';const c=el('input');c.type='checkbox';c.checked=!!t.done;c.style.cssText='width:16px;height:16px;flex:0 0 16px';c.onchange=()=>{const a=routineRead(),v=a.find(x=>x.id===t.id);if(v){v.done=c.checked;if(routineSave(a))render();else c.checked=!c.checked}};const title=el('strong','',t.title);title.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px'+(t.done?';text-decoration:line-through':'');row.append(c,title,btn('編輯',()=>routineEdit(t),'cb-v4-secondary'));context.body.append(row)}}
+function workPage(){routineSection();weeklySection();addHeader('日期任務','＋ 新增任務',()=>dailyEdit(today()));for(const t of dailyRead().sort((a,b)=>a.date.localeCompare(b.date))){context.body.append(el('small','',t.date));context.body.append(dailyRow(t))}}
+
 function calendar(){
  const personal=dailyRead(),jobs=work(),todayStr=today();const year=Number(month.slice(0,4)),mon=Number(month.slice(5,7));
  const heading=el('div','cb-v4-month');heading.append(btn('‹',()=>{month=new Date(Date.UTC(year,mon-2,1)).toISOString().slice(0,7);calendarRefresh()},'cb-v4-month-arrow'),el('strong','',month),btn('›',()=>{month=new Date(Date.UTC(year,mon,1)).toISOString().slice(0,7);calendarRefresh()},'cb-v4-month-arrow'));context.body.append(heading);
@@ -246,7 +254,7 @@ function calendar(){
   if(count)day.append(el('span','cb-v4-dot','●'));
   grid.append(day)
  }context.body.append(grid);context.body.append(btn('＋ 新增任務（'+pickedDay+'）',()=>dailyEdit(pickedDay),'cb-v4-secondary'));
- weeklySection();
+ routineSection();weeklySection();
  const sections=[
   ['當日待辦',jobs.filter(x=>x.date===pickedDay)],
   ['即將到期（7天）',jobs.filter(x=>x.date>todayStr&&x.date<=addDays(todayStr,7)).sort((a,b)=>a.date.localeCompare(b.date))],
@@ -263,14 +271,14 @@ function calendar(){
  }
  context.body.append(el('h3','cb-v4-section-title','加盟主專案清單（'+all().length+'）'));
  for(const lead of all()){
-  const b=btn((lead.name||'未命名')+'｜'+fullAddress(lead),()=>{tab=signed(lead)?'signed':'develop';folderId=String(lead.id);render()},'cb-v4-project-link');
+  const b=btn((lead.name||'未命名')+'｜'+fullAddress(lead),()=>{tab='develop';folderId=String(lead.id);render()},'cb-v4-project-link');
   context.body.append(b)
  }
 }
 function addDays(date,n){const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function calendarRefresh(){render()}
 function open(ctx){
- context=ctx;tab='develop';folderId=null;month=today().slice(0,7);pickedDay=today();active=true;
+ context=ctx;tab='calendar';folderId=null;month=today().slice(0,7);pickedDay=today();active=true;
  if(!window.ComebuySchedule||!safeSeed()){active=false;return}
  render()
 }
