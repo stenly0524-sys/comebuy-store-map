@@ -52,7 +52,7 @@ function safeSeed(){
 function page(){
  if(!active||!context)return;
  context.setLayout('compact');context.setNav();context.drawer.classList.add('open');
- context.setHeading();context.title.textContent='項目中心';
+ context.setHeading();context.title.textContent='工作';
  context.body.replaceChildren();
  const tabs=el('div','cb-v4-tabs');
  for(const [id,name] of [['calendar','時程中心'],['work','工作任務'],['develop','加盟開發']]){
