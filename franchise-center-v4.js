@@ -240,7 +240,7 @@ function routineRead(){try{const a=JSON.parse(localStorage.getItem(ROUTINE_KEY)|
 function routineSave(a){try{localStorage.setItem(ROUTINE_KEY,JSON.stringify(a));return true}catch{alert('儲存失敗');return false}}
 function routineEdit(t){popup(t?'編輯待辦任務':'新增待辦任務',(body,close)=>{const f=el('form','cb-v4-form'),l=el('label','','任務名稱'),i=el('input');i.required=true;i.value=t?.title||'';l.append(i);f.append(l);const a=el('div');a.style.cssText='display:grid;gap:8px;grid-template-columns:'+(t?'2fr 1fr':'1fr');const b=btn('儲存任務',()=>{},'cb-v4-primary');b.type='submit';a.append(b);if(t)a.append(btn('刪除任務',()=>{if(confirm('確定刪除？')&&routineSave(routineRead().filter(x=>x.id!==t.id))){close();render()}},'cb-v4-secondary'));f.append(a);f.onsubmit=e=>{e.preventDefault();const title=i.value.trim();if(!title)return;const rows=routineRead(),v={...t,title,id:t?.id||String(Date.now())+'-'+Math.random().toString(36).slice(2)},idx=rows.findIndex(x=>x.id===v.id);if(idx<0)rows.push(v);else rows[idx]=v;if(routineSave(rows)){close();render()}};body.append(f)})}
 function routineSection(){const a=routineRead();addHeader('待辦任務（'+a.length+'）','＋ 新增任務',()=>routineEdit(null));if(!a.length)context.body.append(el('p','cb-v4-empty','尚無待辦任務'));for(const t of a){const row=el('div','cb-v4-job');row.style.cssText='display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;min-height:30px';const c=el('input');c.type='checkbox';c.checked=!!t.done;c.style.cssText='width:16px;height:16px;flex:0 0 16px';c.onchange=()=>{const a=routineRead(),v=a.find(x=>x.id===t.id);if(v){v.done=c.checked;if(routineSave(a))render();else c.checked=!c.checked}};const title=el('strong','',t.title);title.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px'+(t.done?';text-decoration:line-through':'');row.append(c,title,btn('編輯',()=>routineEdit(t),'cb-v4-secondary'));context.body.append(row)}}
-function workPage(){routineSection();weeklySection();addHeader('日期任務','＋ 新增任務',()=>dailyEdit(today()));for(const t of dailyRead().sort((a,b)=>a.date.localeCompare(b.date))){context.body.append(el('small','',t.date));context.body.append(dailyRow(t))}}
+function workPage(){pickedDay=today();routineSection();weeklySection()}
 
 function calendar(){
  const personal=dailyRead(),jobs=work(),todayStr=today();const year=Number(month.slice(0,4)),mon=Number(month.slice(5,7));
@@ -254,7 +254,6 @@ function calendar(){
   if(count)day.append(el('span','cb-v4-dot','●'));
   grid.append(day)
  }context.body.append(grid);context.body.append(btn('＋ 新增任務（'+pickedDay+'）',()=>dailyEdit(pickedDay),'cb-v4-secondary'));
- routineSection();weeklySection();
  const sections=[
   ['當日待辦',jobs.filter(x=>x.date===pickedDay)],
   ['即將到期（7天）',jobs.filter(x=>x.date>todayStr&&x.date<=addDays(todayStr,7)).sort((a,b)=>a.date.localeCompare(b.date))],
