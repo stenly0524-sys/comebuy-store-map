@@ -282,12 +282,11 @@ function calendar(){
   grid.append(day)
  }context.body.append(grid);
  const sections=[
-  ['當日待辦',jobs.filter(x=>x.date===pickedDay)],
-  ['即將到期（7天）',jobs.filter(x=>x.date>todayStr&&x.date<=addDays(todayStr,7)).sort((a,b)=>a.date.localeCompare(b.date))],
-  ['已逾期',jobs.filter(x=>x.date<todayStr).sort((a,b)=>a.date.localeCompare(b.date))]
+  ['本日待辦',jobs.filter(x=>x.date===pickedDay)],
+  ['尚未完成',jobs.filter(x=>x.date<todayStr&&x.date!==pickedDay).sort((a,b)=>a.date.localeCompare(b.date))]
  ];
  for(const [label,items] of sections){
-  const extra=[...personal,...(label==='當日待辦'?meetings.map(t=>({...t,calendarMeeting:true})):[])].filter(t=>label==='當日待辦'?t.date===pickedDay:!t.done&&(label==='已逾期'?t.date<todayStr:t.date>todayStr&&t.date<=addDays(todayStr,7)));context.body.append(el('h3','cb-v4-section-title',label+'（'+(items.length+extra.length)+'）'));for(const t of extra){if(t.calendarMeeting){const b=btn((t.time||'')+'｜會議：'+t.title,()=>dailyEdit(t.date,t),'cb-v4-job');context.body.append(b)}else if(t.routine){const b=btn(t.date+' '+(t.time||'')+'｜'+t.title,()=>routineEdit(t),'cb-v4-job');context.body.append(b)}else context.body.append(dailyRow(t));}
+  const extra=[...personal,...(label==='本日待辦'?meetings.map(t=>({...t,calendarMeeting:true})):[])].filter(t=>!t.done&&(label==='本日待辦'?t.date===pickedDay:t.date<todayStr&&t.date!==pickedDay));context.body.append(el('h3','cb-v4-section-title',label+'（'+(items.length+extra.length)+'）'));for(const t of extra){if(t.calendarMeeting){const b=btn((t.time||'')+'｜會議：'+t.title,()=>dailyEdit(t.date,t),'cb-v4-job');context.body.append(b)}else if(t.routine){const b=btn(t.date+' '+(t.time||'')+'｜'+t.title,()=>routineEdit(t),'cb-v4-job');context.body.append(b)}else context.body.append(dailyRow(t));}
   if(!items.length&&!extra.length)context.body.append(el('p','cb-v4-empty','無待辦項目'));
   for(const x of items.slice(0,40)){
    const button=btn('',()=>openPhase(x.lead,x.task.phase,x.task.id),'cb-v4-job');
