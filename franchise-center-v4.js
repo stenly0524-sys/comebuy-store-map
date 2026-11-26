@@ -52,7 +52,7 @@ function safeSeed(){
 function page(){
  if(!active||!context)return;
  context.setLayout('compact');context.setNav();context.drawer.classList.add('open');
- context.setHeading();context.title.textContent=context.projectMode?'加盟開發':context.calendarMode?'時程中心':'工作';
+ context.setHeading();context.title.textContent=context.projectMode?'加盟開發':context.calendarMode?'行程':'工作';
  context.body.replaceChildren();
  if(context.projectMode){context.body.append(btn('‹ 返回專案',()=>{active=false;context.home()},'cb-v4-back'));if(folderId)folder();else list();return}
  if(context.calendarMode){calendar();return}
