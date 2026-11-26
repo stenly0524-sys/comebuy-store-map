@@ -52,10 +52,11 @@ function safeSeed(){
 function page(){
  if(!active||!context)return;
  context.setLayout('compact');context.setNav();context.drawer.classList.add('open');
- context.setHeading();context.title.textContent='工作';
+ context.setHeading();context.title.textContent=context.projectMode?'加盟開發':'工作';
  context.body.replaceChildren();
- const tabs=el('div','cb-v4-tabs');tabs.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
- for(const [id,name] of [['calendar','時程中心'],['work','工作任務'],['history','歷史任務'],['develop','加盟開發']]){
+ if(context.projectMode){context.body.append(btn('‹ 返回專案',()=>{active=false;context.home()},'cb-v4-back'));if(folderId)folder();else list();return}
+ const tabs=el('div','cb-v4-tabs');tabs.style.gridTemplateColumns='repeat(3,minmax(0,1fr))';
+ for(const [id,name] of [['calendar','時程中心'],['work','工作任務'],['history','歷史任務']]){
   const b=btn(name,()=>{tab=id;folderId=null;render()},'cb-v4-tab'+(tab===id?' active':''));b.style.cssText='min-width:0;white-space:nowrap;padding-left:2px;padding-right:2px;font-size:clamp(11px,3.2vw,14px)';
   b.setAttribute('aria-selected',String(tab===id));tabs.append(b)
  }
@@ -303,11 +304,11 @@ function calendar(){
 function addDays(date,n){const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function calendarRefresh(){render()}
 function open(ctx){
- context=ctx;tab='calendar';folderId=null;month=today().slice(0,7);pickedDay=today();active=true;
+ context=ctx;tab=ctx.projectMode?'develop':'calendar';folderId=null;month=today().slice(0,7);pickedDay=today();active=true;
  if(!window.ComebuySchedule||!safeSeed()){active=false;return}
  render()
 }
-function refresh(){if(active)render()}
+function refresh(){if(active&&context?.isCurrent?.()!==false)render()}
 document.addEventListener('cb:franchise-schedule-saved',refresh);
 window.ComebuyProjectV4={open,refresh,phases:PHASES};
 })();
