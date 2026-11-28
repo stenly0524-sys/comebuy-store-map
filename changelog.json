@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "61957eef69c53955049fdc5f4af233b4ed06ec27",
+      "time": "2026-11-28T13:59:13Z",
+      "title": "專案總覽新增條件篩選",
+      "detail": "縮短搜尋門市欄，右側新增七項單選下拉條件，與門市名稱及編號搜尋交集篩選，保留明細匯出。",
+      "category": "專案",
+      "type": "功能新增",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "172680feb74fc2ee79bb16c699d5d2ab6cc4c087",
       "time": "2026-11-28T13:56:29Z",
       "title": "統一加盟維護與加盟管理按鈕",
@@ -1275,6 +1286,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 1
+    "deploysAfterBaseline": 2
   }
 }
