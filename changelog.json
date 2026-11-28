@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "c9ffb95b63f80bf5199c2e7e320d7a73853f624a",
+      "time": "2026-11-28T14:02:00Z",
+      "title": "調整備份匯入確認流程",
+      "detail": "選檔後先顯示確認視窗，確認才讀取與驗證，取消不寫入資料，保留原有備份保護。",
+      "category": "設定",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "61957eef69c53955049fdc5f4af233b4ed06ec27",
       "time": "2026-11-28T13:59:13Z",
       "title": "專案總覽新增條件篩選",
@@ -1286,6 +1297,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 2
+    "deploysAfterBaseline": 3
   }
 }
