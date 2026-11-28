@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "32f69e582a08e5c82f4b17a272439c096846c803",
+      "time": "2026-11-28T13:17:46Z",
+      "title": "新增修改紀錄載入備援",
+      "detail": "資料請求失敗時使用內建快照，移除 replaceChildren 相容性依賴。",
+      "category": "設定",
+      "type": "錯誤修復",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "43726bfa63afa33bea8173e307b1e6b933ffbe22",
       "time": "2026-11-28T13:15:55Z",
       "title": "修復修改紀錄載入相容性",
