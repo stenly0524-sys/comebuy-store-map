@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "c60564c59e3a2779462b726b5959a3f798bd1c63",
+      "time": "2026-11-28T16:04:57Z",
+      "title": "設定重整與系統資料庫雙分頁",
+      "detail": "整合系統資訊及改版紀錄，調整保障距離、更新系統與備份按鈕位置，保留其他匯入匯出功能。",
+      "category": "設定",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "aa6c71431c1cf56cdb7b2dadc17f4810a4f79d84",
       "time": "2026-11-28T15:51:38Z",
       "title": "整合資料備份入口",
@@ -1418,6 +1429,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 14
+    "deploysAfterBaseline": 15
   }
 }
