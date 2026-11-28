@@ -1,6 +1,28 @@
 {
   "records": [
     {
+      "id": "4f07323a1878cc57e49f37971ef229ffbff3be8b",
+      "time": "2026-11-28T13:44:41Z",
+      "title": "統一資料庫管理視窗尺寸",
+      "detail": "資料庫管理與系統修改紀錄共用視窗邊界、標題高度及內部捲動規則。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
+      "id": "e1574107b9a7fe12d57a086db2cae6054ef82378",
+      "time": "2026-11-28T13:44:37Z",
+      "title": "共用設定視窗定位規則",
+      "detail": "資料庫管理與系統修改紀錄共用視窗邊界、標題高度及內部捲動規則。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "8f0d4e41a7411ac623b5fd532fdff65088e32d50",
       "time": "2026-11-28T13:42:08Z",
       "title": "統一修改紀錄視窗邊界",
