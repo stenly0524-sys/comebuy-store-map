@@ -68,7 +68,7 @@ function page(){
 function render(){page()}
 function addHeader(label,action,fn){const row=el('div','cb-v4-bar');row.append(el('strong','',label));if(action)row.append(btn(action,fn,'cb-v4-button'));context.body.append(row)}
 function list(){
- const leads=all();addHeader('加盟開發（'+leads.length+'）','＋ 新增加盟開發',openAdd);
+ const leads=all();if(context.embeddedProject)context.body.append(el('h3','cb-v4-section-title','加盟開發（'+leads.length+'）'));else addHeader('加盟開發（'+leads.length+'）','＋ 新增加盟開發',openAdd);
  for(const signedMode of [false,true]){const group=leads.filter(l=>signed(l)===signedMode);context.body.append(el('h3','cb-v4-section-title',(signedMode?'已簽約案件':'未簽約開發')+'（'+group.length+'）'));
  if(!leads.length)context.body.append(el('p','cb-v4-empty','目前沒有此類加盟專案'));
  for(const l of group){
@@ -315,5 +315,5 @@ function open(ctx){
 }
 function refresh(){if(active&&context?.isCurrent?.()!==false)render()}
 document.addEventListener('cb:franchise-schedule-saved',refresh);
-window.ComebuyProjectV4={open,refresh,phases:PHASES};
+window.ComebuyProjectV4={open,refresh,add:()=>{if(context?.projectMode)openAdd()},phases:PHASES};
 })();
