@@ -1,0 +1,22 @@
+window.cbOpenChangelog=async function(body){
+const el=(tag,t)=>{const n=document.createElement(tag);if(t!=null)n.textContent=t;return n};
+body.textContent='載入中…';
+try{
+const res=await fetch('./changelog.json',{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);
+const data=await res.json(), rows=[...new Map(data.records.filter(x=>!x.maintenance).map(x=>[x.id,x])).values()].sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+body.textContent='';const date=v=>v?new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date(v)):'未確認', today=date(new Date()).slice(0,10);
+const summary=el('p','累計修改（建檔起） '+rows.length+' ｜ 部署成功 '+rows.filter(x=>['已部署','已驗證'].includes(x.status)).length+' ｜ 今日修改 '+rows.filter(x=>date(x.time).slice(0,10)===today).length);body.append(summary);
+const controls=el('div');controls.style.cssText='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px';
+const input=el('input');input.placeholder='搜尋修改紀錄';input.style.gridColumn='1/-1';
+const select=values=>{const s=el('select');values.forEach(v=>s.append(el('option',v)));return s};
+const cat=select(['全部','行程','門市','工作','專案','文件','設定','系統']),type=select(['全部','功能新增','功能調整','UI優化','錯誤修復','資料更新']),period=select(['全部','今日','最近7天','最近30天','自訂日期']),start=el('input'),end=el('input');start.type=end.type='date';controls.append(input,cat,type,period,start,end);body.append(controls);
+const scope=select(['目前篩選','全部','勾選紀錄']),txt=el('button','文字檔'),pdf=el('button','PDF／列印'),more=el('button','載入更多'),list=el('div');for(const b of [txt,pdf,more])b.className='dashboard-backup';body.append(scope,txt,pdf,list,more);
+const chosen=new Set();let limit=20, filtered=[];
+const render=()=>{start.hidden=end.hidden=period.value!=='自訂日期';filtered=rows.filter(x=>{const day=date(x.time).slice(0,10),age=(Date.parse(today)-Date.parse(day))/86400000;return (cat.value==='全部'||x.category===cat.value)&&(type.value==='全部'||x.type===type.value)&&[x.title,x.detail,x.id,x.category].join(' ').toLowerCase().includes(input.value.toLowerCase())&&(period.value==='全部'||period.value==='今日'&&day===today||period.value==='最近7天'&&age>=0&&age<7||period.value==='最近30天'&&age>=0&&age<30||period.value==='自訂日期'&&(!start.value||day>=start.value)&&(!end.value||day<=end.value))});list.replaceChildren();let prev='';for(const x of filtered.slice(0,limit)){const day=date(x.time).slice(0,10);if(day!==prev){list.append(el('h4',day));prev=day}const card=el('div');card.style.cssText='border:1px solid #ddd;border-radius:10px;padding:10px;margin:8px 0;overflow-wrap:anywhere';const check=el('input');check.type='checkbox';check.checked=chosen.has(x.id);check.onchange=()=>check.checked?chosen.add(x.id):chosen.delete(x.id);const details=el('details'), title=el('summary',x.title);details.append(title,el('p',x.detail),el('p','Commit ID：'+x.id));const link=el('a','GitHub 提交紀錄');link.href='https://github.com/stenly0524-sys/comebuy-store-map/commit/'+encodeURIComponent(x.id);link.target='_blank';link.rel='noopener noreferrer';details.append(link);card.append(check,el('span',date(x.time)+' ｜ '+x.category+' ｜ '+x.type),details,el('p',x.status+' ｜ '+date(x.deployed)));list.append(card)}more.hidden=filtered.length<=limit;if(!filtered.length)list.append(el('p','沒有符合紀錄'))};
+for(const n of [input,cat,type,period,start,end])n.addEventListener('input',()=>{limit=20;render()});more.onclick=()=>{limit+=20;render()};
+const exportRows=()=>scope.value==='全部'?rows:scope.value==='勾選紀錄'?rows.filter(x=>chosen.has(x.id)):filtered;
+const report=()=>exportRows().map(x=>[date(x.time),x.title,x.detail,x.category+'｜'+x.type,x.id,x.status+'｜'+date(x.deployed)].join('\n')).join('\n\n');
+txt.onclick=()=>{const url=URL.createObjectURL(new Blob(['\ufeff'+report()],{type:'text/plain;charset=utf-8'}));const a=el('a');a.href=url;a.download='系統修改紀錄-'+today+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000)};
+pdf.onclick=()=>{const w=window.open('','_blank');if(!w){alert('請允許開啟列印視窗');return}w.document.title='COMEBUY 系統修改紀錄';const h=w.document.createElement('h2'),p=w.document.createElement('pre');h.textContent=w.document.title;p.textContent=report();p.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font:12px sans-serif';w.document.body.append(h,p);w.print()};render();
+}catch(e){body.textContent='載入失敗：'+e.message}
+};
