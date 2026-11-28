@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "0c99dc87ee88258e7185e5cd0758439b96abd182",
+      "time": "2026-11-28T16:54:44Z",
+      "title": "修正舊簽呈連結缺失",
+      "detail": "類別未匹配時，以同門市唯一狀態相符簽呈或唯一簽呈補足連結，避免多筆誤連。",
+      "category": "專案",
+      "type": "錯誤修復",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "88cf586eb8fb15c2d1c3a24de8edc5ba054a6469",
       "time": "2026-11-28T16:53:38Z",
       "title": "移除合約管理重複資料夾",
