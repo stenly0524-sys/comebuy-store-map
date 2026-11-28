@@ -2,9 +2,9 @@ window.cbOpenChangelog=async function(body){
 const el=(tag,t)=>{const n=document.createElement(tag);if(t!=null)n.textContent=t;return n};
 body.textContent='載入中…';
 try{
-const res=await fetch('./changelog.json',{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);
-const data=await res.json(), rows=[...new Map(data.records.filter(x=>!x.maintenance).map(x=>[x.id,x])).values()].sort((a,b)=>String(b.time).localeCompare(String(a.time)));
-body.textContent='';const date=v=>v?new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',dateStyle:'short',timeStyle:'medium'}).format(new Date(v)):'未確認', today=date(new Date()).slice(0,10);
+const res=await fetch(new URL('/changelog.json',location.origin).href+'?v='+Date.now(),{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);
+const data=await res.json();if(!Array.isArray(data.records))throw Error('紀錄格式不符');const rows=[...new Map(data.records.filter(x=>!x.maintenance).map(x=>[x.id,x])).values()].sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+body.textContent='';const date=v=>{if(!v)return '未確認';const d=new Date(v);if(!Number.isFinite(d.getTime()))return '未確認';const t=new Date(d.getTime()+28800000);return t.toISOString().slice(0,19).replace('T',' ')}, today=date(new Date()).slice(0,10);
 const summary=el('p','累計修改（建檔起） '+rows.length+' ｜ 部署成功 '+rows.filter(x=>['已部署','已驗證'].includes(x.status)).length+' ｜ 今日修改 '+rows.filter(x=>date(x.time).slice(0,10)===today).length);body.append(summary);
 const controls=el('div');controls.style.cssText='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px';
 const input=el('input');input.placeholder='搜尋修改紀錄';input.style.gridColumn='1/-1';
