@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "b69114b71ccd604591009a8e5be0ae2736856912",
+      "time": "2026-11-28T13:38:10Z",
+      "title": "精簡修改紀錄視窗與高度",
+      "detail": "隱藏篩選及匯出區，統計分兩行，第二層高度依第一層設定視窗限制。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "40d2456c0f8cbe3ab50ba0080b882f56db35b8e1",
       "time": "2026-11-28T13:35:26Z",
       "title": "精簡系統修改紀錄清單",
