@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "fe4458546557f9fe525e42bdffdaf8cd7ff92add",
+      "time": "2026-11-28T14:39:51Z",
+      "title": "行程三個篩選按鈕統一風格",
+      "detail": "全部、工作、專案沿用工作待辦及歷史工作頁籤樣式與字級。",
+      "category": "行程",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "c9ba95baa0e37b09bf780f288aff35bbaa2ee8da",
       "time": "2026-11-28T14:20:43Z",
       "title": "主功能列文字調整至16px",
@@ -1341,6 +1352,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 7
+    "deploysAfterBaseline": 8
   }
 }
