@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "aa4fb2d2518f72ad1ee2b2ea1e04923e6309e7ca",
+      "time": "2026-11-28T14:16:30Z",
+      "title": "任務狀況四區分隔",
+      "detail": "顯示與編輯畫面加入三條分隔線，保留原欄位及資料。",
+      "category": "門市",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "1cf4402c80419185b9095bd97b6a5866a8619eb4",
       "time": "2026-11-28T14:03:33Z",
       "title": "放大主畫面功能列文字",
@@ -1308,6 +1319,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 4
+    "deploysAfterBaseline": 5
   }
 }
