@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "a76dd61e7052470d69462143158cbcf580ef3420",
+      "time": "2026-11-28T15:47:53Z",
+      "title": "通訊錄精簡雙行排版",
+      "detail": "店名右側顯示分類與開業日期，主管姓名與職稱以斜線分隔，電話置右並保留撥號。",
+      "category": "專案",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "d0c921f00c714a7a79dbca058009c1ff57dd6033",
       "time": "2026-11-28T15:42:24Z",
       "title": "加盟管理通訊錄與專案總覽卡片",
@@ -1396,6 +1407,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 12
+    "deploysAfterBaseline": 13
   }
 }
