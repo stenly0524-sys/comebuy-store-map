@@ -1,14 +1,25 @@
 {
   "records": [
     {
+      "id": "43726bfa63afa33bea8173e307b1e6b933ffbe22",
+      "time": "2026-11-28T13:15:55Z",
+      "title": "修復修改紀錄載入相容性",
+      "detail": "改用固定台灣時間格式及絕對資料路徑，避免日期格式相容性與快取問題。",
+      "category": "設定",
+      "type": "錯誤修復",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "ffdbb0f5a604571a6d12bb02365ff31009fd92ea",
       "time": "2026-11-28T13:14:05Z",
       "title": "修復設定按鈕程式插入位置錯誤",
       "detail": "將六個按鈕樣式及修改紀錄入口移回 showSettings 函式內。",
       "category": "設定",
       "type": "錯誤修復",
-      "status": "已提交",
-      "deployed": null,
+      "status": "已部署",
+      "deployed": "2026-11-28T13:14:22.162599Z",
       "maintenance": false
     },
     {
@@ -18,8 +29,8 @@
       "detail": "統一六個設定按鈕尺寸、圓角、圖示及排列；系統修改紀錄移至最後一列。",
       "category": "設定",
       "type": "UI優化",
-      "status": "已提交",
-      "deployed": null,
+      "status": "已部署",
+      "deployed": "2026-11-28T13:12:22.747613Z",
       "maintenance": false
     },
     {
@@ -29,8 +40,8 @@
       "detail": "設定新增系統修改紀錄入口",
       "category": "設定",
       "type": "功能新增",
-      "status": "未確認",
-      "deployed": null,
+      "status": "已部署",
+      "deployed": "2026-11-28T13:10:05.946713Z",
       "maintenance": false
     },
     {
@@ -40,8 +51,8 @@
       "detail": "新增系統修改紀錄獨立介面、篩選及匯出",
       "category": "設定",
       "type": "功能新增",
-      "status": "未確認",
-      "deployed": null,
+      "status": "已部署",
+      "deployed": "2026-11-28T13:10:05.946713Z",
       "maintenance": false
     },
     {
