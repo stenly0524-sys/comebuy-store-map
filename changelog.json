@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "836b42f9a3017b8f69dc77b717efdd7ddd7bc1e1",
+      "time": "2026-11-28T16:13:20Z",
+      "title": "備份 V3 升級",
+      "detail": "資料表快照、SHA-256 校驗、匯入回讀及失敗回復，保留舊版相容。",
+      "category": "設定",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "fed473c1764443db91ece1ec1935a98dbd8a29a8",
       "time": "2026-11-28T16:07:00Z",
       "title": "隱藏其他資料匯入與匯出",
@@ -1440,6 +1451,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 16
+    "deploysAfterBaseline": 17
   }
 }
