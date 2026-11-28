@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "024ad76d59b00dd54cea3040e8912fcfc6d553b9",
+      "time": "2026-11-28T13:12:00Z",
+      "title": "設定六個按鈕統一系統樣式與圖示，修改紀錄移至底部",
+      "detail": "統一六個設定按鈕尺寸、圓角、圖示及排列；系統修改紀錄移至最後一列。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "918fa038c7682a6432dd91e3d3ac1bd0f09bf2c3",
       "time": "2026-11-28T13:09:43Z",
       "title": "設定新增系統修改紀錄入口",
