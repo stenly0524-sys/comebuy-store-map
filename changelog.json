@@ -1,6 +1,28 @@
 {
   "records": [
     {
+      "id": "918fa038c7682a6432dd91e3d3ac1bd0f09bf2c3",
+      "time": "2026-11-28T13:09:43Z",
+      "title": "設定新增系統修改紀錄入口",
+      "detail": "設定新增系統修改紀錄入口",
+      "category": "設定",
+      "type": "功能新增",
+      "status": "未確認",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
+      "id": "664cf4815f1a53644cdfe194cf1aa522977c8cf7",
+      "time": "2026-11-28T13:09:38Z",
+      "title": "新增系統修改紀錄獨立介面、篩選及匯出",
+      "detail": "新增系統修改紀錄獨立介面、篩選及匯出",
+      "category": "設定",
+      "type": "功能新增",
+      "status": "未確認",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "cbd374973939f43acc1083683547cfdd5039fc92",
       "time": "2026-11-28T12:51:44Z",
       "title": "Add approval department and internal document categories",
