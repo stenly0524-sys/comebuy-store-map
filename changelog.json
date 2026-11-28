@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "172680feb74fc2ee79bb16c699d5d2ab6cc4c087",
+      "time": "2026-11-28T13:56:29Z",
+      "title": "統一加盟維護與加盟管理按鈕",
+      "detail": "九個按鈕補齊線條圖示，字體、字級及按鈕尺寸比照工作待辦與歷史工作。",
+      "category": "專案",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "aa68fc4f1285271d9f39f41a79bfd5dc92852c2e",
       "time": "2026-11-28T13:45:47Z",
       "title": "取消系統修改紀錄勾選框",
@@ -1264,6 +1275,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 0
+    "deploysAfterBaseline": 1
   }
 }
