@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "e5df3b7e63e13424f42ddef99ed43396c1285bb8",
+      "time": "2026-11-28T13:32:26Z",
+      "title": "統一系統修改紀錄視窗設計",
+      "detail": "沿用系統字型、紅色漸層標題、欄位、卡片與雙欄匯出按鈕樣式。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "a2eec582eecbfed7eb308684c4cd4419e551508c",
       "time": "2026-11-28T13:19:07Z",
       "title": "恢復主系統啟動及設定入口",
