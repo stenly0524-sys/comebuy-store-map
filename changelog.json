@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "ffdbb0f5a604571a6d12bb02365ff31009fd92ea",
+      "time": "2026-11-28T13:14:05Z",
+      "title": "修復設定按鈕程式插入位置錯誤",
+      "detail": "將六個按鈕樣式及修改紀錄入口移回 showSettings 函式內。",
+      "category": "設定",
+      "type": "錯誤修復",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "024ad76d59b00dd54cea3040e8912fcfc6d553b9",
       "time": "2026-11-28T13:12:00Z",
       "title": "設定六個按鈕統一系統樣式與圖示，修改紀錄移至底部",
