@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "8f0d4e41a7411ac623b5fd532fdff65088e32d50",
+      "time": "2026-11-28T13:42:08Z",
+      "title": "統一修改紀錄視窗邊界",
+      "detail": "保留上沿，左右及標題高度對齊設定視窗，下沿採專案待辦的100dvh減10px規則。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "b69114b71ccd604591009a8e5be0ae2736856912",
       "time": "2026-11-28T13:38:10Z",
       "title": "精簡修改紀錄視窗與高度",
