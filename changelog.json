@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "17951cddcaca4d0ff263f773f1d1ffb59905c499",
+      "time": "2026-11-28T16:35:26Z",
+      "title": "簽呈狀態編號及連結",
+      "detail": "專案總覽、工程改裝及合約狀態使用可點擊簽呈連結，保留已製作、已送件、已完成日期與編號。",
+      "category": "專案",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "48144e83afb1155864aa54a593cf295259ed44ab",
       "time": "2026-11-28T16:27:34Z",
       "title": "通訊錄開業天數與門市連結",
@@ -1473,6 +1484,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 19
+    "deploysAfterBaseline": 20
   }
 }
