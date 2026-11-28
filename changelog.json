@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "c9ba95baa0e37b09bf780f288aff35bbaa2ee8da",
+      "time": "2026-11-28T14:20:43Z",
+      "title": "主功能列文字調整至16px",
+      "detail": "五個主功能按鈕文字由18px調整至16px，其餘不變。",
+      "category": "系統",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "19cfddbf54f2614206f869f944ac99152e0631f7",
       "time": "2026-11-28T14:18:14Z",
       "title": "主功能列文字放大至18px",
@@ -1330,6 +1341,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 6
+    "deploysAfterBaseline": 7
   }
 }
