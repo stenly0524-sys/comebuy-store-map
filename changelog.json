@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "06691f72d1a09d1048b4d0d8b3b8d600f15fa191",
+      "time": "2026-11-28T15:10:51Z",
+      "title": "專案總覽新增門市任務摘要",
+      "detail": "顯示兩項合約到期日及剩餘天數、簽呈狀態、工程種類、其他待辦與經營改善要求。",
+      "category": "專案",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "1da3088831baac72127560c62dbbae60e13d191e",
       "time": "2026-11-28T15:05:28Z",
       "title": "加盟維護頁籤顯示門市數量",
@@ -1363,6 +1374,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 9
+    "deploysAfterBaseline": 10
   }
 }
