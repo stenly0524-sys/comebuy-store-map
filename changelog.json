@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "4d27080e7476f4d9bb01bd7da096ff872dbdac36",
+      "time": "2026-11-28T16:18:37Z",
+      "title": "專案總覽排序及條件顯示",
+      "detail": "加盟合約到期由近至遠排序，無工程改裝待辦不顯示工程種類，空白其他待辦不顯示。",
+      "category": "專案",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "836b42f9a3017b8f69dc77b717efdd7ddd7bc1e1",
       "time": "2026-11-28T16:13:20Z",
       "title": "備份 V3 升級",
@@ -1451,6 +1462,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 17
+    "deploysAfterBaseline": 18
   }
 }
