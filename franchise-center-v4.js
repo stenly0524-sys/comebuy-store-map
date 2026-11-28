@@ -54,7 +54,7 @@ function page(){
  context.setLayout('compact');context.setNav();context.drawer.classList.add('open');
  context.setHeading();context.title.textContent=context.projectMode?'加盟開發':context.calendarMode?'行程':'工作';
  context.body.replaceChildren();
- if(context.projectMode){context.body.append(btn('‹ 返回專案',()=>{active=false;context.home()},'cb-v4-back'));if(folderId)folder();else list();return}
+ if(context.projectMode){if(!context.embeddedProject)context.body.append(btn('‹ 返回專案',()=>{active=false;context.home()},'cb-v4-back'));if(folderId)folder();else list();return}
  if(context.calendarMode){calendar();return}
  const tabs=el('div','cb-v4-tabs');tabs.style.gridTemplateColumns='repeat(2,minmax(0,1fr))';
  for(const [id,name] of [['work','工作待辦'],['history','歷史工作']]){
