@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "d0c921f00c714a7a79dbca058009c1ff57dd6033",
+      "time": "2026-11-28T15:42:24Z",
+      "title": "加盟管理通訊錄與專案總覽卡片",
+      "detail": "新增本機通訊錄匯入及清單，專案總覽採待面談卡片樣式。",
+      "category": "專案",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "c15113aa43e131867b93face47445b74c67f6023",
       "time": "2026-11-28T15:21:36Z",
       "title": "專案總覽條件顯示與合約倒數",
@@ -1385,6 +1396,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 11
+    "deploysAfterBaseline": 12
   }
 }
