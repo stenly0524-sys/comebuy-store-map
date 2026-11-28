@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "88cf586eb8fb15c2d1c3a24de8edc5ba054a6469",
+      "time": "2026-11-28T16:53:38Z",
+      "title": "移除合約管理重複資料夾",
+      "detail": "不再顯示第四層重複篩選按鈕，保留上層六項合約資料夾及內容。",
+      "category": "專案",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "17951cddcaca4d0ff263f773f1d1ffb59905c499",
       "time": "2026-11-28T16:35:26Z",
       "title": "簽呈狀態編號及連結",
@@ -1484,6 +1495,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 20
+    "deploysAfterBaseline": 21
   }
 }
