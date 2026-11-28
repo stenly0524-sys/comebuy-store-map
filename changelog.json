@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "1da3088831baac72127560c62dbbae60e13d191e",
+      "time": "2026-11-28T15:05:28Z",
+      "title": "加盟維護頁籤顯示門市數量",
+      "detail": "六個頁籤依本機門市資料及分類條件計算數量。",
+      "category": "專案",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "fe4458546557f9fe525e42bdffdaf8cd7ff92add",
       "time": "2026-11-28T14:39:51Z",
       "title": "行程三個篩選按鈕統一風格",
@@ -1352,6 +1363,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 8
+    "deploysAfterBaseline": 9
   }
 }
