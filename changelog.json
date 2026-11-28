@@ -1259,5 +1259,11 @@
     "commits": 100,
     "deploys": 100,
     "complete": false
+  },
+  "totals": {
+    "baselineChanges": 405,
+    "baselineDeploys": 572,
+    "baselineRecords": 114,
+    "deploysAfterBaseline": 0
   }
 }
