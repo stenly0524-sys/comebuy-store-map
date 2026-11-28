@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "19cfddbf54f2614206f869f944ac99152e0631f7",
+      "time": "2026-11-28T14:18:14Z",
+      "title": "主功能列文字放大至18px",
+      "detail": "五個主功能按鈕文字由15px調整至18px，其餘不變。",
+      "category": "系統",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "aa4fb2d2518f72ad1ee2b2ea1e04923e6309e7ca",
       "time": "2026-11-28T14:16:30Z",
       "title": "任務狀況四區分隔",
@@ -1319,6 +1330,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 5
+    "deploysAfterBaseline": 6
   }
 }
