@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "aa6c71431c1cf56cdb7b2dadc17f4810a4f79d84",
+      "time": "2026-11-28T15:51:38Z",
+      "title": "整合資料備份入口",
+      "detail": "立即備份移至資料備份，保留備份時間紀錄，資料庫管理僅保留容量管理。",
+      "category": "設定",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "a76dd61e7052470d69462143158cbcf580ef3420",
       "time": "2026-11-28T15:47:53Z",
       "title": "通訊錄精簡雙行排版",
@@ -1407,6 +1418,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 13
+    "deploysAfterBaseline": 14
   }
 }
