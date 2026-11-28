@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "aa68fc4f1285271d9f39f41a79bfd5dc92852c2e",
+      "time": "2026-11-28T13:45:47Z",
+      "title": "取消系統修改紀錄勾選框",
+      "detail": "清單不再顯示勾選框，其他內容及資料維持不變。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "4f07323a1878cc57e49f37971ef229ffbff3be8b",
       "time": "2026-11-28T13:44:41Z",
       "title": "統一資料庫管理視窗尺寸",
