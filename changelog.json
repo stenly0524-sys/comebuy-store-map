@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "a2eec582eecbfed7eb308684c4cd4419e551508c",
+      "time": "2026-11-28T13:19:07Z",
+      "title": "恢復主系統啟動及設定入口",
+      "detail": "以先前穩定主頁為基準，修復巢狀程式字串跳脫，保留修改紀錄入口。",
+      "category": "系統",
+      "type": "錯誤修復",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "32f69e582a08e5c82f4b17a272439c096846c803",
       "time": "2026-11-28T13:17:46Z",
       "title": "新增修改紀錄載入備援",
