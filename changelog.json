@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "c15113aa43e131867b93face47445b74c67f6023",
+      "time": "2026-11-28T15:21:36Z",
+      "title": "專案總覽條件顯示與合約倒數",
+      "detail": "待辦移至門市名稱右方，依任務顯示簽呈與經營改善，隱藏超過300天的合約，門市資訊顯示倒數。",
+      "category": "專案",
+      "type": "功能調整",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "06691f72d1a09d1048b4d0d8b3b8d600f15fa191",
       "time": "2026-11-28T15:10:51Z",
       "title": "專案總覽新增門市任務摘要",
@@ -1374,6 +1385,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 10
+    "deploysAfterBaseline": 11
   }
 }
