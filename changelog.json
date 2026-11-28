@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "1cf4402c80419185b9095bd97b6a5866a8619eb4",
+      "time": "2026-11-28T14:03:33Z",
+      "title": "放大主畫面功能列文字",
+      "detail": "五個主功能按鈕文字統一15px，保留圖示與原有排列。",
+      "category": "系統",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "c9ffb95b63f80bf5199c2e7e320d7a73853f624a",
       "time": "2026-11-28T14:02:00Z",
       "title": "調整備份匯入確認流程",
@@ -1297,6 +1308,6 @@
     "baselineChanges": 405,
     "baselineDeploys": 572,
     "baselineRecords": 114,
-    "deploysAfterBaseline": 3
+    "deploysAfterBaseline": 4
   }
 }
