@@ -1,6 +1,17 @@
 {
   "records": [
     {
+      "id": "40d2456c0f8cbe3ab50ba0080b882f56db35b8e1",
+      "time": "2026-11-28T13:35:26Z",
+      "title": "精簡系統修改紀錄清單",
+      "detail": "取消搜尋、顯示起始日期、隱藏已提交及未確認狀態、縮小清單間距。",
+      "category": "設定",
+      "type": "UI優化",
+      "status": "已提交",
+      "deployed": null,
+      "maintenance": false
+    },
+    {
       "id": "e5df3b7e63e13424f42ddef99ed43396c1285bb8",
       "time": "2026-11-28T13:32:26Z",
       "title": "統一系統修改紀錄視窗設計",
